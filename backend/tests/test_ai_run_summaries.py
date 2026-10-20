@@ -14,6 +14,8 @@ from app.services.ai_run_summaries import (
     build_run_summary_packet,
 )
 
+AI_HEADERS = {"authorization": "Bearer test-ai-access-token"}
+
 
 class FakeRunSummaryProvider:
     def __init__(self, source_id: str | None = None) -> None:
@@ -97,7 +99,7 @@ def test_run_summary_is_validated_persisted_and_cached(api) -> None:
         openai_model="test-model",
     )
     provider = FakeRunSummaryProvider()
-    request = SimpleNamespace(client=SimpleNamespace(host="summary-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="summary-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, candidates = seed_run(session)
         original_calls = [(candidate.final_call, candidate.shortlist_position) for candidate in candidates]
@@ -131,7 +133,7 @@ def test_run_summary_rejects_unverified_source(api) -> None:
         openai_api_key="test-only-not-a-real-key",
         openai_model="test-model",
     )
-    request = SimpleNamespace(client=SimpleNamespace(host="invalid-summary-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="invalid-summary-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _ = seed_run(session)
         with pytest.raises(HTTPException) as captured:
@@ -163,7 +165,7 @@ def test_run_summary_packet_has_aggregate_and_bounded_excerpts(api) -> None:
 def test_run_summary_is_disabled_by_default(api) -> None:
     _, engine = api
     settings = Settings(app_env="test", run_worker_enabled=False)
-    request = SimpleNamespace(client=SimpleNamespace(host="disabled-summary-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="disabled-summary-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _ = seed_run(session)
         with pytest.raises(HTTPException) as captured:

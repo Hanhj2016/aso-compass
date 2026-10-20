@@ -11,6 +11,7 @@ os.environ["APP_ENV"] = "test"
 os.environ["DATABASE_URL"] = "sqlite:////tmp/aso_compass_pytest_bootstrap.db"
 os.environ["RUN_WORKER_ENABLED"] = "false"
 os.environ["AI_ENABLED"] = "false"
+os.environ["AI_ACCESS_TOKEN_HASH"] = "11caa243f14b435cf3723169bb9efe0efb58acf790349ac6780f028b98a7572c"
 os.environ.pop("OPENAI_API_KEY", None)
 
 from app.core.settings import Settings, get_settings

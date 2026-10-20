@@ -28,6 +28,7 @@ from app.schemas.ai import (
     RunSummaryPublic,
 )
 from app.schemas.runs import CandidatePublic, EventPublic, RunCreate, RunPublic
+from app.services.ai_access import require_ai_access
 from app.services.ai_candidate_comparisons import (
     OUTPUT_SCHEMA_VERSION as CANDIDATE_COMPARISON_OUTPUT_SCHEMA_VERSION,
 )
@@ -119,6 +120,7 @@ def public_config(settings: Annotated[Settings, Depends(get_settings)]) -> dict[
         "version": settings.app_version,
         "environment": settings.app_env,
         "ai_enabled": settings.ai_enabled,
+        "ai_access_required": settings.ai_enabled,
         "engine_version": "4.1-guided",
         "research_use_disclaimer": DISCLAIMER,
     }
@@ -328,6 +330,7 @@ def summarize_run(
         raise HTTPException(
             503, detail={"code": "AI_NOT_CONFIGURED", "message": "AI summaries are not configured."}
         )
+    require_ai_access(request, settings)
     run = require_run(session, run_id, settings)
     if run.status != "succeeded":
         raise HTTPException(
@@ -414,6 +417,7 @@ def compare_candidates(
         raise HTTPException(
             503, detail={"code": "AI_NOT_CONFIGURED", "message": "AI comparisons are not configured."}
         )
+    require_ai_access(request, settings)
     run = require_run(session, run_id, settings)
     if run.status != "succeeded":
         raise HTTPException(
@@ -524,12 +528,6 @@ def answer_saved_evidence_question(
     settings: Annotated[Settings, Depends(get_settings)],
     provider: Annotated[QuestionProvider, Depends(get_question_provider)],
 ) -> AIQuestionPublic:
-    safety = assess_ai_question(payload.question)
-    if not safety.allowed:
-        raise HTTPException(
-            422,
-            detail={"code": safety.code, "message": safety.public_message},
-        )
     if not settings.ai_enabled:
         raise HTTPException(
             503,
@@ -539,6 +537,13 @@ def answer_saved_evidence_question(
         raise HTTPException(
             503,
             detail={"code": "AI_NOT_CONFIGURED", "message": "AI questions are not configured."},
+        )
+    require_ai_access(request, settings)
+    safety = assess_ai_question(payload.question)
+    if not safety.allowed:
+        raise HTTPException(
+            422,
+            detail={"code": safety.code, "message": safety.public_message},
         )
     run = require_run(session, run_id, settings)
     if run.status != "succeeded":
@@ -701,6 +706,7 @@ def explain_candidate(
             503,
             detail={"code": "AI_NOT_CONFIGURED", "message": "AI explanations are not configured."},
         )
+    require_ai_access(request, settings)
     run = require_run(session, run_id, settings)
     if run.status != "succeeded":
         raise HTTPException(

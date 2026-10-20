@@ -16,6 +16,8 @@ from app.services.ai_questions import (
     build_question_packet,
 )
 
+AI_HEADERS = {"authorization": "Bearer test-ai-access-token"}
+
 
 class FakeQuestionProvider:
     def __init__(
@@ -170,7 +172,7 @@ def enabled_settings() -> Settings:
 def test_saved_evidence_question_is_validated_persisted_and_cached_without_raw_question(api) -> None:
     _, engine = api
     provider = FakeQuestionProvider()
-    request = SimpleNamespace(client=SimpleNamespace(host="question-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="question-client"), headers=AI_HEADERS)
     private_question = "Why is GENEA classified as modifier?"
     payload = AIQuestionRequest(question=private_question, gene_symbols=["genea"])
     with Session(engine) as session:
@@ -206,7 +208,7 @@ def test_saved_evidence_question_is_validated_persisted_and_cached_without_raw_q
 def test_rejected_patient_identifier_never_calls_provider_or_persists(api) -> None:
     _, engine = api
     provider = FakeQuestionProvider()
-    request = SimpleNamespace(client=SimpleNamespace(host="pii-question-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="pii-question-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _, _ = seed_question_run(session)
         with pytest.raises(HTTPException) as captured:
@@ -231,7 +233,7 @@ def test_rejected_patient_identifier_never_calls_provider_or_persists(api) -> No
 def test_unsupported_question_returns_without_provider_or_persistence(api) -> None:
     _, engine = api
     provider = FakeQuestionProvider()
-    request = SimpleNamespace(client=SimpleNamespace(host="unsupported-question-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="unsupported-question-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _, _ = seed_question_run(session)
         result = answer_saved_evidence_question(
@@ -252,7 +254,7 @@ def test_unsupported_question_returns_without_provider_or_persistence(api) -> No
 def test_candidate_question_requires_an_explicit_saved_candidate_selection(api) -> None:
     _, engine = api
     provider = FakeQuestionProvider()
-    request = SimpleNamespace(client=SimpleNamespace(host="selection-question-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="selection-question-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _, _ = seed_question_run(session)
         result = answer_saved_evidence_question(
@@ -270,7 +272,7 @@ def test_candidate_question_requires_an_explicit_saved_candidate_selection(api) 
 
 def test_unverified_answer_source_is_rejected_and_not_persisted(api) -> None:
     _, engine = api
-    request = SimpleNamespace(client=SimpleNamespace(host="source-question-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="source-question-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _, _ = seed_question_run(session)
         with pytest.raises(HTTPException) as captured:
@@ -292,7 +294,7 @@ def test_unverified_answer_source_is_rejected_and_not_persisted(api) -> None:
 def test_insufficient_model_answer_can_return_without_inventing_a_citation(api) -> None:
     _, engine = api
     provider = FakeQuestionProvider(insufficient=True)
-    request = SimpleNamespace(client=SimpleNamespace(host="insufficient-question-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="insufficient-question-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _, _ = seed_question_run(session)
         result = answer_saved_evidence_question(
@@ -335,7 +337,7 @@ def test_question_packet_contains_only_selected_candidate_evidence(api) -> None:
 def test_false_classification_premise_is_corrected_by_the_server(api) -> None:
     _, engine = api
     provider = FakeQuestionProvider()
-    request = SimpleNamespace(client=SimpleNamespace(host="premise-question-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="premise-question-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _, _ = seed_question_run(session)
         result = answer_saved_evidence_question(
@@ -360,7 +362,7 @@ def test_false_classification_premise_is_corrected_by_the_server(api) -> None:
 @pytest.mark.parametrize("conflict", ["fact_final_call", "prose_final_call", "invented_number"])
 def test_deterministic_conflicts_are_rejected_and_not_persisted(api, conflict: str) -> None:
     _, engine = api
-    request = SimpleNamespace(client=SimpleNamespace(host=f"conflict-{conflict}"))
+    request = SimpleNamespace(client=SimpleNamespace(host=f"conflict-{conflict}"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _, _ = seed_question_run(session)
         with pytest.raises(HTTPException) as captured:
@@ -388,7 +390,7 @@ def test_question_contract_uses_v2_cache_boundary() -> None:
 def test_question_endpoint_follows_the_global_ai_disabled_gate(api) -> None:
     _, engine = api
     provider = FakeQuestionProvider()
-    request = SimpleNamespace(client=SimpleNamespace(host="disabled-question-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="disabled-question-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _, _ = seed_question_run(session)
         with pytest.raises(HTTPException) as captured:

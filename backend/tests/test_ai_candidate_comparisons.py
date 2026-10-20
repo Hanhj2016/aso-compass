@@ -11,6 +11,8 @@ from app.models import AIInsight, Candidate, Evidence, Run
 from app.schemas.ai import CandidateComparisonOutput, CandidateComparisonRequest
 from app.services.ai_candidate_comparisons import CandidateComparisonProviderResult
 
+AI_HEADERS = {"authorization": "Bearer test-ai-access-token"}
+
 
 class FakeComparisonProvider:
     def __init__(self, source_id: str | None = None, change_gene: bool = False) -> None:
@@ -129,7 +131,7 @@ def test_candidate_comparison_is_validated_persisted_and_order_independent(api) 
         openai_model="test-model",
     )
     provider = FakeComparisonProvider()
-    request = SimpleNamespace(client=SimpleNamespace(host="comparison-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="comparison-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, rows = seed_comparison(session)
         original = [(row.final_call, row.shortlist_position) for row in rows]
@@ -174,7 +176,7 @@ def test_candidate_comparison_rejects_unverified_source(api) -> None:
         openai_api_key="test-only-not-a-real-key",
         openai_model="test-model",
     )
-    request = SimpleNamespace(client=SimpleNamespace(host="invalid-comparison-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="invalid-comparison-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _ = seed_comparison(session)
         with pytest.raises(HTTPException) as captured:
@@ -199,7 +201,7 @@ def test_candidate_comparison_rejects_changed_candidate_set(api) -> None:
         openai_api_key="test-only-not-a-real-key",
         openai_model="test-model",
     )
-    request = SimpleNamespace(client=SimpleNamespace(host="candidate-validation-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="candidate-validation-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _ = seed_comparison(session)
         with pytest.raises(HTTPException) as captured:

@@ -3,6 +3,7 @@ import { askSavedEvidenceQuestion, compareCandidates, createRun, explainCandidat
 import type { AIQuestionAnswer, Candidate, CandidateComparison, CandidateExplanation, CitedClaim, ExampleBundle, RunEvent, RunRecord, RunSummary } from "./types";
 
 const DISCLAIMER = "For hypothesis generation and education only. Not for clinical decision-making.";
+const AI_ACCESS_STORAGE_KEY = "aso-compass-ai-access-token";
 const PRESETS = [
   ["MONDO_0004976", "Amyotrophic lateral sclerosis (ALS)"],
   ["MONDO_0004975", "Alzheimer disease"],
@@ -142,17 +143,31 @@ function AIClaims({ claims }: { claims: CitedClaim[] }) {
   return <ul className="ai-claims">{claims.map((item, index) => <li key={`${item.claim}-${index}`}><span>{item.claim}</span><small>{item.source_ids.map(sourceId => <b key={sourceId} title={sourceId}>{sourceLabel(sourceId)}</b>)}</small></li>)}</ul>;
 }
 
-function CandidateDrawer({ row, runId, aiEnabled, isExample, onClose }: { row: Candidate; runId: string; aiEnabled: boolean; isExample: boolean; onClose: () => void }) {
+function AIAccessControl({ enabled, required, accessToken, onUnlock, onLock }: { enabled: boolean; required: boolean; accessToken: string; onUnlock: (token: string) => void; onLock: () => void }) {
+  const [draft, setDraft] = useState(accessToken);
+  if (!enabled || !required) return null;
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    const token = draft.trim();
+    if (token) onUnlock(token);
+  }
+  return <section className="ai-access-panel" aria-labelledby="ai-access-title">
+    <div><p className="eyebrow">Controlled AI access</p><h2 id="ai-access-title">{accessToken ? "AI access token ready" : "Unlock AI features"}</h2><p>The OpenAI credential remains on the server. Enter the separate ASO Compass access token; it is kept only for this browser tab and validated by the server on every AI request.</p></div>
+    {accessToken ? <button className="secondary-button" type="button" onClick={() => { setDraft(""); onLock(); }}>Lock AI</button> : <form onSubmit={submit}><label htmlFor="ai-access-token">AI access token</label><div><input id="ai-access-token" type="password" autoComplete="off" value={draft} onChange={(event) => setDraft(event.target.value)} /><button className="secondary-button" disabled={!draft.trim()}>Use token</button></div></form>}
+  </section>;
+}
+
+function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isExample, onClose }: { row: Candidate; runId: string; aiEnabled: boolean; accessLocked: boolean; accessToken: string; isExample: boolean; onClose: () => void }) {
   const [explanation, setExplanation] = useState<CandidateExplanation | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   async function requestExplanation() {
     setAiLoading(true); setAiError("");
-    try { setExplanation(await explainCandidate(runId, row.gene_symbol)); }
+    try { setExplanation(await explainCandidate(runId, row.gene_symbol, accessToken)); }
     catch (error) { setAiError(error instanceof Error ? error.message : "The explanation could not be generated."); }
     finally { setAiLoading(false); }
   }
-  return <div className="drawer-backdrop" role="presentation" onMouseDown={onClose}><aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="gene-title" onMouseDown={(e) => e.stopPropagation()}>
+  return <div className="drawer-backdrop" role="presentation" onMouseDown={onClose}><aside className="drawer" role="dialog" aria-labelledby="gene-title" onMouseDown={(e) => e.stopPropagation()}>
     <button className="close" onClick={onClose} aria-label="Close gene details">×</button>
     <p className="eyebrow">Candidate evidence</p><h2 id="gene-title">{row.gene_symbol}</h2><p>{row.gene_name}</p>
     <span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span>
@@ -163,7 +178,7 @@ function CandidateDrawer({ row, runId, aiEnabled, isExample, onClose }: { row: C
     {(row.flag || row.evidence_truncated) && <p className="notice"><b>Review flag:</b> {row.flag || "Variant evidence was capped and may be incomplete."}</p>}
     <section className="source-links"><h3>Primary records</h3><a href={`https://platform.opentargets.org/target/${row.ensembl_id}`} target="_blank" rel="noreferrer">Open Targets ↗</a>{row.aso_trial_ids.split(", ").filter(Boolean).map(id => <a key={id} href={`https://clinicaltrials.gov/study/${id}`} target="_blank" rel="noreferrer">{id} ↗</a>)}</section>
     <section className="ai-panel" aria-labelledby="ai-explanation-title"><div className="ai-heading"><h3 id="ai-explanation-title">AI evidence explainer</h3><span>Generated · optional</span></div>
-      {!aiEnabled && <p>{isExample ? "AI explanations are unavailable for the bundled example." : "AI explanations are currently off. Deterministic results remain fully available."}</p>}
+      {!aiEnabled && <p>{isExample ? "AI explanations are unavailable for the bundled example." : accessLocked ? "Enter the shared AI access token in the results page to unlock explanations." : "AI explanations are currently off. Deterministic results remain fully available."}</p>}
       {aiEnabled && !explanation && <><p>Generate a plain-language explanation from this saved evidence only. The explanation cannot change the classification or rank.</p><button className="secondary-button ai-button" onClick={() => void requestExplanation()} disabled={aiLoading}>{aiLoading ? "Generating…" : "Explain saved evidence"}</button></>}
       {aiError && <p className="ai-error" role="alert">{aiError}</p>}
       {explanation && <div className="ai-output"><p className="ai-summary">{explanation.output.summary}</p>
@@ -181,7 +196,7 @@ function CandidateDrawer({ row, runId, aiEnabled, isExample, onClose }: { row: C
   </aside></div>;
 }
 
-function AIQuestionPanel({ runId, candidates, enabled, isExample }: { runId: string; candidates: Candidate[]; enabled: boolean; isExample: boolean }) {
+function AIQuestionPanel({ runId, candidates, enabled, accessLocked, accessToken, isExample }: { runId: string; candidates: Candidate[]; enabled: boolean; accessLocked: boolean; accessToken: string; isExample: boolean }) {
   const [question, setQuestion] = useState("");
   const [geneSymbols, setGeneSymbols] = useState<string[]>([]);
   const [answer, setAnswer] = useState<AIQuestionAnswer | null>(null);
@@ -201,14 +216,14 @@ function AIQuestionPanel({ runId, candidates, enabled, isExample }: { runId: str
     const normalized = question.trim();
     if (!normalized) return;
     setLoading(true); setError(""); setAnswer(null);
-    try { setAnswer(await askSavedEvidenceQuestion(runId, normalized, geneSymbols)); }
+    try { setAnswer(await askSavedEvidenceQuestion(runId, normalized, geneSymbols, accessToken)); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "The saved-evidence question could not be answered."); }
     finally { setLoading(false); }
   }
 
   return <section className="ai-panel qa-panel" aria-labelledby="qa-title">
     <div className="ai-heading"><div><p className="eyebrow">Guarded questions</p><h2 id="qa-title">Ask about this saved result</h2></div><span>Generated · evidence only</span></div>
-    {!enabled && <p>{isExample ? "AI questions are unavailable for the bundled example." : "AI questions are currently off. Deterministic results remain fully available."}</p>}
+    {!enabled && <p>{isExample ? "AI questions are unavailable for the bundled example." : accessLocked ? "Enter the shared AI access token above to ask questions about saved evidence." : "AI questions are currently off. Deterministic results remain fully available."}</p>}
     {enabled && <>
       <p className="qa-intro">Ask about run warnings, classifications, scores, evidence gaps, or therapeutic precedent. Answers use only this saved run and cannot change its classifications or rank.</p>
       <form className="qa-form" onSubmit={(event) => void submitQuestion(event)}>
@@ -235,7 +250,7 @@ function AIQuestionPanel({ runId, candidates, enabled, isExample }: { runId: str
   </section>;
 }
 
-function Results({ run, candidates, isExample, aiEnabled, onReset }: { run: RunRecord; candidates: Candidate[]; isExample: boolean; aiEnabled: boolean; onReset: () => void }) {
+function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAccessToken, onUnlockAI, onLockAI, onReset }: { run: RunRecord; candidates: Candidate[]; isExample: boolean; aiEnabled: boolean; aiAccessRequired: boolean; aiAccessToken: string; onUnlockAI: (token: string) => void; onLockAI: () => void; onReset: () => void }) {
   const [query, setQuery] = useState(""); const [track, setTrack] = useState("all");
   const [shortlist, setShortlist] = useState(false); const [selected, setSelected] = useState<Candidate | null>(null);
   const [sort, setSort] = useState<"rank" | "overall" | "genetic">("rank");
@@ -246,13 +261,15 @@ function Results({ run, candidates, isExample, aiEnabled, onReset }: { run: RunR
   const [comparison, setComparison] = useState<CandidateComparison | null>(null);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [comparisonError, setComparisonError] = useState("");
+  const accessLocked = aiEnabled && aiAccessRequired && !aiAccessToken;
+  const aiAvailable = aiEnabled && !isExample && !accessLocked;
   const counts = useMemo(() => Object.fromEntries(TRACKS.slice(1).map(name => [name, candidates.filter(row => row.final_call === name).length])), [candidates]);
   const filtered = useMemo(() => candidates.filter(row => (track === "all" || row.final_call === track) && (!shortlist || row.shortlist_position !== null) && `${row.gene_symbol} ${row.gene_name}`.toLowerCase().includes(query.toLowerCase())).sort((a, b) => sort === "overall" ? b.overall_score - a.overall_score : sort === "genetic" ? b.genetic_score - a.genetic_score : (a.shortlist_position ?? 9999) - (b.shortlist_position ?? 9999)), [candidates, query, track, shortlist, sort]);
   const shortlistCount = candidates.filter(row => row.shortlist_position !== null).length;
   const capped = candidates.filter(row => row.evidence_truncated).length;
   async function requestRunSummary() {
     setSummaryLoading(true); setSummaryError("");
-    try { setRunSummary(await summarizeRun(run.id)); }
+    try { setRunSummary(await summarizeRun(run.id, aiAccessToken)); }
     catch (error) { setSummaryError(error instanceof Error ? error.message : "The run summary could not be generated."); }
     finally { setSummaryLoading(false); }
   }
@@ -263,19 +280,20 @@ function Results({ run, candidates, isExample, aiEnabled, onReset }: { run: RunR
   async function requestComparison() {
     if (comparisonSelection.length < 2 || comparisonSelection.length > 3) return;
     setComparisonLoading(true); setComparisonError("");
-    try { setComparison(await compareCandidates(run.id, comparisonSelection)); }
+    try { setComparison(await compareCandidates(run.id, comparisonSelection, aiAccessToken)); }
     catch (error) { setComparisonError(error instanceof Error ? error.message : "The candidate comparison could not be generated."); }
     finally { setComparisonLoading(false); }
   }
 
-  return <section className="results-view">
+  return <section className={`results-view${selected ? " evidence-open" : ""}`}>
     <div className="results-header"><div><p className="eyebrow">{isExample ? "Precomputed example" : "Completed analysis"}</p><h1>{run.disease_label ?? run.disease_id}</h1><p>{run.disease_id} · Engine {run.engine_version} · Open Targets {String(run.upstream_metadata.open_targets_release ?? "release unknown")}</p></div><div className="header-actions">{!isExample && <><a className="secondary-button" href={exportUrl(run.id, "csv")}>Export CSV</a><a className="secondary-button" href={exportUrl(run.id, "json")}>Export JSON</a></>}<button className="primary-button compact" onClick={onReset}>New analysis</button></div></div>
     {isExample && <p className="example-banner"><b>Offline-ready example.</b> These versioned results are illustrative and do not refresh with current sources.</p>}
     {run.warnings.map((warning) => <p className="notice" key={warning}>{warning}</p>)}
     <div className="metrics"><Metric label="Candidates" value={candidates.length} detail="Passed association filters"/><Metric label="Priority shortlist" value={shortlistCount} detail="Retained by configured shortlist rules"/><Metric label="Evidence capped" value={capped} detail={capped ? "Manual review required" : "No truncated gene records"}/><Metric label="ASO precedent" value={candidates.filter(row => row.aso_precedent).length} detail="Drug or trial source match"/></div>
+    {!isExample && <AIAccessControl enabled={aiEnabled} required={aiAccessRequired} accessToken={aiAccessToken} onUnlock={onUnlockAI} onLock={onLockAI}/>}
     <section className="ai-panel run-summary-panel" aria-labelledby="run-summary-title"><div className="ai-heading"><div><p className="eyebrow">Optional interpretation</p><h2 id="run-summary-title">AI run summary</h2></div><span>Generated · evidence only</span></div>
-      {!aiEnabled && <p>{isExample ? "AI summaries are unavailable for the bundled example." : "AI summaries are currently off. Deterministic results remain fully available."}</p>}
-      {aiEnabled && !runSummary && <div className="run-summary-intro"><p>Summarize saved track counts, evidence gaps, warnings, and review priorities. The summary cannot change classifications, scores, or shortlist order.</p><button className="secondary-button" onClick={() => void requestRunSummary()} disabled={summaryLoading}>{summaryLoading ? "Generating summary…" : "Summarize this run"}</button></div>}
+      {!aiAvailable && <p>{isExample ? "AI summaries are unavailable for the bundled example." : accessLocked ? "Enter the shared AI access token above to unlock summaries." : "AI summaries are currently off. Deterministic results remain fully available."}</p>}
+      {aiAvailable && !runSummary && <div className="run-summary-intro"><p>Summarize saved track counts, evidence gaps, warnings, and review priorities. The summary cannot change classifications, scores, or shortlist order.</p><button className="secondary-button" onClick={() => void requestRunSummary()} disabled={summaryLoading}>{summaryLoading ? "Generating summary…" : "Summarize this run"}</button></div>}
       {summaryError && <p className="ai-error" role="alert">{summaryError}</p>}
       {runSummary && <div className="ai-output run-summary-output"><p className="ai-summary">{runSummary.output.overview}</p>
         <div className="run-summary-columns"><div><h4>Key findings</h4><AIClaims claims={runSummary.output.key_findings}/></div><div><h4>Review priorities</h4><AIClaims claims={runSummary.output.review_priorities}/></div></div>
@@ -285,12 +303,12 @@ function Results({ run, candidates, isExample, aiEnabled, onReset }: { run: RunR
         <p className="ai-meta">{runSummary.cached ? "Reused identical-input cache" : "New summary"} · {runSummary.model} · sources validated server-side</p><p className="drawer-disclaimer">{runSummary.research_use_disclaimer}</p>
       </div>}
     </section>
-    <AIQuestionPanel runId={run.id} candidates={candidates} enabled={aiEnabled && !isExample} isExample={isExample}/>
+    <AIQuestionPanel runId={run.id} candidates={candidates} enabled={aiAvailable} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample}/>
     <div className="visual-grid"><article className="panel"><div className="panel-title"><div><p className="eyebrow">Mechanism landscape</p><h2>Candidate tracks</h2></div><span>{candidates.length} genes</span></div><div className="track-bars">{TRACKS.slice(1).map(name => <button key={name} onClick={() => setTrack(name)}><span>{TRACK_LABEL[name]}</span><i><em className={`track-${name.replace(/[^a-z]/g, "-")}`} style={{ width: `${Math.max(3, ((counts[name] ?? 0) / candidates.length) * 100)}%` }} /></i><b>{counts[name] ?? 0}</b></button>)}</div></article><article className="panel"><div className="panel-title"><div><p className="eyebrow">Association landscape</p><h2>Evidence scores</h2></div><span>Click a point</span></div><ScorePlot candidates={candidates} onSelect={setSelected}/></article></div>
     <article className="table-panel"><div className="table-tools"><div><p className="eyebrow">Candidate explorer</p><h2>Trace every classification</h2></div><div className="filters"><label><span className="sr-only">Search candidates</span><input type="search" placeholder="Search gene…" value={query} onChange={(e) => setQuery(e.target.value)}/></label><label><span className="sr-only">Filter track</span><select value={track} onChange={(e) => setTrack(e.target.value)}>{TRACKS.map(name => <option key={name} value={name}>{name === "all" ? "All tracks" : TRACK_LABEL[name]}</option>)}</select></label><label><span className="sr-only">Sort candidates</span><select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}><option value="rank">Shortlist rank</option><option value="overall">Overall score</option><option value="genetic">Genetic score</option></select></label><label className="mini-check"><input type="checkbox" checked={shortlist} onChange={(e) => setShortlist(e.target.checked)}/> Shortlist only</label></div></div>
-      {aiEnabled && !isExample && <div className="comparison-toolbar"><div><b>Compare saved evidence</b><span>{comparisonSelection.length ? `${comparisonSelection.join(", ")} selected` : "Select two or three candidates below"}</span></div><div><button className="text-button" type="button" disabled={!comparisonSelection.length} onClick={() => { setComparisonSelection([]); setComparison(null); setComparisonError(""); }}>Clear</button><button className="secondary-button" type="button" disabled={comparisonSelection.length < 2 || comparisonLoading} onClick={() => void requestComparison()}>{comparisonLoading ? "Comparing…" : `Compare selected (${comparisonSelection.length})`}</button></div></div>}
+      {aiAvailable && <div className="comparison-toolbar"><div><b>Compare saved evidence</b><span>{comparisonSelection.length ? `${comparisonSelection.join(", ")} selected` : "Select two or three candidates below"}</span></div><div><button className="text-button" type="button" disabled={!comparisonSelection.length} onClick={() => { setComparisonSelection([]); setComparison(null); setComparisonError(""); }}>Clear</button><button className="secondary-button" type="button" disabled={comparisonSelection.length < 2 || comparisonLoading} onClick={() => void requestComparison()}>{comparisonLoading ? "Comparing…" : `Compare selected (${comparisonSelection.length})`}</button></div></div>}
       {comparisonError && <p className="ai-error comparison-error" role="alert">{comparisonError}</p>}
-      <div className="table-wrap"><table><thead><tr>{aiEnabled && !isExample && <th><span className="sr-only">Compare</span></th>}<th>Gene</th><th>Track</th><th>Overall</th><th>Genetic</th><th>Evidence</th><th>LOEUF</th><th>Drug status</th><th><span className="sr-only">Details</span></th></tr></thead><tbody>{filtered.map(row => { const selectedForComparison = comparisonSelection.includes(row.gene_symbol); return <tr key={row.ensembl_id} className={selectedForComparison ? "comparison-selected" : ""}>{aiEnabled && !isExample && <td><input type="checkbox" aria-label={`Select ${row.gene_symbol} for comparison`} checked={selectedForComparison} disabled={!selectedForComparison && comparisonSelection.length >= 3} onChange={() => toggleComparison(row.gene_symbol)}/></td>}<td><b>{row.gene_symbol}</b><small>{row.gene_name}</small></td><td><span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span></td><td>{row.overall_score.toFixed(3)}</td><td>{row.genetic_score.toFixed(3)}</td><td>{row.evidence_truncated ? <span className="status-warn">Capped</span> : row.n_evidence === null ? "Not checked" : `${row.n_evidence_returned}/${row.n_evidence}`}</td><td>{row.loeuf?.toFixed(2) ?? "—"}</td><td>{row.drug_status}</td><td><button className="row-button" onClick={() => setSelected(row)} aria-label={`View evidence for ${row.gene_symbol}`}>→</button></td></tr>;})}</tbody></table>{filtered.length === 0 && <p className="empty">No candidates match these filters.</p>}</div>
+      <div className="table-wrap"><table><thead><tr>{aiAvailable && <th><span className="sr-only">Compare</span></th>}<th>Gene</th><th>Track</th><th>Overall</th><th>Genetic</th><th>Evidence</th><th>LOEUF</th><th>Drug status</th><th><span className="sr-only">Details</span></th></tr></thead><tbody>{filtered.map(row => { const selectedForComparison = comparisonSelection.includes(row.gene_symbol); return <tr key={row.ensembl_id} className={selectedForComparison ? "comparison-selected" : ""}>{aiAvailable && <td><input type="checkbox" aria-label={`Select ${row.gene_symbol} for comparison`} checked={selectedForComparison} disabled={!selectedForComparison && comparisonSelection.length >= 3} onChange={() => toggleComparison(row.gene_symbol)}/></td>}<td><b>{row.gene_symbol}</b><small>{row.gene_name}</small></td><td><span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span></td><td>{row.overall_score.toFixed(3)}</td><td>{row.genetic_score.toFixed(3)}</td><td>{row.evidence_truncated ? <span className="status-warn">Capped</span> : row.n_evidence === null ? "Not checked" : `${row.n_evidence_returned}/${row.n_evidence}`}</td><td>{row.loeuf?.toFixed(2) ?? "—"}</td><td>{row.drug_status}</td><td><button className="row-button" onClick={() => setSelected(row)} aria-label={`View evidence for ${row.gene_symbol}`}>→</button></td></tr>;})}</tbody></table>{filtered.length === 0 && <p className="empty">No candidates match these filters.</p>}</div>
     </article>
     {comparison && <section className="ai-panel comparison-panel" aria-labelledby="comparison-title"><div className="ai-heading"><div><p className="eyebrow">Optional interpretation</p><h2 id="comparison-title">Evidence comparison: {comparison.compared_gene_symbols.join(" · ")}</h2></div><span>Generated · no ranking</span></div><div className="ai-output"><p className="ai-summary">{comparison.output.overview}</p>
       <div className="comparison-profiles">{comparison.output.candidate_summaries.map(item => <article key={item.gene_symbol}><h3>{item.gene_symbol}</h3><p>{item.evidence_summary}</p><small>{item.source_ids.map(sourceId => <b key={sourceId} title={sourceId}>{sourceLabel(sourceId)}</b>)}</small></article>)}</div>
@@ -300,7 +318,7 @@ function Results({ run, candidates, isExample, aiEnabled, onReset }: { run: RunR
       <div className="run-summary-columns"><div><h4>Limitations</h4><ul>{comparison.output.limitations.map(item => <li key={item}>{item}</li>)}</ul></div><div><h4>What this does not mean</h4><ul>{comparison.output.what_this_does_not_mean.map(item => <li key={item}>{item}</li>)}</ul></div></div>
       <p className="ai-meta">{comparison.cached ? "Reused identical-input cache" : "New comparison"} · {comparison.model} · selected candidates and sources validated server-side</p><p className="drawer-disclaimer">{comparison.research_use_disclaimer}</p>
     </div></section>}
-    <Glossary />{selected && <CandidateDrawer key={selected.ensembl_id} row={selected} runId={run.id} aiEnabled={aiEnabled && !isExample} isExample={isExample} onClose={() => setSelected(null)}/>}<p className="persistent-disclaimer">{DISCLAIMER}</p>
+    <Glossary />{selected && <CandidateDrawer key={selected.ensembl_id} row={selected} runId={run.id} aiEnabled={aiAvailable} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample} onClose={() => setSelected(null)}/>}<p className="persistent-disclaimer">{DISCLAIMER}</p>
   </section>;
 }
 
@@ -313,11 +331,13 @@ export default function App() {
   const [run, setRun] = useState<RunRecord | null>(null); const [events, setEvents] = useState<RunEvent[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]); const [example, setExample] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiAccessRequired, setAiAccessRequired] = useState(false);
+  const [aiAccessToken, setAiAccessToken] = useState(() => sessionStorage.getItem(AI_ACCESS_STORAGE_KEY) ?? "");
   const runId = run?.id;
   const runStatus = run?.status;
 
   useEffect(() => {
-    void getPublicConfig().then(config => setAiEnabled(config.ai_enabled)).catch(() => setAiEnabled(false));
+    void getPublicConfig().then(config => { setAiEnabled(config.ai_enabled); setAiAccessRequired(config.ai_access_required ?? false); }).catch(() => { setAiEnabled(false); setAiAccessRequired(false); });
     const saved = localStorage.getItem("aso-compass-run");
     if (!saved) return;
     void (async () => {
@@ -339,9 +359,11 @@ export default function App() {
 
   async function loadExample() { const response = await fetch("/examples/als-v4.1.json"); const bundle = await response.json() as ExampleBundle; setRun(bundle.run); setCandidates(bundle.candidates); setEvents(bundle.events); setExample(true); setView("analyze"); }
   function reset() { setRun(null); setCandidates([]); setEvents([]); setExample(false); localStorage.removeItem("aso-compass-run"); }
+  function unlockAI(token: string) { sessionStorage.setItem(AI_ACCESS_STORAGE_KEY, token); setAiAccessToken(token); }
+  function lockAI() { sessionStorage.removeItem(AI_ACCESS_STORAGE_KEY); setAiAccessToken(""); }
   let content = <RunForm onCreated={(created) => { setRun(created); setExample(false); }} onExample={() => void loadExample()} />;
   if (run && ["queued", "running"].includes(run.status)) content = <Progress run={run} events={events} onReset={reset}/>;
-  if (run?.status === "succeeded" && candidates.length) content = <Results run={run} candidates={candidates} isExample={example} aiEnabled={aiEnabled} onReset={reset}/>;
+  if (run?.status === "succeeded" && candidates.length) content = <Results run={run} candidates={candidates} isExample={example} aiEnabled={aiEnabled} aiAccessRequired={aiAccessRequired} aiAccessToken={aiAccessToken} onUnlockAI={unlockAI} onLockAI={lockAI} onReset={reset}/>;
   if (run?.status === "failed") content = <section className="progress-view"><p className="eyebrow">Analysis stopped</p><h1>The run could not be completed.</h1><p>{run.error_message}</p><button className="primary-button compact" onClick={reset}>Start again</button><button className="text-button" onClick={() => void loadExample()}>Open the example instead →</button></section>;
   return <><Header view={view} onView={setView}/>{view === "learn" ? <Learn/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Engine 4.1-guided</span><span>{DISCLAIMER}</span></footer></>;
 }

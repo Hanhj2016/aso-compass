@@ -49,7 +49,7 @@ Free resources are appropriate for a demonstration, not a production or clinical
 ```text
 APP_ENV=demo
 DATABASE_URL=<Supabase session-pooler or reachable direct URL>
-FRONTEND_ORIGINS=https://<account>-<space-name>.hf.space
+FRONTEND_ORIGINS=https://<assigned-space-host>.static.hf.space
 AI_ENABLED=false
 OPENAI_API_KEY=<only if AI is enabled later>
 OPENAI_MODEL=<configured supported model>
@@ -58,13 +58,16 @@ OPENAI_MODEL=<configured supported model>
 Also configure engine/cache/run limits from the backend `.env.example`.
 
 The committed blueprint keeps AI off and defaults the optional model name to `gpt-6-luna`. Add
-`OPENAI_API_KEY` as a Render secret only after the AI scientific/safety review is complete. The model is
+`OPENAI_API_KEY` and `AI_ACCESS_TOKEN_HASH` as Render secrets only after the AI scientific/safety review is complete, then set `AI_ENABLED=true`. `AI_ACCESS_TOKEN_HASH` is the SHA-256 digest of the separate token entered in the GUI; never enter the OpenAI key, the raw app token, or either value in Hugging Face variables. The model is
 appropriate for this cost-sensitive, bounded saved-evidence workflow and supports its `reasoning: none`
 configuration; model access still depends on the configured OpenAI project.
 
 ## CORS
 
-Use an exact production Space origin and explicit localhost origins. Do not combine credentialed requests with a wildcard origin. If the Space URL changes, update the backend and redeploy.
+Use the exact production Space origin reported by the Hugging Face Space API and explicit localhost origins.
+Do not infer the hostname from the repository name: directly served Static Spaces can use a
+`.static.hf.space` host. Do not combine credentialed requests with a wildcard origin. If the Space URL changes,
+update the backend and redeploy.
 
 ## Run orchestration
 
@@ -121,8 +124,8 @@ After the Space URL and Render URL are final, run the read-only smoke script:
 cd backend
 python scripts/deployment_smoke.py \
   --api-url https://<service>.onrender.com \
-  --frontend-url https://<account>-<space>.hf.space \
-  --allowed-origin https://<account>-<space>.hf.space
+  --frontend-url https://<assigned-space-host>.static.hf.space \
+  --allowed-origin https://<assigned-space-host>.static.hf.space
 ```
 
 It verifies liveness, database readiness, the public configuration boundary, allowed and rejected CORS origins,

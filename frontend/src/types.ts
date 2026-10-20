@@ -79,6 +79,7 @@ export interface PublicConfig {
   version: string;
   environment: string;
   ai_enabled: boolean;
+  ai_access_required: boolean;
   engine_version: string;
   research_use_disclaimer: string;
 }

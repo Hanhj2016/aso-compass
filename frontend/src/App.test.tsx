@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
-afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); localStorage.clear(); sessionStorage.clear(); vi.restoreAllMocks(); });
 
 describe("ASO Compass", () => {
   it("requires acknowledgement before a run can start", async () => {
@@ -87,7 +87,7 @@ describe("ASO Compass", () => {
       if (url.endsWith("/ai-question") && requestBody?.question?.includes("dose")) {
         return new Response(JSON.stringify({ detail: { code: "CLINICAL_ADVICE", message: "Clinical, treatment, and dosing advice is outside this research tool." } }), { status: 422, headers: { "Content-Type": "application/json" } });
       }
-      const body = url.endsWith("/config/public") ? { ai_enabled: true }
+      const body = url.endsWith("/config/public") ? { ai_enabled: true, ai_access_required: true }
         : url.endsWith(`/runs/${run.id}`) ? run
         : url.endsWith("/events") ? []
         : url.includes("/candidates?limit=500") ? candidates
@@ -101,6 +101,10 @@ describe("ASO Compass", () => {
     localStorage.setItem("aso-compass-run", run.id);
     const user = userEvent.setup();
     render(<App />);
+
+    await user.type(await screen.findByLabelText("AI access token"), "shared-demo-token");
+    await user.click(screen.getByRole("button", { name: "Use token" }));
+    expect(screen.getByRole("heading", { name: "AI access token ready" })).toBeVisible();
 
     await user.click(await screen.findByRole("checkbox", { name: "Select GENEA for comparison" }));
     await user.click(screen.getByRole("checkbox", { name: "Select GENEB for comparison" }));
@@ -119,6 +123,7 @@ describe("ASO Compass", () => {
     expect(screen.getByText("Server generated · not AI")).toBeVisible();
     expect(screen.getByText("Question premise corrected")).toBeVisible();
     const qaCall = fetchMock.mock.calls.find(([input]) => String(input).endsWith("/ai-question"));
+    expect(new Headers(qaCall?.[1]?.headers).get("Authorization")).toBe("Bearer shared-demo-token");
     expect(JSON.parse(String(qaCall?.[1]?.body))).toEqual({
       question: "Why is GENEA classified as modifier?", gene_symbols: ["GENEA"],
     });

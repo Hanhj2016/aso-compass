@@ -10,6 +10,8 @@ from app.models import AIInsight, Candidate, Evidence, Run
 from app.schemas.ai import CandidateExplanationOutput
 from app.services.ai_explanations import AIExplanationError, OpenAIExplanationProvider, ProviderResult
 
+AI_HEADERS = {"authorization": "Bearer test-ai-access-token"}
+
 
 class FakeProvider:
     def __init__(self, source_id: str | None = None) -> None:
@@ -98,7 +100,7 @@ def test_candidate_explanation_is_validated_persisted_and_cached(api) -> None:
         openai_model="test-model",
     )
     provider = FakeProvider()
-    request = SimpleNamespace(client=SimpleNamespace(host="test-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="test-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, candidate = seed_candidate(session)
         first = explain_candidate(run.id, "sod1", request, session, settings, provider)
@@ -128,7 +130,7 @@ def test_candidate_explanation_rejects_unverified_source(api) -> None:
         openai_api_key="test-only-not-a-real-key",
         openai_model="test-model",
     )
-    request = SimpleNamespace(client=SimpleNamespace(host="source-validation-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="source-validation-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _ = seed_candidate(session)
         with pytest.raises(HTTPException) as captured:
@@ -148,7 +150,7 @@ def test_candidate_explanation_rejects_unverified_source(api) -> None:
 def test_candidate_explanation_is_disabled_by_default(api) -> None:
     _, engine = api
     settings = Settings(app_env="test", run_worker_enabled=False)
-    request = SimpleNamespace(client=SimpleNamespace(host="disabled-client"))
+    request = SimpleNamespace(client=SimpleNamespace(host="disabled-client"), headers=AI_HEADERS)
     with Session(engine) as session:
         run, _ = seed_candidate(session)
         with pytest.raises(HTTPException) as captured:

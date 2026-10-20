@@ -4,11 +4,10 @@ emoji: 🧬
 colorFrom: blue
 colorTo: indigo
 sdk: static
-app_build_command: npm run build
 app_file: dist/index.html
 fullWidth: true
 header: mini
-short_description: Evidence-guided ASO target exploration for research education
+short_description: Evidence-guided ASO target exploration and education
 tags:
   - biology
   - genetics

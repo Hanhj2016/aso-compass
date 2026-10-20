@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     create_run_rate_limit_per_minute: int = 12
     run_worker_enabled: bool = True
     ai_enabled: bool = False
+    ai_access_token_hash: SecretStr | None = None
     openai_api_key: SecretStr | None = None
     openai_model: str = "gpt-6-luna"
     ai_max_output_tokens: int = Field(default=1800, ge=256, le=4000)

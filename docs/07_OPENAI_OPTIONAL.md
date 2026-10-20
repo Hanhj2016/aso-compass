@@ -48,6 +48,8 @@ Local opt-in, after adding the key privately to `backend/.env`:
 
 ```dotenv
 AI_ENABLED=true
+# SHA-256 of a separate shared GUI token; never the OpenAI API key.
+AI_ACCESS_TOKEN_HASH=<64-character SHA-256 hex digest>
 OPENAI_API_KEY=<private backend-only key>
 OPENAI_MODEL=gpt-6-luna
 AI_MAX_OUTPUT_TOKENS=1800
@@ -56,6 +58,18 @@ AI_RATE_LIMIT_PER_MINUTE=6
 ```
 
 Restart FastAPI after changing these values. Never add this key to a `VITE_` variable, source file, screenshot, log, or chat message.
+
+Every AI endpoint also requires `Authorization: Bearer <ASO Compass access token>`. The browser asks for this separate shared token and keeps it in `sessionStorage`, so it is cleared when the tab is closed. Only its SHA-256 digest belongs in Render. The token, digest, and OpenAI key must not be placed in Hugging Face variables or the frontend bundle.
+
+Generate a high-entropy token and its digest from a private terminal without putting the token in shell history:
+
+```bash
+read -rsp "AI access token: " ASO_AI_TOKEN
+printf %s "$ASO_AI_TOKEN" | sha256sum
+unset ASO_AI_TOKEN
+```
+
+Put only the printed digest in `AI_ACCESS_TOKEN_HASH`. Share the original token out of band with intended demo users. This shared identity is a Phase 1 control, not per-user authentication; Supabase Auth plus user-specific quotas is the recommended later replacement.
 
 ## Hard boundaries
 
@@ -70,7 +84,7 @@ The model must not:
 
 ## Backend-only architecture
 
-`OPENAI_API_KEY` belongs only in local backend `.env` and Render secrets. Official OpenAI documentation states that API keys are secrets and must not be exposed in browser/client code. The React app calls narrow FastAPI endpoints; FastAPI retrieves only the authorized saved evidence and calls the Responses API.
+`OPENAI_API_KEY` belongs only in local backend `.env` and Render secrets. Official OpenAI documentation states that API keys are secrets and must not be exposed in browser/client code. The React app calls narrow FastAPI endpoints with the separate app token; FastAPI validates its digest, retrieves only the authorized saved evidence, and calls the Responses API.
 
 Recommended endpoints:
 
@@ -118,6 +132,7 @@ Record `model`, `prompt_version`, `input_hash`, `output_schema_version`, API res
 ## Cost and abuse controls
 
 - `AI_ENABLED=false` by default;
+- fail-closed shared-token authorization for every AI route;
 - configurable model rather than hard-coding one in many files;
 - maximum context and output tokens;
 - per-user/session and per-run rate limits;

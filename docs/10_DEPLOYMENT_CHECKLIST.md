@@ -37,7 +37,8 @@
 ## Hugging Face Static Space
 
 - [ ] README metadata uses `sdk: static`.
-- [ ] Build command and `dist/index.html` are correct.
+- [ ] `dist/index.html` was built and audited locally, committed to the Space repository, and configured as `app_file`.
+- [ ] `app_build_command` is omitted for accounts without Hugging Face build credits.
 - [ ] Render API URL is configured as public config only.
 - [ ] `VITE_API_BASE_URL` is set to the exact HTTPS Render origin.
 - [ ] Direct route refresh works or hash routing is used.
@@ -60,6 +61,8 @@
 ## Optional AI release
 
 - [ ] Key exists only in Render/local backend secret storage.
+- [ ] `AI_ACCESS_TOKEN_HASH` is configured in Render and every AI endpoint rejects missing/invalid bearer tokens.
+- [ ] The raw shared access token is distributed out of band and is absent from Hugging Face variables and built assets.
 - [ ] `AI_ENABLED` kill switch works.
 - [ ] Structured schema/refusal/incomplete handling is tested.
 - [ ] Deterministic fields remain immutable.

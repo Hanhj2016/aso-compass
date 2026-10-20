@@ -25,16 +25,21 @@ export const getRun = (id: string) => request<RunRecord>(`/api/v1/runs/${id}`);
 export const getPublicConfig = () => request<PublicConfig>("/api/v1/config/public");
 export const getEvents = (id: string) => request<RunEvent[]>(`/api/v1/runs/${id}/events`);
 export const getCandidates = (id: string) => request<Candidate[]>(`/api/v1/runs/${id}/candidates?limit=500`);
-export const explainCandidate = (runId: string, geneSymbol: string) => request<CandidateExplanation>(`/api/v1/runs/${runId}/candidates/${encodeURIComponent(geneSymbol)}/ai-explanation`, { method: "POST" });
-export const summarizeRun = (runId: string) => request<RunSummary>(`/api/v1/runs/${runId}/ai-summary`, { method: "POST" });
-export const compareCandidates = (runId: string, geneSymbols: string[]) => request<CandidateComparison>(`/api/v1/runs/${runId}/ai-compare`, {
+const aiHeaders = (accessToken: string, includeJson = false): HeadersInit => ({
+  ...(includeJson ? { "Content-Type": "application/json" } : {}),
+  ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+});
+
+export const explainCandidate = (runId: string, geneSymbol: string, accessToken: string) => request<CandidateExplanation>(`/api/v1/runs/${runId}/candidates/${encodeURIComponent(geneSymbol)}/ai-explanation`, { method: "POST", headers: aiHeaders(accessToken) });
+export const summarizeRun = (runId: string, accessToken: string) => request<RunSummary>(`/api/v1/runs/${runId}/ai-summary`, { method: "POST", headers: aiHeaders(accessToken) });
+export const compareCandidates = (runId: string, geneSymbols: string[], accessToken: string) => request<CandidateComparison>(`/api/v1/runs/${runId}/ai-compare`, {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: aiHeaders(accessToken, true),
   body: JSON.stringify({ gene_symbols: geneSymbols }),
 });
-export const askSavedEvidenceQuestion = (runId: string, question: string, geneSymbols: string[]) => request<AIQuestionAnswer>(`/api/v1/runs/${runId}/ai-question`, {
+export const askSavedEvidenceQuestion = (runId: string, question: string, geneSymbols: string[], accessToken: string) => request<AIQuestionAnswer>(`/api/v1/runs/${runId}/ai-question`, {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: aiHeaders(accessToken, true),
   body: JSON.stringify({ question, gene_symbols: geneSymbols }),
 });
 export const exportUrl = (id: string, format: "csv" | "json") => `${API_BASE}/api/v1/runs/${id}/exports/${format}`;
