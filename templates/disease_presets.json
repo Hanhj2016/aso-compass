@@ -1,0 +1,43 @@
+[
+  {
+    "id": "MONDO_0004976",
+    "label": "Amyotrophic lateral sclerosis (ALS)",
+    "group": "Neurodegenerative"
+  },
+  {
+    "id": "MONDO_0004975",
+    "label": "Alzheimer disease",
+    "group": "Neurodegenerative"
+  },
+  {
+    "id": "MONDO_0005180",
+    "label": "Parkinson disease",
+    "group": "Neurodegenerative"
+  },
+  {
+    "id": "MONDO_0007739",
+    "label": "Huntington disease",
+    "group": "Neurogenetic"
+  },
+  {
+    "id": "MONDO_0010679",
+    "label": "Duchenne muscular dystrophy",
+    "group": "Neuromuscular"
+  },
+  {
+    "id": "MONDO_0001516",
+    "label": "Spinal muscular atrophy",
+    "group": "Neuromuscular"
+  },
+  {
+    "id": "MONDO_0100135",
+    "label": "Dravet syndrome",
+    "group": "Neurogenetic"
+  },
+  {
+    "id": "EFO_0700065",
+    "label": "Hereditary ATTR amyloidosis",
+    "group": "Amyloidosis"
+  }
+]
+

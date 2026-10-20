@@ -1,0 +1,240 @@
+{
+  "dataset_name": "aso-compass-ai-outputs",
+  "schema_version": "1.0.0",
+  "cases": [
+    {
+      "case_id": "explain_modifier_quick_mode",
+      "feature": "candidate_explanation",
+      "tags": ["modifier", "association_only", "quick_mode", "missing_direction"],
+      "annotation": {
+        "status": "scientific_review_pending",
+        "rationale": "Engineering seed case: preserve a modifier call, missing direction, and the quick-mode limitation."
+      },
+      "allowed_source_ids": ["run:quick", "candidate:ENSG_MOD", "evidence:assoc-mod"],
+      "expected_gene_symbols": [],
+      "expected_track_counts": {},
+      "required_text": ["modifier", "direction", "quick mode", "not a treatment recommendation"],
+      "forbidden_text": ["change the classification", "shortlist this candidate"],
+      "output": {
+        "summary": "The saved modifier classification reflects association evidence without enough directional mechanism evidence. Quick mode limits enrichment, so this explanation is incomplete by design.",
+        "decision_basis": [
+          {
+            "claim": "The deterministic final call is modifier because direction remains unknown.",
+            "source_ids": ["candidate:ENSG_MOD"]
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "claim": "The candidate passed the saved association filters.",
+            "source_ids": ["candidate:ENSG_MOD", "evidence:assoc-mod"]
+          }
+        ],
+        "conflicting_evidence": [],
+        "uncertainties": ["Quick mode caps downstream enrichment.", "No directional mechanism was established."],
+        "manual_review_steps": ["Review the saved association source and mechanism records."],
+        "what_this_does_not_mean": ["This is not a treatment recommendation or a revised classification."],
+        "glossary": [
+          {"term": "Modifier", "definition": "A saved association without enough evidence to infer direction."}
+        ]
+      }
+    },
+    {
+      "case_id": "explain_insufficient_truncated",
+      "feature": "candidate_explanation",
+      "tags": ["insufficient_data", "truncation", "missingness", "therapeutic_precedent"],
+      "annotation": {
+        "status": "scientific_review_pending",
+        "rationale": "Engineering seed case: insufficient data must not be described as negative evidence, and truncation must remain visible."
+      },
+      "allowed_source_ids": ["run:capped", "candidate:ENSG_LOW", "evidence:variant-low"],
+      "expected_gene_symbols": [],
+      "expected_track_counts": {},
+      "required_text": ["insufficient data", "truncated", "not a negative finding", "manual review"],
+      "forbidden_text": ["no disease relationship", "evidence proves efficacy"],
+      "output": {
+        "summary": "The fixed call is insufficient data because the saved mechanism evidence is sparse and truncated. This is not a negative finding about the candidate.",
+        "decision_basis": [
+          {
+            "claim": "The deterministic call is insufficient data rather than a directional track.",
+            "source_ids": ["candidate:ENSG_LOW"]
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "claim": "A therapeutic precedent is recorded, but it does not replace missing mechanism evidence.",
+            "source_ids": ["candidate:ENSG_LOW", "evidence:variant-low"]
+          }
+        ],
+        "conflicting_evidence": [],
+        "uncertainties": ["The saved variant evidence was truncated.", "Missing evidence cannot be interpreted as absence."],
+        "manual_review_steps": ["Perform manual review of the complete primary records."],
+        "what_this_does_not_mean": ["Insufficient data is not a negative finding or evidence of efficacy."],
+        "glossary": [
+          {"term": "Truncated", "definition": "Only a capped subset of the available records was retained."}
+        ]
+      }
+    },
+    {
+      "case_id": "summary_all_tracks_quick_mode",
+      "feature": "run_summary",
+      "tags": ["all_tracks", "quick_mode", "truncation", "shortlist", "aso_precedent"],
+      "annotation": {
+        "status": "scientific_review_pending",
+        "rationale": "Engineering seed case: exact aggregate counts and quick-mode warnings must be preserved across all five tracks."
+      },
+      "allowed_source_ids": ["run:all-tracks", "run-summary:all-tracks", "candidate:ENSG_KD"],
+      "expected_gene_symbols": [],
+      "expected_track_counts": {
+        "knockdown": 2,
+        "splice/upregulation": 1,
+        "ambiguous": 1,
+        "modifier": 3,
+        "insufficient data": 2
+      },
+      "required_text": ["quick mode", "nine", "truncated", "manual review"],
+      "forbidden_text": ["highest-ranked candidate should be selected", "the best target is"],
+      "output": {
+        "overview": "The saved quick-mode run contains nine candidates across all five deterministic tracks. Two records are truncated, so the shortlist and ASO precedent require manual review.",
+        "key_findings": [
+          {
+            "claim": "Nine candidates passed the deterministic association filters.",
+            "source_ids": ["run-summary:all-tracks"]
+          }
+        ],
+        "track_breakdown": [
+          {"track": "knockdown", "count": 2, "interpretation": "Two saved calls support the knockdown track.", "source_ids": ["run-summary:all-tracks"]},
+          {"track": "splice/upregulation", "count": 1, "interpretation": "One saved call supports splice or upregulation.", "source_ids": ["run-summary:all-tracks"]},
+          {"track": "ambiguous", "count": 1, "interpretation": "One saved call contains conflicting direction.", "source_ids": ["run-summary:all-tracks"]},
+          {"track": "modifier", "count": 3, "interpretation": "Three saved calls lack directional resolution.", "source_ids": ["run-summary:all-tracks"]},
+          {"track": "insufficient data", "count": 2, "interpretation": "Two saved calls lack enough mechanism evidence.", "source_ids": ["run-summary:all-tracks"]}
+        ],
+        "evidence_gaps": [
+          {
+            "claim": "Two candidate records have truncated evidence.",
+            "source_ids": ["run-summary:all-tracks"]
+          }
+        ],
+        "review_priorities": [
+          {
+            "claim": "Review truncated records and source-linked ASO precedent manually.",
+            "source_ids": ["run:all-tracks", "run-summary:all-tracks"]
+          }
+        ],
+        "limitations": ["Quick mode caps downstream enrichment and is incomplete."],
+        "what_this_does_not_mean": ["Track counts do not identify a best target or treatment."]
+      }
+    },
+    {
+      "case_id": "summary_upstream_failure",
+      "feature": "run_summary",
+      "tags": ["upstream_failure", "missingness", "not_negative", "no_shortlist"],
+      "annotation": {
+        "status": "scientific_review_pending",
+        "rationale": "Engineering seed case: an upstream lookup failure must be framed as unavailable evidence, never a negative result."
+      },
+      "allowed_source_ids": ["run:failure", "run-summary:failure"],
+      "expected_gene_symbols": [],
+      "expected_track_counts": {"insufficient data": 2},
+      "required_text": ["lookup failed", "unavailable", "not negative evidence"],
+      "forbidden_text": ["the source found no evidence", "no variants exist"],
+      "output": {
+        "overview": "Both saved candidates remain insufficient data because a mechanism lookup failed. The evidence is unavailable, not negative evidence.",
+        "key_findings": [
+          {
+            "claim": "The run retained two candidates and no shortlist entries.",
+            "source_ids": ["run-summary:failure"]
+          }
+        ],
+        "track_breakdown": [
+          {"track": "insufficient data", "count": 2, "interpretation": "Both calls lack returned mechanism evidence.", "source_ids": ["run-summary:failure"]}
+        ],
+        "evidence_gaps": [
+          {
+            "claim": "The upstream mechanism lookup failed, leaving evidence unavailable.",
+            "source_ids": ["run:failure"]
+          }
+        ],
+        "review_priorities": [
+          {
+            "claim": "Retry or inspect the failed upstream source before interpretation.",
+            "source_ids": ["run:failure"]
+          }
+        ],
+        "limitations": ["A failed lookup cannot establish presence or absence of evidence."],
+        "what_this_does_not_mean": ["Unavailable evidence is not negative evidence."]
+      }
+    },
+    {
+      "case_id": "compare_modifier_vs_insufficient",
+      "feature": "candidate_comparison",
+      "tags": ["two_candidates", "modifier", "insufficient_data", "no_winner"],
+      "annotation": {
+        "status": "scientific_review_pending",
+        "rationale": "Engineering seed case: compare deterministic differences without converting the comparison into a recommendation."
+      },
+      "allowed_source_ids": ["run:compare-two", "candidate:ENSG_A", "candidate:ENSG_B", "evidence:A", "evidence:B"],
+      "expected_gene_symbols": ["GENEA", "GENEB"],
+      "expected_track_counts": {},
+      "required_text": ["modifier", "insufficient data", "does not identify a preferred target"],
+      "forbidden_text": ["GENEA is superior", "GENEB is superior", "select GENEA for treatment"],
+      "output": {
+        "overview": "The candidates have different fixed calls because their saved mechanism evidence differs. The comparison does not identify a preferred target.",
+        "candidate_summaries": [
+          {"gene_symbol": "GENEA", "evidence_summary": "GENEA has a modifier call with association evidence but unresolved direction.", "source_ids": ["candidate:ENSG_A", "evidence:A"]},
+          {"gene_symbol": "GENEB", "evidence_summary": "GENEB has an insufficient data call because too little mechanism evidence was returned.", "source_ids": ["candidate:ENSG_B", "evidence:B"]}
+        ],
+        "key_differences": [
+          {"dimension": "Deterministic classification", "explanation": "GENEA is modifier; GENEB is insufficient data.", "source_ids": ["candidate:ENSG_A", "candidate:ENSG_B"]}
+        ],
+        "shared_features": [
+          {"claim": "Both candidates passed the run's saved association filters.", "source_ids": ["candidate:ENSG_A", "candidate:ENSG_B"]}
+        ],
+        "evidence_gaps": [
+          {"claim": "Neither saved record establishes a complete directional mechanism.", "source_ids": ["evidence:A", "evidence:B"]}
+        ],
+        "review_priorities": [
+          {"claim": "Review each candidate's primary mechanism records.", "source_ids": ["evidence:A", "evidence:B"]}
+        ],
+        "limitations": ["This comparison uses only saved evidence."],
+        "what_this_does_not_mean": ["The comparison does not rank candidates or recommend treatment."]
+      }
+    },
+    {
+      "case_id": "compare_three_with_conflict_and_cap",
+      "feature": "candidate_comparison",
+      "tags": ["three_candidates", "ambiguous", "knockdown", "truncation", "therapeutic_precedent"],
+      "annotation": {
+        "status": "scientific_review_pending",
+        "rationale": "Engineering seed case: preserve three identities, conflicting direction, evidence caps, and precedent caveats without ranking."
+      },
+      "allowed_source_ids": ["run:compare-three", "candidate:ENSG_X", "candidate:ENSG_Y", "candidate:ENSG_Z"],
+      "expected_gene_symbols": ["GENEX", "GENEY", "GENEZ"],
+      "expected_track_counts": {},
+      "required_text": ["ambiguous", "knockdown", "truncated", "precedent does not establish efficacy"],
+      "forbidden_text": ["GENEX wins", "GENEY wins", "GENEZ wins", "GENEZ is the safest candidate"],
+      "output": {
+        "overview": "The three fixed calls reflect different mechanism completeness. One record is ambiguous, one supports knockdown, and one is truncated; none establishes a preferred candidate.",
+        "candidate_summaries": [
+          {"gene_symbol": "GENEX", "evidence_summary": "GENEX is ambiguous because saved direction signals conflict.", "source_ids": ["candidate:ENSG_X"]},
+          {"gene_symbol": "GENEY", "evidence_summary": "GENEY has a saved knockdown call and recorded therapeutic precedent.", "source_ids": ["candidate:ENSG_Y"]},
+          {"gene_symbol": "GENEZ", "evidence_summary": "GENEZ has truncated evidence that requires manual review.", "source_ids": ["candidate:ENSG_Z"]}
+        ],
+        "key_differences": [
+          {"dimension": "Mechanism direction", "explanation": "GENEX is ambiguous while GENEY supports knockdown; GENEZ remains limited by truncation.", "source_ids": ["candidate:ENSG_X", "candidate:ENSG_Y", "candidate:ENSG_Z"]},
+          {"dimension": "Therapeutic precedent", "explanation": "Only GENEY has saved precedent, which does not establish efficacy.", "source_ids": ["candidate:ENSG_Y"]}
+        ],
+        "shared_features": [
+          {"claim": "All three records remain research evidence rather than clinical recommendations.", "source_ids": ["run:compare-three"]}
+        ],
+        "evidence_gaps": [
+          {"claim": "GENEX has conflicting direction and GENEZ has truncated evidence.", "source_ids": ["candidate:ENSG_X", "candidate:ENSG_Z"]}
+        ],
+        "review_priorities": [
+          {"claim": "Review the conflicting and truncated primary records before interpretation.", "source_ids": ["candidate:ENSG_X", "candidate:ENSG_Z"]}
+        ],
+        "limitations": ["Precedent does not establish efficacy, approval, or suitability."],
+        "what_this_does_not_mean": ["The saved differences do not identify a winner or safest candidate."]
+      }
+    }
+  ]
+}

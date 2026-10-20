@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: aso-compass-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: python -m pip install .
+    # Free services do not support pre-deploy commands. Apply reviewed Alembic
+    # migrations once from a controlled environment before deployment.
+    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health/ready
+    maxShutdownDelaySeconds: 60
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: demo
+      - key: DATABASE_URL
+        sync: false
+      - key: FRONTEND_ORIGINS
+        sync: false
+      - key: AI_ENABLED
+        value: "false"
+      - key: OPENAI_MODEL
+        value: gpt-6-luna
+      - key: AI_MAX_OUTPUT_TOKENS
+        value: "1800"
+      - key: AI_TIMEOUT_SECONDS
+        value: "45"
+      - key: AI_RATE_LIMIT_PER_MINUTE
+        value: "6"

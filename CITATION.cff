@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use ASO Compass, cite this software and the underlying data sources shown with each run."
+title: "ASO Compass"
+type: software
+version: 0.1.0
+date-released: 2026-10-19
+authors:
+  - family-names: "ASO Compass contributors"
+abstract: "A transparent educational and research-demonstration interface for evidence-guided antisense oligonucleotide target exploration."
+keywords:
+  - antisense oligonucleotide
+  - genetics
+  - bioinformatics
+  - target discovery
