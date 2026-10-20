@@ -9,7 +9,6 @@ services:
     # migrations once from a controlled environment before deployment.
     startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health/ready
-    maxShutdownDelaySeconds: 60
     autoDeploy: true
     envVars:
       - key: APP_ENV
