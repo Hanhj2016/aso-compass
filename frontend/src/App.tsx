@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { askSavedEvidenceQuestion, compareCandidates, createRun, explainCandidate, exportUrl, getCandidates, getEvents, getPublicConfig, getRun, summarizeRun } from "./api";
+import Learn from "./Learn";
 import type { AIQuestionAnswer, Candidate, CandidateComparison, CandidateExplanation, CitedClaim, ExampleBundle, RunEvent, RunRecord, RunSummary } from "./types";
 
 const DISCLAIMER = "For hypothesis generation and education only. Not for clinical decision-making.";
@@ -331,8 +332,6 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
 
 function Glossary() { return <section className="glossary"><p className="eyebrow">Educational glossary</p><h2>Read the evidence, not just the rank</h2><div>{[["LOEUF","A population constraint measure. Lower values suggest less tolerance for loss-of-function variation."],["G2P","Gene2Phenotype annotations that can provide mechanism and inheritance evidence."],["Modifier","An association without enough directional variant evidence to infer knockdown or upregulation."],["ASO precedent","A target-linked oligonucleotide drug or text-matched interventional trial that still requires manual confirmation."]].map(([term, definition]) => <details key={term}><summary>{term}<span>+</span></summary><p>{definition}</p></details>)}</div></section>; }
 
-function Learn() { return <main id="main" className="learn-view"><p className="eyebrow">How ASO Compass works</p><h1>A transparent map, not a clinical answer.</h1><p className="lede">The workflow combines public evidence into five mutually exclusive research tracks. It preserves missingness and shows the rules behind each call.</p><div className="learn-steps">{[["01","Association","Open Targets scores identify genes linked to the selected disease."],["02","Mechanism","ClinVar/EVA consequence patterns and G2P evidence inform direction."],["03","Safety context","LOEUF contributes a caution flag; it does not determine mechanism."],["04","Precedent","Target-centric drugs and text-matched trials provide context, not proof."],["05","Review","Every candidate retains sources, warnings, caps, and uncertainty."]].map(([n,title,text]) => <article key={n}><span>{n}</span><h2>{title}</h2><p>{text}</p></article>)}</div><Glossary/><p className="persistent-disclaimer">{DISCLAIMER}</p></main>; }
-
 export default function App() {
   const [view, setView] = useState<"analyze" | "learn">("analyze");
   const [run, setRun] = useState<RunRecord | null>(null); const [events, setEvents] = useState<RunEvent[]>([]);
@@ -372,5 +371,5 @@ export default function App() {
   if (run && ["queued", "running"].includes(run.status)) content = <Progress run={run} events={events} onReset={reset}/>;
   if (run?.status === "succeeded" && candidates.length) content = <Results run={run} candidates={candidates} isExample={example} aiEnabled={aiEnabled} aiAccessRequired={aiAccessRequired} aiAccessToken={aiAccessToken} onUnlockAI={unlockAI} onLockAI={lockAI} onReset={reset}/>;
   if (run?.status === "failed") content = <section className="progress-view"><p className="eyebrow">Analysis stopped</p><h1>The run could not be completed.</h1><p>{run.error_message}</p><button className="primary-button compact" onClick={reset}>Start again</button><button className="text-button" onClick={() => void loadExample()}>Open the example instead →</button></section>;
-  return <><Header view={view} onView={setView}/>{view === "learn" ? <Learn/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Engine 4.1-guided · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
+  return <><Header view={view} onView={setView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Engine 4.1-guided · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
 }
