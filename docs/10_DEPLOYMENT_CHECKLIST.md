@@ -37,10 +37,14 @@
 ## Hugging Face Static Space
 
 - [ ] README metadata uses `sdk: static`.
-- [ ] `dist/index.html` was built and audited locally, committed to the Space repository, and configured as `app_file`.
+- [ ] GitHub Actions Trusted Publisher is restricted to `Hanhj2016/aso-compass`, `main`, and `ci.yml`.
+- [ ] GitHub Actions repository variable `VITE_API_BASE_URL` is the exact HTTPS Render origin.
+- [ ] CI built and audited `dist/index.html`, and the Space metadata configures it as `app_file`.
+- [ ] `deploy-huggingface` ran only after the backend and frontend CI jobs passed.
+- [ ] The Space repository contains only the generated deployment payload (`README.md` and `dist/`).
 - [ ] `app_build_command` is omitted for accounts without Hugging Face build credits.
 - [ ] Render API URL is configured as public config only.
-- [ ] `VITE_API_BASE_URL` is set to the exact HTTPS Render origin.
+- [ ] No permanent `HF_TOKEN` is stored when Trusted Publisher/OIDC is used.
 - [ ] Direct route refresh works or hash routing is used.
 - [ ] Space includes description, caveat, sources, citation, and version.
 - [ ] Responsive and keyboard-only checks pass.

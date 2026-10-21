@@ -41,7 +41,61 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - name: Validate production API URL
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+        run: |
+          case "$VITE_API_BASE_URL" in
+            https://*) ;;
+            *) echo "Set the VITE_API_BASE_URL repository variable to the HTTPS Render origin." >&2; exit 1 ;;
+          esac
       - run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
       - run: npm run audit:dist
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
+      - name: Package Hugging Face build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: huggingface-space-dist
+          path: frontend/dist
+          if-no-files-found: error
+
+  deploy-huggingface:
+    name: Deploy Hugging Face Space
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs:
+      - backend
+      - frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download built frontend
+        uses: actions/download-artifact@v4
+        with:
+          name: huggingface-space-dist
+          path: .hf-space/dist
+      - name: Add Space metadata
+        run: cp frontend/README.md .hf-space/README.md
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Hugging Face CLI
+        run: pip install "huggingface_hub>=1.19,<3"
+      - name: Publish Space
+        env:
+          HF_OIDC_RESOURCE: spaces/scotthan2021/aso-compass
+        run: >-
+          hf upload
+          scotthan2021/aso-compass
+          .hf-space
+          .
+          --repo-type space
+          --delete "*"
+          --commit-message "Deploy GitHub ${GITHUB_SHA}"

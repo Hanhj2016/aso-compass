@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated: 2026-10-20
+Updated: 2026-10-21
 
 ## Completed locally
 
@@ -19,6 +19,7 @@ Updated: 2026-10-20
 - Phase 4 evaluation gate: a six-case offline fixture dataset and deterministic graders for schemas, citation allow-lists, required caveats, unsafe recommendation language, exact track counts, and comparison identity. Engineering checks run in CI; scientific annotation is explicitly pending and blocks guarded Q&A release readiness.
 - Guarded-Q&A workflow: a results-page panel accepts a bounded research question and zero-to-three explicit candidate contexts. Deterministic preflight runs before persistence, retrieval, or model requests; a conservative saved-evidence router prevents unsupported questions from calling the provider; model answers use a strict cited schema and source allow-list validation; and raw questions are not persisted. Schema v2 adds server-generated fact cards, false-classification premise correction, exact candidate-fact validation, conflicting-classification rejection, and unsupported-number rejection. The workflow follows the global `AI_ENABLED` switch. Its 29 synthetic cases cover supported wording, unsupported saved-evidence questions, likely patient identifiers, patient-specific interpretation, clinical advice, ranking overrides, and prompt injection.
 - Deployment-readiness hardening: Render and Hugging Face configuration was rechecked against current official documentation; container builds exclude environment files and run as a non-root user; PostgreSQL pooling is bounded for the Supabase session pooler; Static Spaces can consume the public API URL through Hugging Face runtime variables; CI scans the production browser bundle for secret markers; and a read-only deployed health/CORS/frontend smoke script is available.
+- Automated Static Space publishing: the existing GitHub CI builds the frontend with the public Render API URL, validates and audits the bundle, and publishes only `README.md` plus `dist/` after all backend and frontend gates pass. Hugging Face authentication uses a repository-, branch-, and workflow-scoped Trusted Publisher with short-lived GitHub OIDC credentials, leaving GitHub as the only manually maintained source repository.
 
 ## Deliberately not enabled
 
@@ -29,7 +30,7 @@ Updated: 2026-10-20
 ## External release gates
 
 1. Choose and add the repository software license after reviewing reference/data-source terms.
-2. Supply the final Render API and Hugging Face Space URLs so `FRONTEND_ORIGINS` and `VITE_API_BASE_URL` can be exact.
-3. Create/connect the Render service and Hugging Face Static Space, then run the deployed smoke checklist in `docs/10_DEPLOYMENT_CHECKLIST.md`.
+2. Complete the first OIDC GitHub Actions deployment and verify the generated Space payload and assigned host.
+3. Run the deployed smoke checklist in `docs/10_DEPLOYMENT_CHECKLIST.md` after each release-affecting configuration change.
 
 Do not place any of those credentials in repository files or frontend build variables.

@@ -1,8 +1,8 @@
 ---
 title: ASO Compass
-emoji: 🧬
-colorFrom: blue
-colorTo: indigo
+emoji: 🧭
+colorFrom: green
+colorTo: yellow
 sdk: static
 app_file: dist/index.html
 fullWidth: true
@@ -20,8 +20,14 @@ tags:
 
 **Evidence-guided target exploration for research and education.**
 
-ASO Compass is a transparent research demonstration for exploring disease-associated genes, genetic mechanisms, safety signals, therapeutic precedent, and candidate ASO strategy tracks.
+ASO Compass is a transparent research demonstration for exploring disease-associated genes, genetic mechanisms, safety signals, therapeutic precedent, and candidate antisense oligonucleotide strategy tracks.
 
-This tool supports hypothesis generation and education only. It is not a clinical decision tool and must not be used for diagnosis, patient selection, treatment, or dosing. Live evidence can be incomplete, truncated, or unavailable; inspect source links and warnings.
+For hypothesis generation and education only. Not for clinical decision-making. Live evidence can be incomplete, truncated, or unavailable; inspect source links and warnings.
 
-The static React interface calls a separately hosted FastAPI service. Source, method, validation notes, citation guidance, and the Colab notebooks should be linked here after deployment.
+The application source, methodology, validation notes, and citation guidance are maintained in the
+[ASO Compass GitHub repository](https://github.com/Hanhj2016/aso-compass). The static interface calls the
+[ASO Compass API](https://aso-compass-api.onrender.com/api/v1/config/public).
+
+The production bundle is built and published from GitHub Actions. `VITE_API_BASE_URL` is public build-time
+configuration; database credentials, OpenAI credentials, and application access tokens must never be placed in
+the Space repository or in a `VITE_` variable.

@@ -26,5 +26,10 @@ mechanisms, safety signals, therapeutic precedent, and candidate antisense oligo
 For hypothesis generation and education only. Not for clinical decision-making. Live evidence can be
 incomplete, truncated, or unavailable; inspect source links and warnings.
 
-Configure the public backend URL with `VITE_API_BASE_URL` during the static build. Never place database or
-service credentials in a `VITE_` variable.
+The application source, methodology, validation notes, and citation guidance are maintained in the
+[ASO Compass GitHub repository](https://github.com/Hanhj2016/aso-compass). The static interface calls the
+[ASO Compass API](https://aso-compass-api.onrender.com/api/v1/config/public).
+
+The production bundle is built and published from GitHub Actions. `VITE_API_BASE_URL` is public build-time
+configuration; database credentials, OpenAI credentials, and application access tokens must never be placed in
+the Space repository or in a `VITE_` variable.

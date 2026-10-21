@@ -40,8 +40,10 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The deployment targets remain Render for the API and a Hugging Face Static Space for the frontend.
-Before deployment, run `npm run build && npm run audit:dist` from `frontend/`. After deployment, use
+The deployment targets remain Render for the API and a Hugging Face Static Space for the frontend. GitHub is
+the only manually maintained source repository: after all CI gates pass on `main`, GitHub Actions builds and
+audits the browser bundle and publishes `README.md` plus `dist/` to the Space with a short-lived OIDC credential.
+See `docs/06_HUGGINGFACE_STATIC_SPACE.md` for setup. After deployment, use
 `backend/scripts/deployment_smoke.py` with the final HTTPS origins to verify health, database readiness, CORS,
 the public configuration boundary, and frontend reachability.
 
@@ -77,7 +79,7 @@ the public configuration boundary, and frontend reachability.
 
 ## Official documentation checked
 
-Service instructions were checked on 2026-10-19. Pricing, quotas, UI labels, and product behavior can change; verify the linked official pages before deployment.
+Service instructions were checked through 2026-10-21. Pricing, quotas, UI labels, and product behavior can change; verify the linked official pages before deployment.
 
 - Supabase: https://supabase.com/docs/guides/database/connecting-to-postgres
 - Supabase billing: https://supabase.com/docs/guides/platform/billing-on-supabase
@@ -85,5 +87,7 @@ Service instructions were checked on 2026-10-19. Pricing, quotas, UI labels, and
 - Render FastAPI: https://render.com/docs/deploy-fastapi
 - Render free services: https://render.com/docs/free
 - Hugging Face static Spaces: https://huggingface.co/docs/hub/main/spaces-sdks-static
+- Hugging Face GitHub Actions: https://huggingface.co/docs/hub/spaces-github-actions
+- Hugging Face Trusted Publishers: https://huggingface.co/docs/hub/trusted-publishers
 - OpenAI API overview: https://developers.openai.com/api/reference/overview
 - OpenAI Structured Outputs: https://developers.openai.com/api/docs/guides/structured-outputs

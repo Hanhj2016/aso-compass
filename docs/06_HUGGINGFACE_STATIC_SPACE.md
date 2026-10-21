@@ -8,8 +8,9 @@ Checked against official documentation on 2026-10-20:
 - Configuration reference: https://huggingface.co/docs/hub/en/spaces-config-reference
 
 Hugging Face documents Static Spaces as free and served without runtime compute. Its optional server-side
-`app_build_command` runs as a Job and can require account credits. The free deployment path used here builds
-locally, commits the generated `dist/` directory to the Space repository, and serves it directly.
+`app_build_command` runs as a Job and can require account credits. The free deployment path used here builds in
+GitHub Actions, uploads the generated `dist/` directory to the Space repository, and serves it directly. GitHub
+is the only manually maintained source repository.
 
 ## Prepare the frontend
 
@@ -24,11 +25,14 @@ locally, commits the generated `dist/` directory to the Space repository, and se
 
 1. Create a new Space and select the **Static** SDK.
 2. Use a public Space if source transparency is desired; remember that public Space files are visible.
-3. Place the frontend project at the Space repository root, or use a dedicated deployment branch/repository.
-4. Add YAML metadata to the top of the Space `README.md` as shown in `templates/huggingface_space/README.md`.
-5. Run `npm run build && npm run audit:dist` locally.
-6. Force-add the normally ignored output with `git add -f dist`, then push it with the source and README.
-7. Open the Space URL after Hugging Face publishes the static files.
+3. Add YAML metadata to `frontend/README.md`; CI copies this file to the Space repository root.
+4. In GitHub, create the public repository variable
+   `VITE_API_BASE_URL=https://aso-compass-api.onrender.com`.
+5. In the Space settings, add a GitHub Actions Trusted Publisher restricted to repository
+   `Hanhj2016/aso-compass`, branch `main`, and workflow `ci.yml`.
+6. Push to `main`. The `deploy-huggingface` CI job runs only after backend and frontend validation pass, then
+   uploads `README.md` and `dist/` with a short-lived OIDC credential.
+7. Open the Space URL after Hugging Face publishes the new commit.
 
 Read the authoritative deployed host from the `host` field returned by:
 
@@ -46,8 +50,8 @@ sdk: static
 app_file: dist/index.html
 ```
 
-Do not set `app_build_command` for the no-credit path. Accounts with build credits may instead set
-`app_build_command: npm run build` and omit `dist/` from the commit.
+Do not set `app_build_command` for this no-credit path. The Space repository is a generated deployment target;
+do not edit it manually or treat it as a second source repository.
 
 ## API URL configuration
 
@@ -65,11 +69,33 @@ VITE_API_BASE_URL=https://<service>.onrender.com
 
 Do not place database passwords, Supabase secret/service-role keys, or OpenAI keys in Space variables consumed by static JavaScript. Everything delivered to the browser is public in practice.
 
-## Deploy from a monorepo
+## Deploy from the GitHub monorepo
 
-The simplest reliable approach is a small deployment workflow that copies or mirrors `frontend/` to the Space
-repository. Keep `dist/` out of the main source repository, but force-add it to the dedicated Space repository
-when using the no-credit deployment path. Pin Node dependencies with a lockfile.
+`.github/workflows/ci.yml` builds the Vite application with the GitHub repository variable
+`VITE_API_BASE_URL`, audits the browser bundle, and stores `frontend/dist` as a temporary Actions artifact.
+After both backend and frontend jobs pass, `deploy-huggingface` assembles this payload:
+
+```text
+README.md
+dist/
+```
+
+The job publishes the payload with the Hugging Face CLI and deletes obsolete files in the Space repository so
+stale hashed assets cannot accumulate. Hugging Face retains repository history for rollback. The main GitHub
+repository continues to ignore `frontend/dist/`.
+
+The publishing credential is obtained through the Space's Trusted Publisher registration and GitHub OIDC. Do
+not create an `HF_TOKEN` secret when OIDC is configured. This deployment credential is unrelated to the OpenAI
+key and the shared ASO Compass AI access token; both remain server-side Render configuration.
+
+For a first deployment, verify the workflow's requested identity exactly matches the Trusted Publisher:
+
+```text
+repository: Hanhj2016/aso-compass
+branch: main
+workflow: ci.yml
+resource: spaces/scotthan2021/aso-compass
+```
 
 ## Validation
 
@@ -81,5 +107,6 @@ when using the no-credit deployment path. Pin Node dependencies with a lockfile.
 - test a narrow mobile layout and keyboard-only use;
 - confirm the Space README includes research-use caveats and backend/source links.
 
-Run `npm run build && npm run audit:dist` before publishing. The audit rejects backend environment names,
-PostgreSQL URLs, OpenAI-style keys, and JWT-like service credentials in the built browser bundle.
+CI runs `npm run build`, `npm run audit:dist`, and the frontend test suite before publishing. The audit rejects
+backend environment names, PostgreSQL URLs, OpenAI-style keys, and JWT-like service credentials in the built
+browser bundle.
