@@ -4,6 +4,10 @@ import { expect, test } from "@playwright/test";
 test("guided form and offline evidence example are usable", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /clearer path through target evidence/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /deployed automatically from github/i })).toHaveAttribute(
+    "href",
+    "https://github.com/Hanhj2016/aso-compass",
+  );
   await expect(page.getByRole("button", { name: /begin evidence analysis/i })).toBeDisabled();
   await page.getByRole("checkbox").check();
   await expect(page.getByRole("button", { name: /begin evidence analysis/i })).toBeEnabled();

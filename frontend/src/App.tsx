@@ -372,5 +372,5 @@ export default function App() {
   if (run && ["queued", "running"].includes(run.status)) content = <Progress run={run} events={events} onReset={reset}/>;
   if (run?.status === "succeeded" && candidates.length) content = <Results run={run} candidates={candidates} isExample={example} aiEnabled={aiEnabled} aiAccessRequired={aiAccessRequired} aiAccessToken={aiAccessToken} onUnlockAI={unlockAI} onLockAI={lockAI} onReset={reset}/>;
   if (run?.status === "failed") content = <section className="progress-view"><p className="eyebrow">Analysis stopped</p><h1>The run could not be completed.</h1><p>{run.error_message}</p><button className="primary-button compact" onClick={reset}>Start again</button><button className="text-button" onClick={() => void loadExample()}>Open the example instead →</button></section>;
-  return <><Header view={view} onView={setView}/>{view === "learn" ? <Learn/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Engine 4.1-guided</span><span>{DISCLAIMER}</span></footer></>;
+  return <><Header view={view} onView={setView}/>{view === "learn" ? <Learn/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Engine 4.1-guided · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
 }
