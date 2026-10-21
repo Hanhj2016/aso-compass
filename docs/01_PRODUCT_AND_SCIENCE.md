@@ -40,7 +40,7 @@ These rules are simplifying heuristics. Missense-heavy evidence does not prove t
 
 ## Recommended screens
 
-1. **Learn / About** — a bilingual English/Simplified Chinese guided tutorial covering the evidence pipeline, deterministic track meanings, source and missingness caveats, AI boundaries, knowledge checks, and an offline example walkthrough.
+1. **Learn / About** — an English guided tutorial covering the evidence pipeline, deterministic track meanings, source and missingness caveats, AI boundaries, knowledge checks, and an offline example walkthrough.
 2. **New analysis** — disease selector, Basic/Advanced parameters, workload warning, consent to research-use statement.
 3. **Run progress** — stage timeline, retries/cache status, current counts, warnings, and recoverable errors.
 4. **Results overview** — run metadata, cards, mechanism distribution, association scatter, evidence completeness, and concise interpretation.

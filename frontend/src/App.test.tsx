@@ -23,11 +23,7 @@ describe("ASO Compass", () => {
     expect(screen.getByRole("heading", { name: /transparent map/i })).toBeVisible();
     expect(screen.getByText(/not a clinical answer/i)).toBeVisible();
     expect(screen.getByRole("heading", { name: "The five research tracks" })).toBeVisible();
-
-    await user.click(screen.getByRole("button", { name: "简体中文" }));
-    expect(screen.getByRole("heading", { name: /透明的证据地图/ })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "五条研究轨道" })).toBeVisible();
-    expect(screen.getByText(/AI 负责解释，不负责决策/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "简体中文" })).not.toBeInTheDocument();
   });
 
   it("constrains AI comparison selection to saved candidates", async () => {

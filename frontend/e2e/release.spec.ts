@@ -27,15 +27,13 @@ test("guided form and offline evidence example are usable", async ({ page }) => 
   await expect(page.getByText(/not for clinical decision-making/i).last()).toBeVisible();
 });
 
-test("bilingual tutorial leads into the offline evidence example", async ({ page }) => {
+test("guided tutorial leads into the offline evidence example", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Learn" }).click();
   await expect(page.getByRole("heading", { name: /transparent map/i })).toBeVisible();
-  await page.getByRole("button", { name: "简体中文" }).click();
-  await expect(page.getByRole("heading", { name: /透明的证据地图/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "五条研究轨道" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The five research tracks" })).toBeVisible();
 
-  await page.getByRole("button", { name: /打开 ALS 引导示例/ }).first().click();
+  await page.getByRole("button", { name: /open the guided ALS example/i }).first().click();
   await expect(page.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();
   await expect(page.getByText(/offline-ready example/i)).toBeVisible();
 });
