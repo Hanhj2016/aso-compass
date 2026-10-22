@@ -15,14 +15,16 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "typescript": "latest",
+    "vite": "latest"
   },
   "devDependencies": {
-    "@eslint/js": "latest",
     "@axe-core/playwright": "latest",
+    "@eslint/js": "latest",
     "@playwright/test": "latest",
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",

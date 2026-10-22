@@ -189,7 +189,7 @@ function CandidateDrawer({ row, runId, aiEnabled, aiConfigStatus, accessLocked, 
     finally { setAiLoading(false); }
   }
   return <div className={`drawer-backdrop${maximized ? " drawer-maximized" : ""}`} role="presentation" onMouseDown={onClose}><aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="gene-title" onMouseDown={(e) => e.stopPropagation()}>
-    <div className="drawer-actions"><button className="secondary-button candidate-print-button" type="button" onClick={() => onPrint(explanation)}>{explanation ? "Print evidence + AI" : "Print evidence"}</button><button className="secondary-button drawer-size-button" type="button" aria-label={maximized ? "Restore candidate evidence view" : "Maximize candidate evidence view"} aria-pressed={maximized} onClick={() => setMaximized(current => !current)}><span aria-hidden="true">{maximized ? "↙" : "↗"}</span>{maximized ? "Restore" : "Maximize"}</button><button className="drawer-icon-button close" onClick={onClose} aria-label="Close gene details">×</button></div>
+    <div className="drawer-actions"><button className="secondary-button candidate-print-button" type="button" onClick={() => onPrint(explanation)}>{explanation ? "Download evidence PDF + AI" : "Download evidence PDF"}</button><button className="secondary-button drawer-size-button" type="button" aria-label={maximized ? "Restore candidate evidence view" : "Maximize candidate evidence view"} aria-pressed={maximized} onClick={() => setMaximized(current => !current)}><span aria-hidden="true">{maximized ? "↙" : "↗"}</span>{maximized ? "Restore" : "Maximize"}</button><button className="drawer-icon-button close" onClick={onClose} aria-label="Close gene details">×</button></div>
     <div className="drawer-content">
     <p className="eyebrow">Candidate evidence</p><h2 id="gene-title">{row.gene_symbol}</h2><p>{row.gene_name}</p>
     <span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span>
@@ -311,59 +311,6 @@ function printFilenamePart(value: string) {
   return normalized.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 72) || "report";
 }
 
-function openPrintDialog(title: string) {
-  const printRequestId = crypto.randomUUID();
-  const printUrl = new URL("print.html", window.location.href);
-  printUrl.searchParams.set("request", printRequestId);
-  printUrl.searchParams.set("title", title);
-  let printWindow: Window | null = null;
-  const previousTitle = document.title;
-  const restoreTitle = () => {
-    document.title = previousTitle;
-    window.removeEventListener("afterprint", restoreTitle);
-  };
-  const fallBackToCurrentDocument = () => {
-    window.removeEventListener("message", handlePrintPageReady);
-    document.title = title;
-    window.addEventListener("afterprint", restoreTitle, { once: true });
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-      window.print();
-      window.setTimeout(restoreTitle, 0);
-    }));
-  };
-  const handlePrintPageReady = (event: MessageEvent) => {
-    if (
-      event.origin !== window.location.origin
-      || event.source !== printWindow
-      || event.data?.type !== "aso-print-ready"
-      || event.data?.requestId !== printRequestId
-    ) return;
-    window.removeEventListener("message", handlePrintPageReady);
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-      const report = document.querySelector<HTMLElement>(".print-report");
-      if (!report || !printWindow || printWindow.closed) {
-        printWindow?.close();
-        fallBackToCurrentDocument();
-        return;
-      }
-      const headHtml = [...document.head.querySelectorAll('meta[charset], meta[name="viewport"], link[rel="stylesheet"], style')]
-        .map(node => node.outerHTML);
-      printWindow.postMessage({
-        type: "aso-print-render",
-        requestId: printRequestId,
-        title,
-        baseHref: document.baseURI,
-        headHtml,
-        reportHtml: report.outerHTML,
-      }, window.location.origin);
-    }));
-  };
-
-  window.addEventListener("message", handlePrintPageReady);
-  printWindow = window.open(printUrl.toString(), "_blank", "popup,width=1200,height=800");
-  if (!printWindow) fallBackToCurrentDocument();
-}
-
 function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAccessRequired, aiAccessToken, onRetryAIConfig, onUnlockAI, onLockAI, onReset }: { run: RunRecord; candidates: Candidate[]; isExample: boolean; aiEnabled: boolean; aiConfigStatus: AIConfigStatus; aiAccessRequired: boolean; aiAccessToken: string; onRetryAIConfig: () => void; onUnlockAI: (token: string) => void; onLockAI: () => void; onReset: () => void }) {
   const [query, setQuery] = useState(""); const [track, setTrack] = useState("all");
   const [researchView, setResearchView] = useState<ResearchView>("all");
@@ -428,27 +375,33 @@ function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAcce
     catch (error) { setComparisonError(error instanceof Error ? error.message : "The candidate comparison could not be generated."); }
     finally { setComparisonLoading(false); }
   }
-  function printReport(mode: PrintMode) {
+  async function downloadReport(mode: PrintMode) {
     setPrintMode(mode);
-    setReportGeneratedAt(new Date().toISOString());
+    const generatedAt = new Date().toISOString();
+    setReportGeneratedAt(generatedAt);
     const disease = printFilenamePart(run.disease_label ?? run.disease_id);
-    openPrintDialog(`ASO-Compass_${disease}_${mode}-report_${run.id.slice(0, 8)}`);
+    const filename = `ASO-Compass_${disease}_${mode}-report_${run.id.slice(0, 8)}`;
+    const { downloadRunPdf } = await import("./pdfExport");
+    downloadRunPdf(run, candidates, mode, generatedAt, runSummary, filename);
   }
-  function printCandidate(explanation: CandidateExplanation | null) {
+  async function downloadCandidate(explanation: CandidateExplanation | null) {
     setCandidatePrintExplanation(explanation);
     setPrintMode("candidate");
-    setReportGeneratedAt(new Date().toISOString());
+    const generatedAt = new Date().toISOString();
+    setReportGeneratedAt(generatedAt);
     if (!selected) return;
     const disease = printFilenamePart(run.disease_label ?? run.disease_id);
     const gene = printFilenamePart(selected.gene_symbol);
-    openPrintDialog(`ASO-Compass_${disease}_${gene}_candidate-evidence_${run.id.slice(0, 8)}`);
+    const filename = `ASO-Compass_${disease}_${gene}_candidate-evidence_${run.id.slice(0, 8)}`;
+    const { downloadCandidatePdf } = await import("./pdfExport");
+    downloadCandidatePdf(run, selected, explanation, generatedAt, filename);
   }
 
   return <section className={`results-view${selected ? " evidence-open" : ""}`}>
     {printMode === "candidate" && selected
       ? <CandidatePrintReport run={run} candidate={selected} explanation={candidatePrintExplanation} generatedAt={reportGeneratedAt}/>
       : <PrintReport run={run} candidates={candidates} mode={printMode === "candidate" ? "summary" : printMode} generatedAt={reportGeneratedAt} runSummary={runSummary}/>}
-    <div className="results-header"><div><p className="eyebrow">{isExample ? "Precomputed example" : "Completed analysis"}</p><h1>{run.disease_label ?? run.disease_id}</h1><p>{run.disease_id} · Engine {run.engine_version} · Open Targets {String(run.upstream_metadata.open_targets_release ?? "release unknown")}</p></div><div className="header-actions"><button className="secondary-button print-report-button" type="button" onClick={() => printReport("summary")}>Print summary</button><button className="secondary-button print-report-button" type="button" onClick={() => printReport("full")}>{runSummary ? "Print full report + AI" : "Print full report"}</button>{!isExample && <><a className="secondary-button" href={exportUrl(run.id, "csv")}>Export CSV</a><a className="secondary-button" href={exportUrl(run.id, "json")}>Export JSON</a></>}<button className="primary-button compact" onClick={onReset}>New analysis</button></div></div>
+    <div className="results-header"><div><p className="eyebrow">{isExample ? "Precomputed example" : "Completed analysis"}</p><h1>{run.disease_label ?? run.disease_id}</h1><p>{run.disease_id} · Engine {run.engine_version} · Open Targets {String(run.upstream_metadata.open_targets_release ?? "release unknown")}</p></div><div className="header-actions"><button className="secondary-button print-report-button" type="button" onClick={() => void downloadReport("summary")}>Download summary PDF</button><button className="secondary-button print-report-button" type="button" onClick={() => void downloadReport("full")}>{runSummary ? "Download full PDF + AI" : "Download full PDF"}</button>{!isExample && <><a className="secondary-button" href={exportUrl(run.id, "csv")}>Export CSV</a><a className="secondary-button" href={exportUrl(run.id, "json")}>Export JSON</a></>}<button className="primary-button compact" onClick={onReset}>New analysis</button></div></div>
     {isExample && <p className="example-banner"><b>Offline-ready deterministic example.</b> These versioned results are illustrative and do not refresh with current sources. Optional AI interpretation requires the API and an unlocked access token.</p>}
     {[...new Set(run.warnings.map(normalizeRunWarning))].map((warning) => <p className="notice" key={warning}>{warning}</p>)}
     <div className="metrics"><Metric label="Candidates" value={candidates.length} detail="Passed association filters"/><Metric label="Priority shortlist" value={shortlistCount} detail="Retained by configured shortlist rules"/><Metric label="Evidence capped" value={capped} detail={capped ? "Manual review required" : "No truncated gene records"}/><Metric label="ASO precedent" value={candidates.filter(row => row.aso_precedent).length} detail="Drug or trial source match"/></div>
@@ -490,7 +443,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAcce
       <div className="run-summary-columns"><div><h4>Limitations</h4><ul>{comparison.output.limitations.map(item => <li key={item}>{item}</li>)}</ul></div><div><h4>What this does not mean</h4><ul>{comparison.output.what_this_does_not_mean.map(item => <li key={item}>{item}</li>)}</ul></div></div>
       <p className="ai-meta">{comparison.cached ? "Reused identical-input cache" : "New comparison"} · {comparison.model} · selected candidates and sources validated server-side</p><p className="drawer-disclaimer">{comparison.research_use_disclaimer}</p>
     </div></section>}
-    <Glossary />{selected && <CandidateDrawer key={selected.ensembl_id} row={selected} runId={run.id} aiEnabled={aiAvailable} aiConfigStatus={aiConfigStatus} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample} explanation={candidateExplanations[selected.ensembl_id] ?? null} onExplanationChange={(explanation) => setCandidateExplanations(current => ({ ...current, [selected.ensembl_id]: explanation }))} onPrint={printCandidate} onClose={() => setSelected(null)}/>}<p className="persistent-disclaimer">{DISCLAIMER}</p>
+    <Glossary />{selected && <CandidateDrawer key={selected.ensembl_id} row={selected} runId={run.id} aiEnabled={aiAvailable} aiConfigStatus={aiConfigStatus} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample} explanation={candidateExplanations[selected.ensembl_id] ?? null} onExplanationChange={(explanation) => setCandidateExplanations(current => ({ ...current, [selected.ensembl_id]: explanation }))} onPrint={downloadCandidate} onClose={() => setSelected(null)}/>}<p className="persistent-disclaimer">{DISCLAIMER}</p>
   </section>;
 }
 

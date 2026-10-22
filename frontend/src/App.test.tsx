@@ -3,7 +3,16 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
-afterEach(() => { cleanup(); localStorage.clear(); sessionStorage.clear(); vi.restoreAllMocks(); });
+const { downloadRunPdfMock, downloadCandidatePdfMock } = vi.hoisted(() => ({
+  downloadRunPdfMock: vi.fn(),
+  downloadCandidatePdfMock: vi.fn(),
+}));
+vi.mock("./pdfExport", () => ({
+  downloadRunPdf: downloadRunPdfMock,
+  downloadCandidatePdf: downloadCandidatePdfMock,
+}));
+
+afterEach(() => { cleanup(); localStorage.clear(); sessionStorage.clear(); vi.clearAllMocks(); vi.restoreAllMocks(); });
 
 describe("ASO Compass", () => {
   it("requires acknowledgement before a run can start", async () => {
@@ -138,18 +147,16 @@ describe("ASO Compass", () => {
     vi.stubGlobal("fetch", fetchMock);
     localStorage.setItem("aso-compass-run", run.id);
     const user = userEvent.setup();
-    const printTitles: string[] = [];
-    const printSpy = vi.spyOn(window, "print").mockImplementation(() => { printTitles.push(document.title); });
     render(<App />);
 
-    await user.click(await screen.findByRole("button", { name: "Print summary" }));
-    await waitFor(() => expect(printSpy).toHaveBeenCalledOnce());
-    expect(printTitles[0]).toBe("ASO-Compass_Example-disease_summary-report_00000000");
+    await user.click(await screen.findByRole("button", { name: "Download summary PDF" }));
+    await waitFor(() => expect(downloadRunPdfMock).toHaveBeenCalledOnce());
+    expect(downloadRunPdfMock.mock.calls[0]?.[5]).toBe("ASO-Compass_Example-disease_summary-report_00000000");
     expect(document.querySelector(".print-report")).toHaveAttribute("data-print-mode", "summary");
     expect(document.querySelector('[data-report-section="review"]')).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Print full report" }));
-    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(2));
-    expect(printTitles[1]).toBe("ASO-Compass_Example-disease_full-report_00000000");
+    await user.click(screen.getByRole("button", { name: "Download full PDF" }));
+    await waitFor(() => expect(downloadRunPdfMock).toHaveBeenCalledTimes(2));
+    expect(downloadRunPdfMock.mock.calls[1]?.[5]).toBe("ASO-Compass_Example-disease_full-report_00000000");
     expect(document.querySelector(".print-report")).toHaveAttribute("data-print-mode", "full");
     expect(document.querySelector('[data-report-section="appendix"]')).toBeInTheDocument();
 
@@ -160,9 +167,9 @@ describe("ASO Compass", () => {
     expect(screen.getByRole("button", { name: "Restore candidate evidence view" })).toHaveAttribute("aria-pressed", "true");
     await user.click(screen.getByRole("button", { name: "Restore candidate evidence view" }));
     expect(document.querySelector(".drawer-backdrop")).not.toHaveClass("drawer-maximized");
-    await user.click(screen.getByRole("button", { name: "Print evidence" }));
-    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(3));
-    expect(printTitles[2]).toBe("ASO-Compass_Example-disease_GENEA_candidate-evidence_00000000");
+    await user.click(screen.getByRole("button", { name: "Download evidence PDF" }));
+    await waitFor(() => expect(downloadCandidatePdfMock).toHaveBeenCalledOnce());
+    expect(downloadCandidatePdfMock.mock.calls[0]?.[4]).toBe("ASO-Compass_Example-disease_GENEA_candidate-evidence_00000000");
     expect(document.querySelector('.print-report[data-print-mode="candidate"]')).toBeInTheDocument();
     expect(document.querySelector('[data-report-section="candidate-evidence"]')).toHaveTextContent("candidate:ENSG1");
     expect(document.querySelector('[data-report-section="candidate-evidence"]')).toHaveTextContent("No AI explanation had been generated");
@@ -185,22 +192,22 @@ describe("ASO Compass", () => {
     await user.click(screen.getByRole("button", { name: "View evidence for GENEA" }));
     await user.click(screen.getByRole("button", { name: "Explain saved evidence" }));
     expect(await screen.findByText("GENEA is a modifier based on the saved evidence.")).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Print evidence + AI" }));
-    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(4));
+    await user.click(screen.getByRole("button", { name: "Download evidence PDF + AI" }));
+    await waitFor(() => expect(downloadCandidatePdfMock).toHaveBeenCalledTimes(2));
     expect(document.querySelector('[data-report-section="candidate-ai-explanation"]')).toHaveTextContent("Optional AI appendix");
     expect(document.querySelector('[data-report-section="candidate-ai-explanation"]')).toHaveTextContent("candidate:ENSG1");
     await user.click(screen.getByRole("button", { name: "Close gene details" }));
     await user.click(screen.getByRole("button", { name: "View evidence for GENEA" }));
-    expect(screen.getByRole("button", { name: "Print evidence + AI" })).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Print evidence + AI" }));
-    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(5));
+    expect(screen.getByRole("button", { name: "Download evidence PDF + AI" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Download evidence PDF + AI" }));
+    await waitFor(() => expect(downloadCandidatePdfMock).toHaveBeenCalledTimes(3));
     expect(document.querySelector('[data-report-section="candidate-ai-explanation"]')).toHaveTextContent("GENEA is a modifier based on the saved evidence.");
     await user.click(screen.getByRole("button", { name: "Close gene details" }));
 
     await user.click(screen.getByRole("button", { name: "Summarize this run" }));
     expect(await screen.findByText("The saved run contains four candidates and one target-level approved-drug precedent.")).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Print full report + AI" }));
-    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(6));
+    await user.click(screen.getByRole("button", { name: "Download full PDF + AI" }));
+    await waitFor(() => expect(downloadRunPdfMock).toHaveBeenCalledTimes(3));
     const runSummaryAppendix = document.querySelector('[data-report-section="run-ai-summary"]');
     expect(runSummaryAppendix).toHaveTextContent("Optional AI appendix");
     expect(runSummaryAppendix).toHaveTextContent("GENEA has target-level approved-drug precedent.");
