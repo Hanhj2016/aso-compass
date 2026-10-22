@@ -20,7 +20,9 @@ def test_health_and_create_idempotent_run(api) -> None:
         second = create_run(payload, request, session, settings, "same-request")
         assert second.id == first.id
         assert first.disease_id == "MONDO_0004976"
-        assert "incomplete" in first.warnings[0]
+        assert first.warnings[0] == (
+            "Quick mode caps variant and drug enrichment at 25 genes; results are incomplete."
+        )
 
 
 def test_candidates_are_environment_scoped(api) -> None:

@@ -22,7 +22,8 @@
 - richer plots and comparison views;
 - saved parameter presets and shareable read-only run links;
 - stronger accessibility/usability testing with students;
-- source-status dashboard and improved export report;
+- source-status dashboard; deterministic summary/full print reports are implemented, while signed or
+  server-generated archival report bundles remain future work;
 - validated disease preset catalog.
 
 ## Release 1.2 — optional OpenAI explanations
@@ -62,4 +63,3 @@
 - arbitrary SQL/agent access;
 - large-scale literature crawling without citation validation;
 - reliance on free-tier hosting for important research records.
-

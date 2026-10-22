@@ -1,6 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { askSavedEvidenceQuestion, compareCandidates, createRun, explainCandidate, exportUrl, getCandidates, getEvents, getPublicConfig, getRun, summarizeRun } from "./api";
+import CandidatePrintReport from "./CandidatePrintReport";
 import Learn from "./Learn";
+import PrintReport from "./PrintReport";
+import { normalizeRunWarning, type PrintMode } from "./printReportUtils";
 import type { AIQuestionAnswer, Candidate, CandidateComparison, CandidateExplanation, CitedClaim, ExampleBundle, RunEvent, RunRecord, RunSummary } from "./types";
 
 const DISCLAIMER = "For hypothesis generation and education only. Not for clinical decision-making.";
@@ -165,7 +168,7 @@ function AIAccessControl({ enabled, required, accessToken, onUnlock, onLock }: {
   </section>;
 }
 
-function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isExample, onClose }: { row: Candidate; runId: string; aiEnabled: boolean; accessLocked: boolean; accessToken: string; isExample: boolean; onClose: () => void }) {
+function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isExample, onPrint, onClose }: { row: Candidate; runId: string; aiEnabled: boolean; accessLocked: boolean; accessToken: string; isExample: boolean; onPrint: () => void; onClose: () => void }) {
   const [explanation, setExplanation] = useState<CandidateExplanation | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
@@ -177,6 +180,7 @@ function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isE
   }
   return <div className="drawer-backdrop" role="presentation" onMouseDown={onClose}><aside className="drawer" role="dialog" aria-labelledby="gene-title" onMouseDown={(e) => e.stopPropagation()}>
     <button className="close" onClick={onClose} aria-label="Close gene details">×</button>
+    <button className="secondary-button candidate-print-button" type="button" onClick={onPrint}>Print evidence</button>
     <p className="eyebrow">Candidate evidence</p><h2 id="gene-title">{row.gene_symbol}</h2><p>{row.gene_name}</p>
     <span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span>
     <section><h3>Why this track?</h3><p>{row.confidence_reason}</p><p className="call-source">Deterministic source: <b>{row.call_source}</b> · Confidence label: <b>{row.confidence_tier}</b></p></section>
@@ -301,6 +305,8 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [printMode, setPrintMode] = useState<PrintMode | "candidate">("summary");
+  const [reportGeneratedAt, setReportGeneratedAt] = useState(() => new Date().toISOString());
   const [runSummary, setRunSummary] = useState<RunSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState("");
@@ -352,11 +358,24 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
     catch (error) { setComparisonError(error instanceof Error ? error.message : "The candidate comparison could not be generated."); }
     finally { setComparisonLoading(false); }
   }
+  function printReport(mode: PrintMode) {
+    setPrintMode(mode);
+    setReportGeneratedAt(new Date().toISOString());
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()));
+  }
+  function printCandidate() {
+    setPrintMode("candidate");
+    setReportGeneratedAt(new Date().toISOString());
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()));
+  }
 
   return <section className={`results-view${selected ? " evidence-open" : ""}`}>
-    <div className="results-header"><div><p className="eyebrow">{isExample ? "Precomputed example" : "Completed analysis"}</p><h1>{run.disease_label ?? run.disease_id}</h1><p>{run.disease_id} · Engine {run.engine_version} · Open Targets {String(run.upstream_metadata.open_targets_release ?? "release unknown")}</p></div><div className="header-actions"><button className="secondary-button print-report-button" type="button" onClick={() => window.print()}>Print report</button>{!isExample && <><a className="secondary-button" href={exportUrl(run.id, "csv")}>Export CSV</a><a className="secondary-button" href={exportUrl(run.id, "json")}>Export JSON</a></>}<button className="primary-button compact" onClick={onReset}>New analysis</button></div></div>
+    {printMode === "candidate" && selected
+      ? <CandidatePrintReport run={run} candidate={selected} generatedAt={reportGeneratedAt}/>
+      : <PrintReport run={run} candidates={candidates} mode={printMode === "candidate" ? "summary" : printMode} generatedAt={reportGeneratedAt}/>}
+    <div className="results-header"><div><p className="eyebrow">{isExample ? "Precomputed example" : "Completed analysis"}</p><h1>{run.disease_label ?? run.disease_id}</h1><p>{run.disease_id} · Engine {run.engine_version} · Open Targets {String(run.upstream_metadata.open_targets_release ?? "release unknown")}</p></div><div className="header-actions"><button className="secondary-button print-report-button" type="button" onClick={() => printReport("summary")}>Print summary</button><button className="secondary-button print-report-button" type="button" onClick={() => printReport("full")}>Print full report</button>{!isExample && <><a className="secondary-button" href={exportUrl(run.id, "csv")}>Export CSV</a><a className="secondary-button" href={exportUrl(run.id, "json")}>Export JSON</a></>}<button className="primary-button compact" onClick={onReset}>New analysis</button></div></div>
     {isExample && <p className="example-banner"><b>Offline-ready example.</b> These versioned results are illustrative and do not refresh with current sources.</p>}
-    {run.warnings.map((warning) => <p className="notice" key={warning}>{warning}</p>)}
+    {[...new Set(run.warnings.map(normalizeRunWarning))].map((warning) => <p className="notice" key={warning}>{warning}</p>)}
     <div className="metrics"><Metric label="Candidates" value={candidates.length} detail="Passed association filters"/><Metric label="Priority shortlist" value={shortlistCount} detail="Retained by configured shortlist rules"/><Metric label="Evidence capped" value={capped} detail={capped ? "Manual review required" : "No truncated gene records"}/><Metric label="ASO precedent" value={candidates.filter(row => row.aso_precedent).length} detail="Drug or trial source match"/></div>
     {!isExample && <AIAccessControl enabled={aiEnabled} required={aiAccessRequired} accessToken={aiAccessToken} onUnlock={onUnlockAI} onLock={onLockAI}/>}
     <section className={`ai-panel run-summary-panel${runSummary ? " has-print-content" : ""}`} aria-labelledby="run-summary-title"><div className="ai-heading"><div><p className="eyebrow">Optional interpretation</p><h2 id="run-summary-title"><AIIcon size={19}/>AI run summary</h2></div><span><AIIcon size={11}/>Generated · evidence only</span></div>
@@ -395,7 +414,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
       <div className="run-summary-columns"><div><h4>Limitations</h4><ul>{comparison.output.limitations.map(item => <li key={item}>{item}</li>)}</ul></div><div><h4>What this does not mean</h4><ul>{comparison.output.what_this_does_not_mean.map(item => <li key={item}>{item}</li>)}</ul></div></div>
       <p className="ai-meta">{comparison.cached ? "Reused identical-input cache" : "New comparison"} · {comparison.model} · selected candidates and sources validated server-side</p><p className="drawer-disclaimer">{comparison.research_use_disclaimer}</p>
     </div></section>}
-    <Glossary />{selected && <CandidateDrawer key={selected.ensembl_id} row={selected} runId={run.id} aiEnabled={aiAvailable} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample} onClose={() => setSelected(null)}/>}<p className="persistent-disclaimer">{DISCLAIMER}</p>
+    <Glossary />{selected && <CandidateDrawer key={selected.ensembl_id} row={selected} runId={run.id} aiEnabled={aiAvailable} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample} onPrint={printCandidate} onClose={() => setSelected(null)}/>}<p className="persistent-disclaimer">{DISCLAIMER}</p>
   </section>;
 }
 

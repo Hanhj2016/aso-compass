@@ -161,7 +161,7 @@ def create_run(
     if len(queued) >= settings.max_queued_runs + settings.max_active_runs:
         raise HTTPException(429, detail={"code": "QUEUE_FULL", "message": "The demonstration queue is full"})
     warnings = (
-        ["Quick mode caps variant enrichment at 25 genes; results are incomplete."]
+        ["Quick mode caps variant and drug enrichment at 25 genes; results are incomplete."]
         if parameters["run_mode"] == "quick"
         else []
     )

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -107,15 +107,32 @@ describe("ASO Compass", () => {
     const printSpy = vi.spyOn(window, "print").mockImplementation(() => undefined);
     render(<App />);
 
-    await user.click(await screen.findByRole("button", { name: "Print report" }));
-    expect(printSpy).toHaveBeenCalledOnce();
+    await user.click(await screen.findByRole("button", { name: "Print summary" }));
+    await waitFor(() => expect(printSpy).toHaveBeenCalledOnce());
+    expect(document.querySelector(".print-report")).toHaveAttribute("data-print-mode", "summary");
+    expect(document.querySelector('[data-report-section="review"]')).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Print full report" }));
+    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(2));
+    expect(document.querySelector(".print-report")).toHaveAttribute("data-print-mode", "full");
+    expect(document.querySelector('[data-report-section="appendix"]')).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "View evidence for GENEA" }));
+    expect(screen.getByRole("dialog", { name: "GENEA" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Print evidence" }));
+    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(3));
+    expect(document.querySelector('.print-report[data-print-mode="candidate"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-report-section="candidate-evidence"]')).toHaveTextContent("candidate:ENSG1");
+    expect(document.querySelector('[data-report-section="candidate-evidence"]')).toHaveTextContent("Optional AI explanations are excluded");
+    await user.click(screen.getByRole("button", { name: "Close gene details" }));
 
     expect(screen.getByText("No candidate is hidden because a drug or ASO precedent exists.")).toBeVisible();
     expect(screen.getByText("Showing 1–4 of 4")).toBeVisible();
     await user.selectOptions(screen.getByLabelText("Research view"), "translational");
     expect(screen.getByText(/Shows candidates with an approved drug/)).toBeVisible();
-    expect(screen.getByText("GENEA")).toBeVisible();
-    expect(screen.queryByText("GENEB")).not.toBeInTheDocument();
+    const candidateExplorer = screen.getByRole("heading", { name: "Trace every classification" }).closest("article");
+    expect(candidateExplorer).not.toBeNull();
+    expect(within(candidateExplorer as HTMLElement).getByText("GENEA")).toBeVisible();
+    expect(within(candidateExplorer as HTMLElement).queryByText("GENEB")).not.toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText("Research view"), "all");
 
     await user.type(await screen.findByLabelText("AI access token"), "shared-demo-token");
