@@ -312,16 +312,68 @@ function printFilenamePart(value: string) {
 }
 
 function openPrintDialog(title: string) {
+  const embedded = window.self !== window.top;
+  const printWindow = embedded ? window.open("", "_blank", "popup,width=1200,height=800") : null;
   const previousTitle = document.title;
-  document.title = title;
   const restoreTitle = () => {
     document.title = previousTitle;
     window.removeEventListener("afterprint", restoreTitle);
   };
-  window.addEventListener("afterprint", restoreTitle, { once: true });
+
+  if (!printWindow) {
+    document.title = title;
+    window.addEventListener("afterprint", restoreTitle, { once: true });
+  }
+
   window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-    window.print();
-    window.setTimeout(restoreTitle, 0);
+    if (!printWindow) {
+      window.print();
+      window.setTimeout(restoreTitle, 0);
+      return;
+    }
+
+    const report = document.querySelector<HTMLElement>(".print-report");
+    if (!report || printWindow.closed) {
+      printWindow.close();
+      document.title = title;
+      window.addEventListener("afterprint", restoreTitle, { once: true });
+      window.print();
+      window.setTimeout(restoreTitle, 0);
+      return;
+    }
+
+    const printDocument = printWindow.document;
+    printDocument.open();
+    printDocument.write("<!doctype html><html lang=\"en\"><head></head><body></body></html>");
+    printDocument.close();
+    printDocument.title = title;
+
+    const base = printDocument.createElement("base");
+    base.href = document.baseURI;
+    printDocument.head.append(base);
+    for (const node of document.head.querySelectorAll('meta[charset], meta[name="viewport"], link[rel="stylesheet"], style')) {
+      printDocument.head.append(printDocument.importNode(node, true));
+    }
+    const main = printDocument.createElement("main");
+    main.className = "results-view";
+    main.append(printDocument.importNode(report, true));
+    printDocument.body.replaceChildren(main);
+
+    const stylesReady = [...printDocument.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].map(link => {
+      if (link.sheet) return Promise.resolve();
+      return new Promise<void>(resolve => {
+        link.addEventListener("load", () => resolve(), { once: true });
+        link.addEventListener("error", () => resolve(), { once: true });
+      });
+    });
+    void Promise.all(stylesReady).then(async () => {
+      await printDocument.fonts.ready;
+      await new Promise<void>(resolve => printWindow.requestAnimationFrame(() => printWindow.requestAnimationFrame(() => resolve())));
+      if (printWindow.closed) return;
+      printWindow.addEventListener("afterprint", () => printWindow.close(), { once: true });
+      printWindow.focus();
+      printWindow.print();
+    });
   }));
 }
 
