@@ -41,8 +41,10 @@ describe("ASO Compass", () => {
       frac_lof: null, frac_splice_related: null, g2p_mech: null, inheritance: null,
       clinvar_call: "modifier", final_call: "modifier", call_source: "assoc only",
       confidence_tier: "Association only", confidence_reason: "Direction unknown.", flag: "", note: "",
-      drug_status: "None found", has_approved_drug: false, n_drugs: 0, drug_max_stage: null,
-      approved_drugs: "", oligo_drug: null, oligo_names: "", aso_drug: null, aso_names: "",
+      drug_status: gene === "GENEA" ? "Approved: Example drug" : "None found",
+      has_approved_drug: gene === "GENEA", n_drugs: gene === "GENEA" ? 1 : 0,
+      drug_max_stage: gene === "GENEA" ? "Approved" : null,
+      approved_drugs: gene === "GENEA" ? "Example drug" : "", oligo_drug: null, oligo_names: "", aso_drug: null, aso_names: "",
       aso_trial_n: 0, aso_trial_weak: 0, aso_trial_best: null, aso_trial_ids: "", aso_precedent: "",
       shortlist_position: null, completeness: "complete",
     });
@@ -107,6 +109,14 @@ describe("ASO Compass", () => {
 
     await user.click(await screen.findByRole("button", { name: "Print report" }));
     expect(printSpy).toHaveBeenCalledOnce();
+
+    expect(screen.getByText("No candidate is hidden because a drug or ASO precedent exists.")).toBeVisible();
+    expect(screen.getByText("Showing 1–4 of 4")).toBeVisible();
+    await user.selectOptions(screen.getByLabelText("Research view"), "translational");
+    expect(screen.getByText(/Shows candidates with an approved drug/)).toBeVisible();
+    expect(screen.getByText("GENEA")).toBeVisible();
+    expect(screen.queryByText("GENEB")).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("Research view"), "all");
 
     await user.type(await screen.findByLabelText("AI access token"), "shared-demo-token");
     await user.click(screen.getByRole("button", { name: "Use token" }));

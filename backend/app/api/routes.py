@@ -13,7 +13,7 @@ from sqlmodel import Session, col, select
 
 from app.core.settings import Settings, get_settings
 from app.db.session import get_session
-from app.domain.classification import DISCLAIMER
+from app.domain.classification import DISCLAIMER, ENGINE_VERSION
 from app.models import AIInsight, Candidate, Evidence, ExportArtifact, Run, RunEvent
 from app.schemas.ai import (
     AIQuestionPublic,
@@ -121,7 +121,7 @@ def public_config(settings: Annotated[Settings, Depends(get_settings)]) -> dict[
         "environment": settings.app_env,
         "ai_enabled": settings.ai_enabled,
         "ai_access_required": settings.ai_enabled,
-        "engine_version": "4.1-guided",
+        "engine_version": ENGINE_VERSION,
         "research_use_disclaimer": DISCLAIMER,
     }
 

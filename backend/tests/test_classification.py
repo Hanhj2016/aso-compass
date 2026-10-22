@@ -57,3 +57,32 @@ def test_threshold_boundaries_match_reference() -> None:
         "C": "splice/upregulation",
         "D": "insufficient data",
     }
+
+
+def test_approved_drug_is_retained_unless_explicitly_excluded() -> None:
+    row = {
+        "ensembl_id": "ENSG_APPROVED",
+        "gene_symbol": "KNOWN",
+        "gene_name": "Known target",
+        "overall_score": 0.9,
+        "genetic_score": 0.8,
+        "loeuf": 0.9,
+        "n_evidence": 20,
+        "n_evidence_returned": 20,
+        "evidence_truncated": False,
+        "n_lof": 0,
+        "n_splice": 0,
+        "n_splice_extra": 0,
+        "n_missense": 20,
+        "g2p_mech": "GoF/DN",
+        "inheritance": "dominant",
+        "strategy": None,
+        "has_approved_drug": True,
+        "aso_precedent": "Drug: EXAMPLE (Approved)",
+    }
+
+    retained = classify_candidates([row])
+    assert retained[0]["shortlist_position"] == 1
+    assert retained[0]["has_approved_drug"] is True
+
+    assert classify_candidates([row], exclude_approved=True) == []

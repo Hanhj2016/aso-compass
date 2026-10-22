@@ -25,7 +25,7 @@ class Run(AuditMixin, table=True):
     parameters: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     input_hash: str = Field(index=True, max_length=64)
     idempotency_key: str | None = Field(default=None, max_length=128)
-    engine_version: str = Field(default="4.1-guided", max_length=32)
+    engine_version: str = Field(default="4.2-guided", max_length=32)
     upstream_metadata: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     warnings: list[str] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
     validation: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))

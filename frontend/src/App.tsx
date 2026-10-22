@@ -258,10 +258,49 @@ function AIQuestionPanel({ runId, candidates, enabled, accessLocked, accessToken
   </section>;
 }
 
+type ResearchView = "all" | "shortlist" | "novel" | "translational";
+type PrecedentFilter = "all" | "approved" | "aso" | "drug" | "none" | "unknown";
+type CandidateSort = "rank" | "overall" | "genetic" | "evidence" | "loeuf" | "gene";
+type SortDirection = "asc" | "desc";
+
+const VIEW_HELP: Record<ResearchView, string> = {
+  all: "No candidate is hidden because a drug or ASO precedent exists.",
+  shortlist: "Shows the deterministic review order saved with this run. It is not a treatment ranking.",
+  novel: "Shows only targets whose completed drug lookup found no target-level approved drug. Approval may be for another disease; verify the indication manually.",
+  translational: "Shows candidates with an approved drug, another drug record, or an ASO/drug/trial precedent.",
+};
+
+function hasTranslationalPrecedent(row: Candidate) {
+  return row.has_approved_drug === true || (row.n_drugs ?? 0) > 0 || Boolean(row.aso_precedent);
+}
+
+function matchesPrecedent(row: Candidate, filter: PrecedentFilter) {
+  const unknown = row.has_approved_drug === null || ["not checked", "lookup failed"].includes(row.drug_status.toLowerCase());
+  if (filter === "all") return true;
+  if (filter === "approved") return row.has_approved_drug === true;
+  if (filter === "aso") return Boolean(row.aso_precedent);
+  if (filter === "drug") return (row.n_drugs ?? 0) > 0;
+  if (filter === "unknown") return unknown;
+  return !unknown && !hasTranslationalPrecedent(row);
+}
+
+function compareNullable(a: number | string | null, b: number | string | null, direction: SortDirection) {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  const comparison = typeof a === "string" && typeof b === "string" ? a.localeCompare(b) : Number(a) - Number(b);
+  return direction === "asc" ? comparison : -comparison;
+}
+
 function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAccessToken, onUnlockAI, onLockAI, onReset }: { run: RunRecord; candidates: Candidate[]; isExample: boolean; aiEnabled: boolean; aiAccessRequired: boolean; aiAccessToken: string; onUnlockAI: (token: string) => void; onLockAI: () => void; onReset: () => void }) {
   const [query, setQuery] = useState(""); const [track, setTrack] = useState("all");
-  const [shortlist, setShortlist] = useState(false); const [selected, setSelected] = useState<Candidate | null>(null);
-  const [sort, setSort] = useState<"rank" | "overall" | "genetic">("rank");
+  const [researchView, setResearchView] = useState<ResearchView>("all");
+  const [precedentFilter, setPrecedentFilter] = useState<PrecedentFilter>("all");
+  const [selected, setSelected] = useState<Candidate | null>(null);
+  const [sort, setSort] = useState<CandidateSort>("rank");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [runSummary, setRunSummary] = useState<RunSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState("");
@@ -272,7 +311,28 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
   const accessLocked = aiEnabled && aiAccessRequired && !aiAccessToken;
   const aiAvailable = aiEnabled && !isExample && !accessLocked;
   const counts = useMemo(() => Object.fromEntries(TRACKS.slice(1).map(name => [name, candidates.filter(row => row.final_call === name).length])), [candidates]);
-  const filtered = useMemo(() => candidates.filter(row => (track === "all" || row.final_call === track) && (!shortlist || row.shortlist_position !== null) && `${row.gene_symbol} ${row.gene_name}`.toLowerCase().includes(query.toLowerCase())).sort((a, b) => sort === "overall" ? b.overall_score - a.overall_score : sort === "genetic" ? b.genetic_score - a.genetic_score : (a.shortlist_position ?? 9999) - (b.shortlist_position ?? 9999)), [candidates, query, track, shortlist, sort]);
+  const filtered = useMemo(() => candidates.filter(row => {
+    const inView = researchView === "all"
+      || (researchView === "shortlist" && row.shortlist_position !== null)
+      || (researchView === "novel" && row.has_approved_drug === false)
+      || (researchView === "translational" && hasTranslationalPrecedent(row));
+    return inView
+      && matchesPrecedent(row, precedentFilter)
+      && (track === "all" || row.final_call === track)
+      && `${row.gene_symbol} ${row.gene_name ?? ""}`.toLowerCase().includes(query.toLowerCase());
+  }).sort((a, b) => {
+    if (sort === "overall") return compareNullable(a.overall_score, b.overall_score, sortDirection);
+    if (sort === "genetic") return compareNullable(a.genetic_score, b.genetic_score, sortDirection);
+    if (sort === "evidence") return compareNullable(a.n_evidence_returned, b.n_evidence_returned, sortDirection);
+    if (sort === "loeuf") return compareNullable(a.loeuf, b.loeuf, sortDirection);
+    if (sort === "gene") return compareNullable(a.gene_symbol, b.gene_symbol, sortDirection);
+    return compareNullable(a.shortlist_position, b.shortlist_position, sortDirection)
+      || compareNullable(a.overall_score, b.overall_score, "desc");
+  }), [candidates, precedentFilter, query, researchView, sort, sortDirection, track]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const pageEnd = Math.min(pageStart + pageSize, filtered.length);
   const shortlistCount = candidates.filter(row => row.shortlist_position !== null).length;
   const capped = candidates.filter(row => row.evidence_truncated).length;
   async function requestRunSummary() {
@@ -313,10 +373,19 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
     </section>
     <AIQuestionPanel runId={run.id} candidates={candidates} enabled={aiAvailable} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample}/>
     <div className="visual-grid"><article className="panel"><div className="panel-title"><div><p className="eyebrow">Mechanism landscape</p><h2>Candidate tracks</h2></div><span>{candidates.length} genes</span></div><div className="track-bars">{TRACKS.slice(1).map(name => <button key={name} onClick={() => setTrack(name)}><span>{TRACK_LABEL[name]}</span><i><em className={`track-${name.replace(/[^a-z]/g, "-")}`} style={{ width: `${Math.max(3, ((counts[name] ?? 0) / candidates.length) * 100)}%` }} /></i><b>{counts[name] ?? 0}</b></button>)}</div></article><article className="panel"><div className="panel-title"><div><p className="eyebrow">Association landscape</p><h2>Evidence scores</h2></div><span>Click a point</span></div><ScorePlot candidates={candidates} onSelect={setSelected}/></article></div>
-    <article className="table-panel"><div className="table-tools"><div><p className="eyebrow">Candidate explorer</p><h2>Trace every classification</h2></div><div className="filters"><label><span className="sr-only">Search candidates</span><input type="search" placeholder="Search gene…" value={query} onChange={(e) => setQuery(e.target.value)}/></label><label><span className="sr-only">Filter track</span><select value={track} onChange={(e) => setTrack(e.target.value)}>{TRACKS.map(name => <option key={name} value={name}>{name === "all" ? "All tracks" : TRACK_LABEL[name]}</option>)}</select></label><label><span className="sr-only">Sort candidates</span><select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}><option value="rank">Shortlist rank</option><option value="overall">Overall score</option><option value="genetic">Genetic score</option></select></label><label className="mini-check"><input type="checkbox" checked={shortlist} onChange={(e) => setShortlist(e.target.checked)}/> Shortlist only</label></div></div>
+    <article className="table-panel"><div className="table-tools"><div><p className="eyebrow">Candidate explorer</p><h2>Trace every classification</h2></div><div className="filters">
+      <label><span>Research view</span><select aria-label="Research view" value={researchView} onChange={(e) => { setResearchView(e.target.value as ResearchView); setPage(1); }}><option value="all">All evidence</option><option value="shortlist">Saved priority shortlist</option><option value="novel">Novel-target discovery</option><option value="translational">Translational precedent</option></select></label>
+      <label><span>Precedent</span><select aria-label="Filter therapeutic precedent" value={precedentFilter} onChange={(e) => { setPrecedentFilter(e.target.value as PrecedentFilter); setPage(1); }}><option value="all">All precedent statuses</option><option value="approved">Target-level approved drug</option><option value="aso">ASO / trial precedent</option><option value="drug">Any drug record</option><option value="none">No known precedent</option><option value="unknown">Drug evidence unknown</option></select></label>
+      <label><span>Track</span><select aria-label="Filter track" value={track} onChange={(e) => { setTrack(e.target.value); setPage(1); }}>{TRACKS.map(name => <option key={name} value={name}>{name === "all" ? "All tracks" : TRACK_LABEL[name]}</option>)}</select></label>
+      <label><span>Search</span><input aria-label="Search candidates" type="search" placeholder="Gene symbol or name…" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }}/></label>
+      <label><span>Sort by</span><select aria-label="Sort candidates" value={sort} onChange={(e) => { setSort(e.target.value as CandidateSort); setPage(1); }}><option value="rank">Shortlist rank</option><option value="overall">Overall score</option><option value="genetic">Genetic score</option><option value="evidence">Returned evidence</option><option value="loeuf">LOEUF</option><option value="gene">Gene symbol</option></select></label>
+      <button className="sort-direction" type="button" aria-label={`Sort ${sortDirection === "asc" ? "descending" : "ascending"}`} onClick={() => { setSortDirection(current => current === "asc" ? "desc" : "asc"); setPage(1); }}>{sortDirection === "asc" ? "↑ Asc" : "↓ Desc"}</button>
+    </div></div>
+      <p className="view-explainer"><b>{researchView === "all" ? "All evidence" : researchView === "shortlist" ? "Saved priority shortlist" : researchView === "novel" ? "Novel-target discovery" : "Translational precedent"}:</b> {VIEW_HELP[researchView]}</p>
       {aiAvailable && <div className="comparison-toolbar"><div><b><AIIcon/>Compare saved evidence</b><span>{comparisonSelection.length ? `${comparisonSelection.join(", ")} selected` : "Select two or three candidates below"}</span></div><div><button className="text-button" type="button" disabled={!comparisonSelection.length} onClick={() => { setComparisonSelection([]); setComparison(null); setComparisonError(""); }}>Clear</button><button className="secondary-button" type="button" disabled={comparisonSelection.length < 2 || comparisonLoading} onClick={() => void requestComparison()}><AIIcon/>{comparisonLoading ? "Comparing…" : `Compare selected (${comparisonSelection.length})`}</button></div></div>}
       {comparisonError && <p className="ai-error comparison-error" role="alert">{comparisonError}</p>}
-      <div className="table-wrap"><table><thead><tr>{aiAvailable && <th className="comparison-select-cell"><span className="sr-only">Compare</span></th>}<th>Gene</th><th>Track</th><th>Overall</th><th>Genetic</th><th>Evidence</th><th>LOEUF</th><th>Drug status</th><th className="candidate-actions-cell"><span className="sr-only">Details</span></th></tr></thead><tbody>{filtered.map(row => { const selectedForComparison = comparisonSelection.includes(row.gene_symbol); return <tr key={row.ensembl_id} className={selectedForComparison ? "comparison-selected" : ""}>{aiAvailable && <td className="comparison-select-cell"><input type="checkbox" aria-label={`Select ${row.gene_symbol} for comparison`} checked={selectedForComparison} disabled={!selectedForComparison && comparisonSelection.length >= 3} onChange={() => toggleComparison(row.gene_symbol)}/></td>}<td><b>{row.gene_symbol}</b><small>{row.gene_name}</small></td><td><span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span></td><td>{row.overall_score.toFixed(3)}</td><td>{row.genetic_score.toFixed(3)}</td><td>{row.evidence_truncated ? <span className="status-warn">Capped</span> : row.n_evidence === null ? "Not checked" : `${row.n_evidence_returned}/${row.n_evidence}`}</td><td>{row.loeuf?.toFixed(2) ?? "—"}</td><td>{row.drug_status}</td><td className="candidate-actions-cell"><button className="row-button" onClick={() => setSelected(row)} aria-label={`View evidence for ${row.gene_symbol}`}>→</button></td></tr>;})}</tbody></table>{filtered.length === 0 && <p className="empty">No candidates match these filters.</p>}</div>
+      <div className="table-wrap"><table><thead><tr>{aiAvailable && <th className="comparison-select-cell"><span className="sr-only">Compare</span></th>}<th>Gene</th><th>Track</th><th>Overall</th><th>Genetic</th><th>Evidence</th><th>LOEUF</th><th>Therapeutic precedent</th><th className="candidate-actions-cell"><span className="sr-only">Details</span></th></tr></thead><tbody>{filtered.map((row, index) => { const selectedForComparison = comparisonSelection.includes(row.gene_symbol); const outsidePage = index < pageStart || index >= pageEnd; return <tr key={row.ensembl_id} className={`${selectedForComparison ? "comparison-selected " : ""}${outsidePage ? "page-hidden" : ""}`.trim()}>{aiAvailable && <td className="comparison-select-cell"><input type="checkbox" aria-label={`Select ${row.gene_symbol} for comparison`} checked={selectedForComparison} disabled={!selectedForComparison && comparisonSelection.length >= 3} onChange={() => toggleComparison(row.gene_symbol)}/></td>}<td><b>{row.gene_symbol}</b><small>{row.gene_name}</small></td><td><span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span></td><td>{row.overall_score.toFixed(3)}</td><td>{row.genetic_score.toFixed(3)}</td><td>{row.evidence_truncated ? <span className="status-warn">Capped</span> : row.n_evidence === null ? "Not checked" : `${row.n_evidence_returned}/${row.n_evidence}`}</td><td>{row.loeuf?.toFixed(2) ?? "—"}</td><td><span className={row.has_approved_drug ? "precedent-approved" : ""}>{row.drug_status}</span>{row.aso_precedent && <small>ASO / trial precedent</small>}</td><td className="candidate-actions-cell"><button className="row-button" onClick={() => setSelected(row)} aria-label={`View evidence for ${row.gene_symbol}`}>→</button></td></tr>;})}</tbody></table>{filtered.length === 0 && <p className="empty">No candidates match these filters.</p>}</div>
+      {filtered.length > 0 && <div className="pagination"><span>Showing {pageStart + 1}–{pageEnd} of {filtered.length}</span><label>Rows per page <select aria-label="Rows per page" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label><div><button type="button" onClick={() => setPage(1)} disabled={safePage === 1} aria-label="First page">«</button><button type="button" onClick={() => setPage(current => Math.max(1, current - 1))} disabled={safePage === 1}>Previous</button><span>Page {safePage} of {totalPages}</span><button type="button" onClick={() => setPage(current => Math.min(totalPages, current + 1))} disabled={safePage === totalPages}>Next</button><button type="button" onClick={() => setPage(totalPages)} disabled={safePage === totalPages} aria-label="Last page">»</button></div></div>}
     </article>
     {comparison && <section className="ai-panel comparison-panel" aria-labelledby="comparison-title"><div className="ai-heading"><div><p className="eyebrow">Optional interpretation</p><h2 id="comparison-title"><AIIcon size={19}/>Evidence comparison: {comparison.compared_gene_symbols.join(" · ")}</h2></div><span><AIIcon size={11}/>Generated · no ranking</span></div><div className="ai-output"><p className="ai-summary">{comparison.output.overview}</p>
       <div className="comparison-profiles">{comparison.output.candidate_summaries.map(item => <article key={item.gene_symbol}><h3>{item.gene_symbol}</h3><p>{item.evidence_summary}</p><small>{item.source_ids.map(sourceId => <b key={sourceId} title={sourceId}>{sourceLabel(sourceId)}</b>)}</small></article>)}</div>
@@ -374,5 +443,5 @@ export default function App() {
   if (run && ["queued", "running"].includes(run.status)) content = <Progress run={run} events={events} onReset={reset}/>;
   if (run?.status === "succeeded" && candidates.length) content = <Results run={run} candidates={candidates} isExample={example} aiEnabled={aiEnabled} aiAccessRequired={aiAccessRequired} aiAccessToken={aiAccessToken} onUnlockAI={unlockAI} onLockAI={lockAI} onReset={reset}/>;
   if (run?.status === "failed") content = <section className="progress-view"><p className="eyebrow">Analysis stopped</p><h1>The run could not be completed.</h1><p>{run.error_message}</p><button className="primary-button compact" onClick={reset}>Start again</button><button className="text-button" onClick={() => void loadExample()}>Open the example instead →</button></section>;
-  return <><Header view={view} onView={setView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Engine 4.1-guided · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
+  return <><Header view={view} onView={setView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
 }

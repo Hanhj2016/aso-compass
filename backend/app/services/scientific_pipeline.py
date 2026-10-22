@@ -363,7 +363,6 @@ def run_pipeline(
         include_modifiers=parameters["include_modifiers"],
         exclude_approved=parameters["exclude_approved"],
         exclude_aso_precedent=parameters["exclude_aso_precedent"],
-        drug_lookup_complete=drug_source not in {"not checked", "lookup failed"},
     )
     validation = validate_candidates(classified)
     try:

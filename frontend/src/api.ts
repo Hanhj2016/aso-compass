@@ -24,7 +24,15 @@ export function createRun(payload: Record<string, unknown>): Promise<RunRecord> 
 export const getRun = (id: string) => request<RunRecord>(`/api/v1/runs/${id}`);
 export const getPublicConfig = () => request<PublicConfig>("/api/v1/config/public");
 export const getEvents = (id: string) => request<RunEvent[]>(`/api/v1/runs/${id}/events`);
-export const getCandidates = (id: string) => request<Candidate[]>(`/api/v1/runs/${id}/candidates?limit=500`);
+export async function getCandidates(id: string): Promise<Candidate[]> {
+  const candidates: Candidate[] = [];
+  const limit = 500;
+  for (let offset = 0; ; offset += limit) {
+    const page = await request<Candidate[]>(`/api/v1/runs/${id}/candidates?limit=${limit}&offset=${offset}`);
+    candidates.push(...page);
+    if (page.length < limit) return candidates;
+  }
+}
 const aiHeaders = (accessToken: string, includeJson = false): HeadersInit => ({
   ...(includeJson ? { "Content-Type": "application/json" } : {}),
   ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),

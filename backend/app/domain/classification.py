@@ -11,6 +11,7 @@ from typing import Any
 
 TRACKS = ("knockdown", "splice/upregulation", "ambiguous", "modifier", "insufficient data")
 DISCLAIMER = "For hypothesis generation and education only. Not for clinical decision-making."
+ENGINE_VERSION = "4.2-guided"
 
 
 def _confidence(row: dict[str, Any]) -> tuple[str, str]:
@@ -171,7 +172,6 @@ def classify_candidates(
     include_modifiers: bool = True,
     exclude_approved: bool = False,
     exclude_aso_precedent: bool = False,
-    drug_lookup_complete: bool = False,
 ) -> list[dict[str, Any]]:
     classified = [classify_candidate(row) for row in rows]
     if exclude_approved:
@@ -180,8 +180,6 @@ def classify_candidates(
     if include_modifiers:
         allowed.add("modifier")
     shortlist = [row for row in classified if row["final_call"] in allowed]
-    if drug_lookup_complete:
-        shortlist = [row for row in shortlist if row.get("has_approved_drug") is not True]
     if exclude_aso_precedent:
         shortlist = [row for row in shortlist if not row["has_aso_precedent"]]
     shortlist.sort(
