@@ -312,69 +312,56 @@ function printFilenamePart(value: string) {
 }
 
 function openPrintDialog(title: string) {
-  const embedded = window.self !== window.top;
-  const printWindow = embedded ? window.open("", "_blank", "popup,width=1200,height=800") : null;
+  const printRequestId = crypto.randomUUID();
+  const printUrl = new URL("print.html", window.location.href);
+  printUrl.searchParams.set("request", printRequestId);
+  printUrl.searchParams.set("title", title);
+  let printWindow: Window | null = null;
   const previousTitle = document.title;
   const restoreTitle = () => {
     document.title = previousTitle;
     window.removeEventListener("afterprint", restoreTitle);
   };
-
-  if (!printWindow) {
+  const fallBackToCurrentDocument = () => {
+    window.removeEventListener("message", handlePrintPageReady);
     document.title = title;
     window.addEventListener("afterprint", restoreTitle, { once: true });
-  }
-
-  window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
-    if (!printWindow) {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
       window.print();
       window.setTimeout(restoreTitle, 0);
-      return;
-    }
+    }));
+  };
+  const handlePrintPageReady = (event: MessageEvent) => {
+    if (
+      event.origin !== window.location.origin
+      || event.source !== printWindow
+      || event.data?.type !== "aso-print-ready"
+      || event.data?.requestId !== printRequestId
+    ) return;
+    window.removeEventListener("message", handlePrintPageReady);
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      const report = document.querySelector<HTMLElement>(".print-report");
+      if (!report || !printWindow || printWindow.closed) {
+        printWindow?.close();
+        fallBackToCurrentDocument();
+        return;
+      }
+      const headHtml = [...document.head.querySelectorAll('meta[charset], meta[name="viewport"], link[rel="stylesheet"], style')]
+        .map(node => node.outerHTML);
+      printWindow.postMessage({
+        type: "aso-print-render",
+        requestId: printRequestId,
+        title,
+        baseHref: document.baseURI,
+        headHtml,
+        reportHtml: report.outerHTML,
+      }, window.location.origin);
+    }));
+  };
 
-    const report = document.querySelector<HTMLElement>(".print-report");
-    if (!report || printWindow.closed) {
-      printWindow.close();
-      document.title = title;
-      window.addEventListener("afterprint", restoreTitle, { once: true });
-      window.print();
-      window.setTimeout(restoreTitle, 0);
-      return;
-    }
-
-    const printDocument = printWindow.document;
-    printDocument.open();
-    printDocument.write("<!doctype html><html lang=\"en\"><head></head><body></body></html>");
-    printDocument.close();
-    printDocument.title = title;
-
-    const base = printDocument.createElement("base");
-    base.href = document.baseURI;
-    printDocument.head.append(base);
-    for (const node of document.head.querySelectorAll('meta[charset], meta[name="viewport"], link[rel="stylesheet"], style')) {
-      printDocument.head.append(printDocument.importNode(node, true));
-    }
-    const main = printDocument.createElement("main");
-    main.className = "results-view";
-    main.append(printDocument.importNode(report, true));
-    printDocument.body.replaceChildren(main);
-
-    const stylesReady = [...printDocument.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].map(link => {
-      if (link.sheet) return Promise.resolve();
-      return new Promise<void>(resolve => {
-        link.addEventListener("load", () => resolve(), { once: true });
-        link.addEventListener("error", () => resolve(), { once: true });
-      });
-    });
-    void Promise.all(stylesReady).then(async () => {
-      await printDocument.fonts.ready;
-      await new Promise<void>(resolve => printWindow.requestAnimationFrame(() => printWindow.requestAnimationFrame(() => resolve())));
-      if (printWindow.closed) return;
-      printWindow.addEventListener("afterprint", () => printWindow.close(), { once: true });
-      printWindow.focus();
-      printWindow.print();
-    });
-  }));
+  window.addEventListener("message", handlePrintPageReady);
+  printWindow = window.open(printUrl.toString(), "_blank", "popup,width=1200,height=800");
+  if (!printWindow) fallBackToCurrentDocument();
 }
 
 function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAccessRequired, aiAccessToken, onRetryAIConfig, onUnlockAI, onLockAI, onReset }: { run: RunRecord; candidates: Candidate[]; isExample: boolean; aiEnabled: boolean; aiConfigStatus: AIConfigStatus; aiAccessRequired: boolean; aiAccessToken: string; onRetryAIConfig: () => void; onUnlockAI: (token: string) => void; onLockAI: () => void; onReset: () => void }) {

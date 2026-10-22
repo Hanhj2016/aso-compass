@@ -176,7 +176,7 @@ test("full print report uses bounded independent candidate tables", async ({ pag
 test("embedded printing uses a standalone document with a report-specific title", async ({ page, context }) => {
   await context.addInitScript(() => { window.print = () => undefined; });
   await page.goto("/");
-  await page.setContent('<iframe title="Embedded ASO Compass" src="http://127.0.0.1:5173/" style="width:100%;height:900px;border:0"></iframe>');
+  await page.setContent('<iframe title="Embedded ASO Compass" sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts" src="http://127.0.0.1:5173/" style="position:fixed;inset:0;width:100vw;height:100vh;border:0"></iframe>');
   const app = page.frameLocator('iframe[title="Embedded ASO Compass"]');
   await app.getByRole("button", { name: /precomputed ALS example/i }).click();
   await expect(app.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();
@@ -184,7 +184,27 @@ test("embedded printing uses a standalone document with a report-specific title"
   const popupPromise = context.waitForEvent("page");
   await app.getByRole("button", { name: "Print full report" }).click();
   const printPage = await popupPromise;
+  await expect(printPage).toHaveURL(/\/print\.html\?/);
   await expect(printPage.locator('.print-report[data-print-mode="full"]')).toHaveCount(1);
   await expect(printPage).toHaveTitle("ASO-Compass_Amyotrophic-lateral-sclerosis-ALS_full-report_example-");
   await printPage.close();
+});
+
+test("embedded candidate evidence uses its own report-specific title", async ({ page, context }) => {
+  await context.addInitScript(() => { window.print = () => undefined; });
+  await page.goto("/");
+  await page.setContent('<iframe title="Embedded ASO Compass" sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts" src="http://127.0.0.1:5173/" style="position:fixed;inset:0;width:100vw;height:100vh;border:0"></iframe>');
+  const app = page.frameLocator('iframe[title="Embedded ASO Compass"]');
+  await app.getByRole("button", { name: /precomputed ALS example/i }).click();
+  await expect(app.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();
+  await app.getByRole("button", { name: "View evidence for SOD1" }).click();
+  const evidenceDialog = app.getByRole("dialog", { name: "SOD1" });
+  await expect(evidenceDialog).toBeVisible();
+  const evidencePopupPromise = context.waitForEvent("page");
+  await evidenceDialog.getByRole("button", { name: "Print evidence" }).click({ force: true });
+  const evidencePrintPage = await evidencePopupPromise;
+  await expect(evidencePrintPage).toHaveURL(/\/print\.html\?/);
+  await expect(evidencePrintPage.locator('.print-report[data-print-mode="candidate"]')).toHaveCount(1);
+  await expect(evidencePrintPage).toHaveTitle("ASO-Compass_Amyotrophic-lateral-sclerosis-ALS_SOD1_candidate-evidence_example-");
+  await evidencePrintPage.close();
 });
