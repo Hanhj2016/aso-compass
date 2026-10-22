@@ -48,7 +48,12 @@ The key metadata is:
 ```yaml
 sdk: static
 app_file: dist/index.html
+fullWidth: true
+header: default
 ```
+
+Use the default Hugging Face header so platform navigation stays above the application instead of appearing
+as a floating mini toolbar over application controls.
 
 Do not set `app_build_command` for this no-credit path. The Space repository is a generated deployment target;
 do not edit it manually or treat it as a second source repository.

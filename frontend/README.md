@@ -6,7 +6,7 @@ colorTo: yellow
 sdk: static
 app_file: dist/index.html
 fullWidth: true
-header: mini
+header: default
 short_description: Evidence-guided ASO target exploration and education
 tags:
   - biology
