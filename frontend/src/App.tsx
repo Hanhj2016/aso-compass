@@ -173,7 +173,7 @@ function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isE
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [maximized, setMaximized] = useState(false);
-  const embedded = window.self !== window.top;
+  const embedded = window.self !== window.top || window.location.hostname.endsWith(".hf.space");
   useEffect(() => {
     function handleEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
@@ -190,7 +190,7 @@ function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isE
     finally { setAiLoading(false); }
   }
   return <div className={`drawer-backdrop${maximized ? " drawer-maximized" : ""}${embedded ? " drawer-embedded" : ""}`} role="presentation" onMouseDown={onClose}><aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="gene-title" onMouseDown={(e) => e.stopPropagation()}>
-    <div className="drawer-actions"><button className="secondary-button candidate-print-button" type="button" onClick={onPrint}>Print evidence</button><button className="drawer-icon-button maximize" type="button" aria-label={maximized ? "Restore candidate evidence view" : "Maximize candidate evidence view"} aria-pressed={maximized} onClick={() => setMaximized(current => !current)}>{maximized ? "↙" : "↗"}</button><button className="drawer-icon-button close" onClick={onClose} aria-label="Close gene details">×</button></div>
+    <div className="drawer-actions"><button className="secondary-button candidate-print-button" type="button" onClick={onPrint}>Print evidence</button><button className="secondary-button drawer-size-button" type="button" aria-label={maximized ? "Restore candidate evidence view" : "Maximize candidate evidence view"} aria-pressed={maximized} onClick={() => setMaximized(current => !current)}><span aria-hidden="true">{maximized ? "↙" : "↗"}</span>{maximized ? "Restore" : "Maximize"}</button><button className="drawer-icon-button close" onClick={onClose} aria-label="Close gene details">×</button></div>
     <div className="drawer-content">
     <p className="eyebrow">Candidate evidence</p><h2 id="gene-title">{row.gene_symbol}</h2><p>{row.gene_name}</p>
     <span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span>
