@@ -20,15 +20,22 @@ test("guided form and offline evidence example are usable", async ({ page }) => 
 
   await page.getByRole("button", { name: /precomputed ALS example/i }).click();
   await expect(page.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();
-  await expect(page.getByText(/offline-ready example/i)).toBeVisible();
-  await expect(page.getByText(/AI questions are unavailable for the bundled example/i)).toBeVisible();
+  await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
+  const questionPanel = page.getByRole("heading", { name: /ask about this saved result/i }).locator("xpath=ancestor::section[1]");
+  await expect(
+    questionPanel.getByText(/(?:enter the shared AI access token above to ask questions|AI questions are currently off)/i),
+  ).toBeVisible();
   await page.getByRole("button", { name: "View evidence for SOD1" }).click();
   await expect(page.getByRole("dialog", { name: "SOD1" })).toBeVisible();
   await page.getByRole("button", { name: "Maximize candidate evidence view" }).click();
   await expect(page.locator(".drawer-backdrop")).toHaveClass(/drawer-maximized/);
   await page.getByRole("button", { name: "Restore candidate evidence view" }).click();
   await expect(page.locator(".drawer-backdrop")).not.toHaveClass(/drawer-maximized/);
-  await expect(page.getByText(/AI explanations are unavailable for the bundled example/i)).toBeVisible();
+  await expect(
+    page.getByRole("dialog", { name: "SOD1" }).getByText(
+      /(?:enter the shared AI access token in the results page to unlock explanations|AI explanations are currently off)/i,
+    ),
+  ).toBeVisible();
   await expect(page.getByText(/not for clinical decision-making/i).last()).toBeVisible();
 });
 
@@ -40,7 +47,7 @@ test("guided tutorial leads into the offline evidence example", async ({ page })
 
   await page.getByRole("button", { name: /open the guided ALS example/i }).first().click();
   await expect(page.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();
-  await expect(page.getByText(/offline-ready example/i)).toBeVisible();
+  await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
 });
 
 test("a failed scientific run offers a safe offline fallback", async ({ page }) => {
@@ -84,7 +91,7 @@ test("a failed scientific run offers a safe offline fallback", async ({ page }) 
   await expect(page.getByRole("heading", { name: /run could not be completed/i })).toBeVisible();
   await expect(page.getByText(/no negative inference/i)).toBeVisible();
   await page.getByRole("button", { name: /open the example instead/i }).click();
-  await expect(page.getByText(/offline-ready example/i)).toBeVisible();
+  await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
 });
 
 test("full print report uses bounded independent candidate tables", async ({ page }, testInfo) => {
