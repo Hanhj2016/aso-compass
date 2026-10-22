@@ -22,7 +22,19 @@ export function createRun(payload: Record<string, unknown>): Promise<RunRecord> 
 }
 
 export const getRun = (id: string) => request<RunRecord>(`/api/v1/runs/${id}`);
-export const getPublicConfig = () => request<PublicConfig>("/api/v1/config/public");
+export async function getPublicConfig(): Promise<PublicConfig> {
+  const retryDelays = [0, 1_000, 2_500, 5_000, 10_000, 20_000];
+  let lastError: unknown;
+  for (const delay of retryDelays) {
+    if (delay) await new Promise(resolve => window.setTimeout(resolve, delay));
+    try {
+      return await request<PublicConfig>("/api/v1/config/public");
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("The API configuration is unavailable.");
+}
 export const getEvents = (id: string) => request<RunEvent[]>(`/api/v1/runs/${id}/events`);
 export async function getCandidates(id: string): Promise<Candidate[]> {
   const candidates: Candidate[] = [];

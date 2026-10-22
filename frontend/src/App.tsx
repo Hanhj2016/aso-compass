@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { askSavedEvidenceQuestion, compareCandidates, createRun, explainCandidate, exportUrl, getCandidates, getEvents, getPublicConfig, getRun, summarizeRun } from "./api";
 import CandidatePrintReport from "./CandidatePrintReport";
 import Learn from "./Learn";
@@ -8,6 +8,7 @@ import type { AIQuestionAnswer, Candidate, CandidateComparison, CandidateExplana
 
 const DISCLAIMER = "For hypothesis generation and education only. Not for clinical decision-making.";
 const AI_ACCESS_STORAGE_KEY = "aso-compass-ai-access-token";
+type AIConfigStatus = "loading" | "ready" | "error";
 const PRESETS = [
   ["MONDO_0004976", "Amyotrophic lateral sclerosis (ALS)"],
   ["MONDO_0004975", "Alzheimer disease"],
@@ -168,7 +169,7 @@ function AIAccessControl({ enabled, required, accessToken, onUnlock, onLock }: {
   </section>;
 }
 
-function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isExample, explanation, onExplanationChange, onPrint, onClose }: { row: Candidate; runId: string; aiEnabled: boolean; accessLocked: boolean; accessToken: string; isExample: boolean; explanation: CandidateExplanation | null; onExplanationChange: (explanation: CandidateExplanation) => void; onPrint: (explanation: CandidateExplanation | null) => void; onClose: () => void }) {
+function CandidateDrawer({ row, runId, aiEnabled, aiConfigStatus, accessLocked, accessToken, isExample, explanation, onExplanationChange, onPrint, onClose }: { row: Candidate; runId: string; aiEnabled: boolean; aiConfigStatus: AIConfigStatus; accessLocked: boolean; accessToken: string; isExample: boolean; explanation: CandidateExplanation | null; onExplanationChange: (explanation: CandidateExplanation) => void; onPrint: (explanation: CandidateExplanation | null) => void; onClose: () => void }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [maximized, setMaximized] = useState(false);
@@ -199,7 +200,7 @@ function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isE
     {(row.flag || row.evidence_truncated) && <p className="notice"><b>Review flag:</b> {row.flag || "Variant evidence was capped and may be incomplete."}</p>}
     <section className="source-links"><h3>Primary records</h3><a href={`https://platform.opentargets.org/target/${row.ensembl_id}`} target="_blank" rel="noreferrer">Open Targets ↗</a>{row.aso_trial_ids.split(", ").filter(Boolean).map(id => <a key={id} href={`https://clinicaltrials.gov/study/${id}`} target="_blank" rel="noreferrer">{id} ↗</a>)}</section>
     <section className="ai-panel" aria-labelledby="ai-explanation-title"><div className="ai-heading"><h3 id="ai-explanation-title"><AIIcon/>AI evidence explainer</h3><span><AIIcon size={11}/>Generated · optional</span></div>
-      {!aiEnabled && <p>{accessLocked ? "Enter the shared AI access token in the results page to unlock explanations." : "AI explanations are currently off. Deterministic results remain fully available."}</p>}
+      {!aiEnabled && <p>{aiConfigStatus !== "ready" ? "Connecting to the AI service configuration…" : accessLocked ? "Enter the shared AI access token in the results page to unlock explanations." : "AI explanations are currently off. Deterministic results remain fully available."}</p>}
       {aiEnabled && !explanation && <><p>Generate a plain-language explanation from this saved evidence only. The explanation cannot change the classification or rank.</p><button className="secondary-button ai-button" onClick={() => void requestExplanation()} disabled={aiLoading}><AIIcon/>{aiLoading ? "Generating…" : "Explain saved evidence"}</button></>}
       {aiError && <p className="ai-error" role="alert">{aiError}</p>}
       {explanation && <div className="ai-output"><p className="ai-summary">{explanation.output.summary}</p>
@@ -217,7 +218,7 @@ function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isE
   </aside></div>;
 }
 
-function AIQuestionPanel({ runId, candidates, enabled, accessLocked, accessToken, isExample }: { runId: string; candidates: Candidate[]; enabled: boolean; accessLocked: boolean; accessToken: string; isExample: boolean }) {
+function AIQuestionPanel({ runId, candidates, enabled, aiConfigStatus, accessLocked, accessToken, isExample }: { runId: string; candidates: Candidate[]; enabled: boolean; aiConfigStatus: AIConfigStatus; accessLocked: boolean; accessToken: string; isExample: boolean }) {
   const [question, setQuestion] = useState("");
   const [geneSymbols, setGeneSymbols] = useState<string[]>([]);
   const [answer, setAnswer] = useState<AIQuestionAnswer | null>(null);
@@ -244,7 +245,7 @@ function AIQuestionPanel({ runId, candidates, enabled, accessLocked, accessToken
 
   return <section className={`ai-panel qa-panel${answer ? " has-print-answer" : ""}`} aria-labelledby="qa-title">
     <div className="ai-heading"><div><p className="eyebrow">Guarded questions</p><h2 id="qa-title"><AIIcon size={19}/>Ask about this saved result</h2></div><span><AIIcon size={11}/>Generated · evidence only</span></div>
-    {!enabled && <p>{accessLocked ? "Enter the shared AI access token above to ask questions about saved evidence." : "AI questions are currently off. Deterministic results remain fully available."}</p>}
+    {!enabled && <p>{aiConfigStatus !== "ready" ? "Connecting to the AI service configuration…" : accessLocked ? "Enter the shared AI access token above to ask questions about saved evidence." : "AI questions are currently off. Deterministic results remain fully available."}</p>}
     {enabled && <>
       <p className="qa-intro">Ask about run warnings, classifications, scores, evidence gaps, or therapeutic precedent. Answers use only this saved run and cannot change its classifications or rank.</p>
       <form className="qa-form" onSubmit={(event) => void submitQuestion(event)}>
@@ -305,7 +306,7 @@ function compareNullable(a: number | string | null, b: number | string | null, d
   return direction === "asc" ? comparison : -comparison;
 }
 
-function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAccessToken, onUnlockAI, onLockAI, onReset }: { run: RunRecord; candidates: Candidate[]; isExample: boolean; aiEnabled: boolean; aiAccessRequired: boolean; aiAccessToken: string; onUnlockAI: (token: string) => void; onLockAI: () => void; onReset: () => void }) {
+function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAccessRequired, aiAccessToken, onRetryAIConfig, onUnlockAI, onLockAI, onReset }: { run: RunRecord; candidates: Candidate[]; isExample: boolean; aiEnabled: boolean; aiConfigStatus: AIConfigStatus; aiAccessRequired: boolean; aiAccessToken: string; onRetryAIConfig: () => void; onUnlockAI: (token: string) => void; onLockAI: () => void; onReset: () => void }) {
   const [query, setQuery] = useState(""); const [track, setTrack] = useState("all");
   const [researchView, setResearchView] = useState<ResearchView>("all");
   const [precedentFilter, setPrecedentFilter] = useState<PrecedentFilter>("all");
@@ -389,9 +390,10 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
     {isExample && <p className="example-banner"><b>Offline-ready deterministic example.</b> These versioned results are illustrative and do not refresh with current sources. Optional AI interpretation requires the API and an unlocked access token.</p>}
     {[...new Set(run.warnings.map(normalizeRunWarning))].map((warning) => <p className="notice" key={warning}>{warning}</p>)}
     <div className="metrics"><Metric label="Candidates" value={candidates.length} detail="Passed association filters"/><Metric label="Priority shortlist" value={shortlistCount} detail="Retained by configured shortlist rules"/><Metric label="Evidence capped" value={capped} detail={capped ? "Manual review required" : "No truncated gene records"}/><Metric label="ASO precedent" value={candidates.filter(row => row.aso_precedent).length} detail="Drug or trial source match"/></div>
+    {aiConfigStatus !== "ready" && <section className="ai-access-panel" aria-labelledby="ai-connection-title"><div><p className="eyebrow">AI service connection</p><h2 id="ai-connection-title"><AIIcon size={19}/>{aiConfigStatus === "loading" ? "Connecting to AI configuration" : "AI configuration is temporarily unavailable"}</h2><p>{aiConfigStatus === "loading" ? "The API may be waking from an idle state. Deterministic results remain available while the app retries." : "The configuration request did not complete. Retry without reloading the evidence example."}</p></div><button className="secondary-button" type="button" onClick={onRetryAIConfig}>Retry now</button></section>}
     <AIAccessControl enabled={aiEnabled} required={aiAccessRequired} accessToken={aiAccessToken} onUnlock={onUnlockAI} onLock={onLockAI}/>
     <section className={`ai-panel run-summary-panel${runSummary ? " has-print-content" : ""}`} aria-labelledby="run-summary-title"><div className="ai-heading"><div><p className="eyebrow">Optional interpretation</p><h2 id="run-summary-title"><AIIcon size={19}/>AI run summary</h2></div><span><AIIcon size={11}/>Generated · evidence only</span></div>
-      {!aiAvailable && <p>{accessLocked ? "Enter the shared AI access token above to unlock summaries." : "AI summaries are currently off. Deterministic results remain fully available."}</p>}
+      {!aiAvailable && <p>{aiConfigStatus !== "ready" ? "Connecting to the AI service configuration…" : accessLocked ? "Enter the shared AI access token above to unlock summaries." : "AI summaries are currently off. Deterministic results remain fully available."}</p>}
       {aiAvailable && !runSummary && <div className="run-summary-intro"><p>Summarize saved track counts, evidence gaps, warnings, and review priorities. The summary cannot change classifications, scores, or shortlist order.</p><button className="secondary-button" onClick={() => void requestRunSummary()} disabled={summaryLoading}><AIIcon/>{summaryLoading ? "Generating summary…" : "Summarize this run"}</button></div>}
       {summaryError && <p className="ai-error" role="alert">{summaryError}</p>}
       {runSummary && <div className="ai-output run-summary-output"><p className="ai-summary">{runSummary.output.overview}</p>
@@ -402,7 +404,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
         <p className="ai-meta">{runSummary.cached ? "Reused identical-input cache" : "New summary"} · {runSummary.model} · sources validated server-side</p><p className="drawer-disclaimer">{runSummary.research_use_disclaimer}</p>
       </div>}
     </section>
-    <AIQuestionPanel runId={run.id} candidates={candidates} enabled={aiAvailable} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample}/>
+    <AIQuestionPanel runId={run.id} candidates={candidates} enabled={aiAvailable} aiConfigStatus={aiConfigStatus} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample}/>
     <div className="visual-grid"><article className="panel"><div className="panel-title"><div><p className="eyebrow">Mechanism landscape</p><h2>Candidate tracks</h2></div><span>{candidates.length} genes</span></div><div className="track-bars">{TRACKS.slice(1).map(name => <button key={name} onClick={() => setTrack(name)}><span>{TRACK_LABEL[name]}</span><i><em className={`track-${name.replace(/[^a-z]/g, "-")}`} style={{ width: `${Math.max(3, ((counts[name] ?? 0) / candidates.length) * 100)}%` }} /></i><b>{counts[name] ?? 0}</b></button>)}</div></article><article className="panel"><div className="panel-title"><div><p className="eyebrow">Association landscape</p><h2>Evidence scores</h2></div><span>Click a point</span></div><ScorePlot candidates={candidates} onSelect={setSelected}/></article></div>
     <article className="table-panel"><div className="table-tools"><div><p className="eyebrow">Candidate explorer</p><h2>Trace every classification</h2></div><div className="filters">
       <label><span>Research view</span><select aria-label="Research view" value={researchView} onChange={(e) => { setResearchView(e.target.value as ResearchView); setPage(1); }}><option value="all">All evidence</option><option value="shortlist">Saved priority shortlist</option><option value="novel">Novel-target discovery</option><option value="translational">Translational precedent</option></select></label>
@@ -426,7 +428,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
       <div className="run-summary-columns"><div><h4>Limitations</h4><ul>{comparison.output.limitations.map(item => <li key={item}>{item}</li>)}</ul></div><div><h4>What this does not mean</h4><ul>{comparison.output.what_this_does_not_mean.map(item => <li key={item}>{item}</li>)}</ul></div></div>
       <p className="ai-meta">{comparison.cached ? "Reused identical-input cache" : "New comparison"} · {comparison.model} · selected candidates and sources validated server-side</p><p className="drawer-disclaimer">{comparison.research_use_disclaimer}</p>
     </div></section>}
-    <Glossary />{selected && <CandidateDrawer key={selected.ensembl_id} row={selected} runId={run.id} aiEnabled={aiAvailable} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample} explanation={candidateExplanations[selected.ensembl_id] ?? null} onExplanationChange={(explanation) => setCandidateExplanations(current => ({ ...current, [selected.ensembl_id]: explanation }))} onPrint={printCandidate} onClose={() => setSelected(null)}/>}<p className="persistent-disclaimer">{DISCLAIMER}</p>
+    <Glossary />{selected && <CandidateDrawer key={selected.ensembl_id} row={selected} runId={run.id} aiEnabled={aiAvailable} aiConfigStatus={aiConfigStatus} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample} explanation={candidateExplanations[selected.ensembl_id] ?? null} onExplanationChange={(explanation) => setCandidateExplanations(current => ({ ...current, [selected.ensembl_id]: explanation }))} onPrint={printCandidate} onClose={() => setSelected(null)}/>}<p className="persistent-disclaimer">{DISCLAIMER}</p>
   </section>;
 }
 
@@ -441,25 +443,41 @@ export default function App() {
   const [candidates, setCandidates] = useState<Candidate[]>([]); const [example, setExample] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiAccessRequired, setAiAccessRequired] = useState(false);
+  const [aiConfigStatus, setAiConfigStatus] = useState<AIConfigStatus>("loading");
   const [aiAccessToken, setAiAccessToken] = useState(() => sessionStorage.getItem(AI_ACCESS_STORAGE_KEY) ?? "");
   const runId = run?.id;
   const runStatus = run?.status;
 
-  useEffect(() => {
-    void getPublicConfig().then(config => { setAiEnabled(config.ai_enabled); setAiAccessRequired(config.ai_access_required ?? false); }).catch(() => { setAiEnabled(false); setAiAccessRequired(false); });
-    const saved = localStorage.getItem("aso-compass-run");
-    if (!saved) return;
-    void (async () => {
-      try {
-        const restored = await getRun(saved);
-        setRun(restored);
-        setEvents(await getEvents(saved));
-        if (restored.status === "succeeded") setCandidates(await getCandidates(saved));
-      } catch {
-        localStorage.removeItem("aso-compass-run");
-      }
-    })();
+  const refreshAIConfig = useCallback(async () => {
+    try {
+      const config = await getPublicConfig();
+      setAiEnabled(config.ai_enabled);
+      setAiAccessRequired(config.ai_access_required ?? false);
+      setAiConfigStatus("ready");
+    } catch {
+      setAiEnabled(false);
+      setAiAccessRequired(false);
+      setAiConfigStatus("error");
+    }
   }, []);
+
+  useEffect(() => {
+    const configTimer = window.setTimeout(() => void refreshAIConfig(), 0);
+    const saved = localStorage.getItem("aso-compass-run");
+    if (saved) {
+      void (async () => {
+        try {
+          const restored = await getRun(saved);
+          setRun(restored);
+          setEvents(await getEvents(saved));
+          if (restored.status === "succeeded") setCandidates(await getCandidates(saved));
+        } catch {
+          localStorage.removeItem("aso-compass-run");
+        }
+      })();
+    }
+    return () => window.clearTimeout(configTimer);
+  }, [refreshAIConfig]);
 
   useEffect(() => { if (!runId || !runStatus || example || !["queued", "running"].includes(runStatus)) return;
     const poll = async () => { try { const [next, nextEvents] = await Promise.all([getRun(runId), getEvents(runId)]); setRun(next); setEvents(nextEvents); if (next.status === "succeeded") setCandidates(await getCandidates(next.id)); } catch { /* transient cold start */ } };
@@ -470,9 +488,10 @@ export default function App() {
   function reset() { setRun(null); setCandidates([]); setEvents([]); setExample(false); localStorage.removeItem("aso-compass-run"); }
   function unlockAI(token: string) { sessionStorage.setItem(AI_ACCESS_STORAGE_KEY, token); setAiAccessToken(token); }
   function lockAI() { sessionStorage.removeItem(AI_ACCESS_STORAGE_KEY); setAiAccessToken(""); }
+  function retryAIConfig() { setAiConfigStatus("loading"); void refreshAIConfig(); }
   let content = <RunForm onCreated={(created) => { setRun(created); setExample(false); }} onExample={() => void loadExample()} />;
   if (run && ["queued", "running"].includes(run.status)) content = <Progress run={run} events={events} onReset={reset}/>;
-  if (run?.status === "succeeded" && candidates.length) content = <Results run={run} candidates={candidates} isExample={example} aiEnabled={aiEnabled} aiAccessRequired={aiAccessRequired} aiAccessToken={aiAccessToken} onUnlockAI={unlockAI} onLockAI={lockAI} onReset={reset}/>;
+  if (run?.status === "succeeded" && candidates.length) content = <Results run={run} candidates={candidates} isExample={example} aiEnabled={aiEnabled} aiConfigStatus={aiConfigStatus} aiAccessRequired={aiAccessRequired} aiAccessToken={aiAccessToken} onRetryAIConfig={retryAIConfig} onUnlockAI={unlockAI} onLockAI={lockAI} onReset={reset}/>;
   if (run?.status === "failed") content = <section className="progress-view"><p className="eyebrow">Analysis stopped</p><h1>The run could not be completed.</h1><p>{run.error_message}</p><button className="primary-button compact" onClick={reset}>Start again</button><button className="text-button" onClick={() => void loadExample()}>Open the example instead →</button></section>;
   return <><Header view={view} onView={setView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
 }

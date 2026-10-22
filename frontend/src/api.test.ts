@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.resetModules();
   delete window.huggingface;
@@ -16,6 +17,28 @@ describe("API deployment configuration", () => {
     const { API_BASE } = await import("./api");
 
     expect(API_BASE).toBe("https://aso-compass-api.onrender.com");
+  });
+
+  it("retries a transient configuration failure before disabling AI", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test");
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValueOnce(new TypeError("temporary network failure"))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ai_enabled: true, ai_access_required: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    const { getPublicConfig } = await import("./api");
+
+    const configPromise = getPublicConfig();
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    await expect(configPromise).resolves.toMatchObject({ ai_enabled: true, ai_access_required: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
   });
 });
 
