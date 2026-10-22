@@ -168,8 +168,7 @@ function AIAccessControl({ enabled, required, accessToken, onUnlock, onLock }: {
   </section>;
 }
 
-function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isExample, onPrint, onClose }: { row: Candidate; runId: string; aiEnabled: boolean; accessLocked: boolean; accessToken: string; isExample: boolean; onPrint: (explanation: CandidateExplanation | null) => void; onClose: () => void }) {
-  const [explanation, setExplanation] = useState<CandidateExplanation | null>(null);
+function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isExample, explanation, onExplanationChange, onPrint, onClose }: { row: Candidate; runId: string; aiEnabled: boolean; accessLocked: boolean; accessToken: string; isExample: boolean; explanation: CandidateExplanation | null; onExplanationChange: (explanation: CandidateExplanation) => void; onPrint: (explanation: CandidateExplanation | null) => void; onClose: () => void }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [maximized, setMaximized] = useState(false);
@@ -184,7 +183,7 @@ function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isE
   }, [maximized, onClose]);
   async function requestExplanation() {
     setAiLoading(true); setAiError("");
-    try { setExplanation(await explainCandidate(runId, row.gene_symbol, accessToken)); }
+    try { onExplanationChange(await explainCandidate(runId, row.gene_symbol, accessToken)); }
     catch (error) { setAiError(error instanceof Error ? error.message : "The explanation could not be generated."); }
     finally { setAiLoading(false); }
   }
@@ -317,6 +316,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
   const [pageSize, setPageSize] = useState(25);
   const [printMode, setPrintMode] = useState<PrintMode | "candidate">("summary");
   const [candidatePrintExplanation, setCandidatePrintExplanation] = useState<CandidateExplanation | null>(null);
+  const [candidateExplanations, setCandidateExplanations] = useState<Record<string, CandidateExplanation>>({});
   const [reportGeneratedAt, setReportGeneratedAt] = useState(() => new Date().toISOString());
   const [runSummary, setRunSummary] = useState<RunSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -426,7 +426,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
       <div className="run-summary-columns"><div><h4>Limitations</h4><ul>{comparison.output.limitations.map(item => <li key={item}>{item}</li>)}</ul></div><div><h4>What this does not mean</h4><ul>{comparison.output.what_this_does_not_mean.map(item => <li key={item}>{item}</li>)}</ul></div></div>
       <p className="ai-meta">{comparison.cached ? "Reused identical-input cache" : "New comparison"} · {comparison.model} · selected candidates and sources validated server-side</p><p className="drawer-disclaimer">{comparison.research_use_disclaimer}</p>
     </div></section>}
-    <Glossary />{selected && <CandidateDrawer key={selected.ensembl_id} row={selected} runId={run.id} aiEnabled={aiAvailable} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample} onPrint={printCandidate} onClose={() => setSelected(null)}/>}<p className="persistent-disclaimer">{DISCLAIMER}</p>
+    <Glossary />{selected && <CandidateDrawer key={selected.ensembl_id} row={selected} runId={run.id} aiEnabled={aiAvailable} accessLocked={accessLocked} accessToken={aiAccessToken} isExample={isExample} explanation={candidateExplanations[selected.ensembl_id] ?? null} onExplanationChange={(explanation) => setCandidateExplanations(current => ({ ...current, [selected.ensembl_id]: explanation }))} onPrint={printCandidate} onClose={() => setSelected(null)}/>}<p className="persistent-disclaimer">{DISCLAIMER}</p>
   </section>;
 }
 

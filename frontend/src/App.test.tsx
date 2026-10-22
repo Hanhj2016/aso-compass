@@ -169,6 +169,12 @@ describe("ASO Compass", () => {
     expect(document.querySelector('[data-report-section="candidate-ai-explanation"]')).toHaveTextContent("Optional AI appendix");
     expect(document.querySelector('[data-report-section="candidate-ai-explanation"]')).toHaveTextContent("candidate:ENSG1");
     await user.click(screen.getByRole("button", { name: "Close gene details" }));
+    await user.click(screen.getByRole("button", { name: "View evidence for GENEA" }));
+    expect(screen.getByRole("button", { name: "Print evidence + AI" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Print evidence + AI" }));
+    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(5));
+    expect(document.querySelector('[data-report-section="candidate-ai-explanation"]')).toHaveTextContent("GENEA is a modifier based on the saved evidence.");
+    await user.click(screen.getByRole("button", { name: "Close gene details" }));
 
     await user.click(await screen.findByRole("checkbox", { name: "Select GENEA for comparison" }));
     await user.click(screen.getByRole("checkbox", { name: "Select GENEB for comparison" }));
