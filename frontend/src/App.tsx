@@ -183,7 +183,7 @@ function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isE
   }, [maximized, onClose]);
   async function requestExplanation() {
     setAiLoading(true); setAiError("");
-    try { onExplanationChange(await explainCandidate(runId, row.gene_symbol, accessToken)); }
+    try { onExplanationChange(await explainCandidate(runId, row.gene_symbol, accessToken, isExample)); }
     catch (error) { setAiError(error instanceof Error ? error.message : "The explanation could not be generated."); }
     finally { setAiLoading(false); }
   }
@@ -199,7 +199,7 @@ function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isE
     {(row.flag || row.evidence_truncated) && <p className="notice"><b>Review flag:</b> {row.flag || "Variant evidence was capped and may be incomplete."}</p>}
     <section className="source-links"><h3>Primary records</h3><a href={`https://platform.opentargets.org/target/${row.ensembl_id}`} target="_blank" rel="noreferrer">Open Targets ↗</a>{row.aso_trial_ids.split(", ").filter(Boolean).map(id => <a key={id} href={`https://clinicaltrials.gov/study/${id}`} target="_blank" rel="noreferrer">{id} ↗</a>)}</section>
     <section className="ai-panel" aria-labelledby="ai-explanation-title"><div className="ai-heading"><h3 id="ai-explanation-title"><AIIcon/>AI evidence explainer</h3><span><AIIcon size={11}/>Generated · optional</span></div>
-      {!aiEnabled && <p>{isExample ? "AI explanations are unavailable for the bundled example." : accessLocked ? "Enter the shared AI access token in the results page to unlock explanations." : "AI explanations are currently off. Deterministic results remain fully available."}</p>}
+      {!aiEnabled && <p>{accessLocked ? "Enter the shared AI access token in the results page to unlock explanations." : "AI explanations are currently off. Deterministic results remain fully available."}</p>}
       {aiEnabled && !explanation && <><p>Generate a plain-language explanation from this saved evidence only. The explanation cannot change the classification or rank.</p><button className="secondary-button ai-button" onClick={() => void requestExplanation()} disabled={aiLoading}><AIIcon/>{aiLoading ? "Generating…" : "Explain saved evidence"}</button></>}
       {aiError && <p className="ai-error" role="alert">{aiError}</p>}
       {explanation && <div className="ai-output"><p className="ai-summary">{explanation.output.summary}</p>
@@ -237,14 +237,14 @@ function AIQuestionPanel({ runId, candidates, enabled, accessLocked, accessToken
     const normalized = question.trim();
     if (!normalized) return;
     setLoading(true); setError(""); setAnswer(null);
-    try { setAnswer(await askSavedEvidenceQuestion(runId, normalized, geneSymbols, accessToken)); }
+    try { setAnswer(await askSavedEvidenceQuestion(runId, normalized, geneSymbols, accessToken, isExample)); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "The saved-evidence question could not be answered."); }
     finally { setLoading(false); }
   }
 
   return <section className={`ai-panel qa-panel${answer ? " has-print-answer" : ""}`} aria-labelledby="qa-title">
     <div className="ai-heading"><div><p className="eyebrow">Guarded questions</p><h2 id="qa-title"><AIIcon size={19}/>Ask about this saved result</h2></div><span><AIIcon size={11}/>Generated · evidence only</span></div>
-    {!enabled && <p>{isExample ? "AI questions are unavailable for the bundled example." : accessLocked ? "Enter the shared AI access token above to ask questions about saved evidence." : "AI questions are currently off. Deterministic results remain fully available."}</p>}
+    {!enabled && <p>{accessLocked ? "Enter the shared AI access token above to ask questions about saved evidence." : "AI questions are currently off. Deterministic results remain fully available."}</p>}
     {enabled && <>
       <p className="qa-intro">Ask about run warnings, classifications, scores, evidence gaps, or therapeutic precedent. Answers use only this saved run and cannot change its classifications or rank.</p>
       <form className="qa-form" onSubmit={(event) => void submitQuestion(event)}>
@@ -326,7 +326,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [comparisonError, setComparisonError] = useState("");
   const accessLocked = aiEnabled && aiAccessRequired && !aiAccessToken;
-  const aiAvailable = aiEnabled && !isExample && !accessLocked;
+  const aiAvailable = aiEnabled && !accessLocked;
   const counts = useMemo(() => Object.fromEntries(TRACKS.slice(1).map(name => [name, candidates.filter(row => row.final_call === name).length])), [candidates]);
   const filtered = useMemo(() => candidates.filter(row => {
     const inView = researchView === "all"
@@ -354,7 +354,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
   const capped = candidates.filter(row => row.evidence_truncated).length;
   async function requestRunSummary() {
     setSummaryLoading(true); setSummaryError("");
-    try { setRunSummary(await summarizeRun(run.id, aiAccessToken)); }
+    try { setRunSummary(await summarizeRun(run.id, aiAccessToken, isExample)); }
     catch (error) { setSummaryError(error instanceof Error ? error.message : "The run summary could not be generated."); }
     finally { setSummaryLoading(false); }
   }
@@ -365,7 +365,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
   async function requestComparison() {
     if (comparisonSelection.length < 2 || comparisonSelection.length > 3) return;
     setComparisonLoading(true); setComparisonError("");
-    try { setComparison(await compareCandidates(run.id, comparisonSelection, aiAccessToken)); }
+    try { setComparison(await compareCandidates(run.id, comparisonSelection, aiAccessToken, isExample)); }
     catch (error) { setComparisonError(error instanceof Error ? error.message : "The candidate comparison could not be generated."); }
     finally { setComparisonLoading(false); }
   }
@@ -386,12 +386,12 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
       ? <CandidatePrintReport run={run} candidate={selected} explanation={candidatePrintExplanation} generatedAt={reportGeneratedAt}/>
       : <PrintReport run={run} candidates={candidates} mode={printMode === "candidate" ? "summary" : printMode} generatedAt={reportGeneratedAt}/>}
     <div className="results-header"><div><p className="eyebrow">{isExample ? "Precomputed example" : "Completed analysis"}</p><h1>{run.disease_label ?? run.disease_id}</h1><p>{run.disease_id} · Engine {run.engine_version} · Open Targets {String(run.upstream_metadata.open_targets_release ?? "release unknown")}</p></div><div className="header-actions"><button className="secondary-button print-report-button" type="button" onClick={() => printReport("summary")}>Print summary</button><button className="secondary-button print-report-button" type="button" onClick={() => printReport("full")}>Print full report</button>{!isExample && <><a className="secondary-button" href={exportUrl(run.id, "csv")}>Export CSV</a><a className="secondary-button" href={exportUrl(run.id, "json")}>Export JSON</a></>}<button className="primary-button compact" onClick={onReset}>New analysis</button></div></div>
-    {isExample && <p className="example-banner"><b>Offline-ready example.</b> These versioned results are illustrative and do not refresh with current sources.</p>}
+    {isExample && <p className="example-banner"><b>Offline-ready deterministic example.</b> These versioned results are illustrative and do not refresh with current sources. Optional AI interpretation requires the API and an unlocked access token.</p>}
     {[...new Set(run.warnings.map(normalizeRunWarning))].map((warning) => <p className="notice" key={warning}>{warning}</p>)}
     <div className="metrics"><Metric label="Candidates" value={candidates.length} detail="Passed association filters"/><Metric label="Priority shortlist" value={shortlistCount} detail="Retained by configured shortlist rules"/><Metric label="Evidence capped" value={capped} detail={capped ? "Manual review required" : "No truncated gene records"}/><Metric label="ASO precedent" value={candidates.filter(row => row.aso_precedent).length} detail="Drug or trial source match"/></div>
-    {!isExample && <AIAccessControl enabled={aiEnabled} required={aiAccessRequired} accessToken={aiAccessToken} onUnlock={onUnlockAI} onLock={onLockAI}/>}
+    <AIAccessControl enabled={aiEnabled} required={aiAccessRequired} accessToken={aiAccessToken} onUnlock={onUnlockAI} onLock={onLockAI}/>
     <section className={`ai-panel run-summary-panel${runSummary ? " has-print-content" : ""}`} aria-labelledby="run-summary-title"><div className="ai-heading"><div><p className="eyebrow">Optional interpretation</p><h2 id="run-summary-title"><AIIcon size={19}/>AI run summary</h2></div><span><AIIcon size={11}/>Generated · evidence only</span></div>
-      {!aiAvailable && <p>{isExample ? "AI summaries are unavailable for the bundled example." : accessLocked ? "Enter the shared AI access token above to unlock summaries." : "AI summaries are currently off. Deterministic results remain fully available."}</p>}
+      {!aiAvailable && <p>{accessLocked ? "Enter the shared AI access token above to unlock summaries." : "AI summaries are currently off. Deterministic results remain fully available."}</p>}
       {aiAvailable && !runSummary && <div className="run-summary-intro"><p>Summarize saved track counts, evidence gaps, warnings, and review priorities. The summary cannot change classifications, scores, or shortlist order.</p><button className="secondary-button" onClick={() => void requestRunSummary()} disabled={summaryLoading}><AIIcon/>{summaryLoading ? "Generating summary…" : "Summarize this run"}</button></div>}
       {summaryError && <p className="ai-error" role="alert">{summaryError}</p>}
       {runSummary && <div className="ai-output run-summary-output"><p className="ai-summary">{runSummary.output.overview}</p>

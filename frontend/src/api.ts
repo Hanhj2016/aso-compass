@@ -38,14 +38,16 @@ const aiHeaders = (accessToken: string, includeJson = false): HeadersInit => ({
   ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
 });
 
-export const explainCandidate = (runId: string, geneSymbol: string, accessToken: string) => request<CandidateExplanation>(`/api/v1/runs/${runId}/candidates/${encodeURIComponent(geneSymbol)}/ai-explanation`, { method: "POST", headers: aiHeaders(accessToken) });
-export const summarizeRun = (runId: string, accessToken: string) => request<RunSummary>(`/api/v1/runs/${runId}/ai-summary`, { method: "POST", headers: aiHeaders(accessToken) });
-export const compareCandidates = (runId: string, geneSymbols: string[], accessToken: string) => request<CandidateComparison>(`/api/v1/runs/${runId}/ai-compare`, {
+const aiResource = (runId: string, isExample: boolean) => `/api/v1/${isExample ? "examples" : "runs"}/${runId}`;
+
+export const explainCandidate = (runId: string, geneSymbol: string, accessToken: string, isExample = false) => request<CandidateExplanation>(`${aiResource(runId, isExample)}/candidates/${encodeURIComponent(geneSymbol)}/ai-explanation`, { method: "POST", headers: aiHeaders(accessToken) });
+export const summarizeRun = (runId: string, accessToken: string, isExample = false) => request<RunSummary>(`${aiResource(runId, isExample)}/ai-summary`, { method: "POST", headers: aiHeaders(accessToken) });
+export const compareCandidates = (runId: string, geneSymbols: string[], accessToken: string, isExample = false) => request<CandidateComparison>(`${aiResource(runId, isExample)}/ai-compare`, {
   method: "POST",
   headers: aiHeaders(accessToken, true),
   body: JSON.stringify({ gene_symbols: geneSymbols }),
 });
-export const askSavedEvidenceQuestion = (runId: string, question: string, geneSymbols: string[], accessToken: string) => request<AIQuestionAnswer>(`/api/v1/runs/${runId}/ai-question`, {
+export const askSavedEvidenceQuestion = (runId: string, question: string, geneSymbols: string[], accessToken: string, isExample = false) => request<AIQuestionAnswer>(`${aiResource(runId, isExample)}/ai-question`, {
   method: "POST",
   headers: aiHeaders(accessToken, true),
   body: JSON.stringify({ question, gene_symbols: geneSymbols }),

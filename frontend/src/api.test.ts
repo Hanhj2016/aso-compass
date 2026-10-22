@@ -47,3 +47,22 @@ describe("candidate retrieval", () => {
     fetchMock.mockRestore();
   });
 });
+
+describe("offline example AI routing", () => {
+  it("uses the allow-listed example endpoint and keeps the bearer token server-bound", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ output: {} }), { status: 200 }),
+    );
+    const { explainCandidate } = await import("./api");
+
+    await explainCandidate("example-als-2026-10", "TARDBP", "shared-token", true);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/api/v1/examples/example-als-2026-10/candidates/TARDBP/ai-explanation",
+      expect.objectContaining({ method: "POST" }),
+    );
+    const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
+    expect(headers.get("Authorization")).toBe("Bearer shared-token");
+  });
+});

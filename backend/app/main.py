@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
+from app.api.example_ai_routes import router as example_ai_router
 from app.api.routes import router
 from app.core.settings import get_settings
 from app.db.session import engine
@@ -74,3 +75,4 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(example_ai_router)
