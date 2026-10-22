@@ -32,6 +32,9 @@ printed report unclear.
    classification, scores, mechanism and variant evidence, therapeutic precedent, primary-record URLs,
    completeness indicators, run provenance, and research-use disclaimer. Optional AI explanations are
    excluded from this report.
+10. The interactive candidate-evidence drawer can expand to the full application viewport and restore to
+    its split-pane width without changing the saved record or its print representation. Embedded-space
+    spacing keeps drawer actions below the hosting toolbar.
 
 ## Consequences
 

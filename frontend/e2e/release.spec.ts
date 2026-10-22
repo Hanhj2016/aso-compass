@@ -24,6 +24,10 @@ test("guided form and offline evidence example are usable", async ({ page }) => 
   await expect(page.getByText(/AI questions are unavailable for the bundled example/i)).toBeVisible();
   await page.getByRole("button", { name: "View evidence for SOD1" }).click();
   await expect(page.getByRole("dialog", { name: "SOD1" })).toBeVisible();
+  await page.getByRole("button", { name: "Maximize candidate evidence view" }).click();
+  await expect(page.locator(".drawer-backdrop")).toHaveClass(/drawer-maximized/);
+  await page.getByRole("button", { name: "Restore candidate evidence view" }).click();
+  await expect(page.locator(".drawer-backdrop")).not.toHaveClass(/drawer-maximized/);
   await expect(page.getByText(/AI explanations are unavailable for the bundled example/i)).toBeVisible();
   await expect(page.getByText(/not for clinical decision-making/i).last()).toBeVisible();
 });

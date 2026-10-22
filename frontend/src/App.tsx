@@ -172,15 +172,26 @@ function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isE
   const [explanation, setExplanation] = useState<CandidateExplanation | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [maximized, setMaximized] = useState(false);
+  const embedded = window.self !== window.top;
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if (maximized) setMaximized(false);
+      else onClose();
+    }
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [maximized, onClose]);
   async function requestExplanation() {
     setAiLoading(true); setAiError("");
     try { setExplanation(await explainCandidate(runId, row.gene_symbol, accessToken)); }
     catch (error) { setAiError(error instanceof Error ? error.message : "The explanation could not be generated."); }
     finally { setAiLoading(false); }
   }
-  return <div className="drawer-backdrop" role="presentation" onMouseDown={onClose}><aside className="drawer" role="dialog" aria-labelledby="gene-title" onMouseDown={(e) => e.stopPropagation()}>
-    <button className="close" onClick={onClose} aria-label="Close gene details">×</button>
-    <button className="secondary-button candidate-print-button" type="button" onClick={onPrint}>Print evidence</button>
+  return <div className={`drawer-backdrop${maximized ? " drawer-maximized" : ""}${embedded ? " drawer-embedded" : ""}`} role="presentation" onMouseDown={onClose}><aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="gene-title" onMouseDown={(e) => e.stopPropagation()}>
+    <div className="drawer-actions"><button className="secondary-button candidate-print-button" type="button" onClick={onPrint}>Print evidence</button><button className="drawer-icon-button maximize" type="button" aria-label={maximized ? "Restore candidate evidence view" : "Maximize candidate evidence view"} aria-pressed={maximized} onClick={() => setMaximized(current => !current)}>{maximized ? "↙" : "↗"}</button><button className="drawer-icon-button close" onClick={onClose} aria-label="Close gene details">×</button></div>
+    <div className="drawer-content">
     <p className="eyebrow">Candidate evidence</p><h2 id="gene-title">{row.gene_symbol}</h2><p>{row.gene_name}</p>
     <span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span>
     <section><h3>Why this track?</h3><p>{row.confidence_reason}</p><p className="call-source">Deterministic source: <b>{row.call_source}</b> · Confidence label: <b>{row.confidence_tier}</b></p></section>
@@ -204,7 +215,7 @@ function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isE
         <p className="drawer-disclaimer">{explanation.research_use_disclaimer}</p>
       </div>}
     </section>
-    <p className="drawer-disclaimer">{DISCLAIMER}</p>
+    <p className="drawer-disclaimer">{DISCLAIMER}</p></div>
   </aside></div>;
 }
 

@@ -118,6 +118,11 @@ describe("ASO Compass", () => {
 
     await user.click(screen.getByRole("button", { name: "View evidence for GENEA" }));
     expect(screen.getByRole("dialog", { name: "GENEA" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Maximize candidate evidence view" }));
+    expect(document.querySelector(".drawer-backdrop")).toHaveClass("drawer-maximized");
+    expect(screen.getByRole("button", { name: "Restore candidate evidence view" })).toHaveAttribute("aria-pressed", "true");
+    await user.click(screen.getByRole("button", { name: "Restore candidate evidence view" }));
+    expect(document.querySelector(".drawer-backdrop")).not.toHaveClass("drawer-maximized");
     await user.click(screen.getByRole("button", { name: "Print evidence" }));
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(3));
     expect(document.querySelector('.print-report[data-print-mode="candidate"]')).toBeInTheDocument();
