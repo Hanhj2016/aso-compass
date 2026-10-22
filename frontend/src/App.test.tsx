@@ -85,6 +85,22 @@ describe("ASO Compass", () => {
       prompt_version: null, output_schema_version: null, source_ids: [], output: null, ai_generated: false,
       research_use_disclaimer: run.research_use_disclaimer,
     };
+    const candidateExplanation = {
+      insight_id: "00000000-0000-0000-0000-000000000004", cached: false,
+      generated_at: "2026-01-01T00:00:00Z", model: "test-model",
+      prompt_version: "candidate-explanation-v1", output_schema_version: "candidate-explanation-v1",
+      source_ids: ["candidate:ENSG1"], ai_generated: true,
+      research_use_disclaimer: run.research_use_disclaimer,
+      output: {
+        summary: "GENEA is a modifier based on the saved evidence.",
+        decision_basis: [{ claim: "The fixed final call is modifier.", source_ids: ["candidate:ENSG1"] }],
+        supporting_evidence: [], conflicting_evidence: [],
+        uncertainties: ["Direction remains unresolved."],
+        manual_review_steps: ["Review the saved candidate record."],
+        what_this_does_not_mean: ["This is not a treatment recommendation."],
+        glossary: [{ term: "Modifier", definition: "Association evidence without a resolved intervention direction." }],
+      },
+    };
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const requestBody = init?.body ? JSON.parse(String(init.body)) as { question?: string } : null;
@@ -95,6 +111,7 @@ describe("ASO Compass", () => {
         : url.endsWith(`/runs/${run.id}`) ? run
         : url.endsWith("/events") ? []
         : url.includes("/candidates?limit=500") ? candidates
+        : url.endsWith("/candidates/GENEA/ai-explanation") && init?.method === "POST" ? candidateExplanation
         : url.endsWith("/ai-compare") && init?.method === "POST" ? comparison
         : url.endsWith("/ai-question") && requestBody?.question?.includes("weather") ? unsupportedAnswer
         : url.endsWith("/ai-question") && init?.method === "POST" ? questionAnswer
@@ -127,7 +144,7 @@ describe("ASO Compass", () => {
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(3));
     expect(document.querySelector('.print-report[data-print-mode="candidate"]')).toBeInTheDocument();
     expect(document.querySelector('[data-report-section="candidate-evidence"]')).toHaveTextContent("candidate:ENSG1");
-    expect(document.querySelector('[data-report-section="candidate-evidence"]')).toHaveTextContent("Optional AI explanations are excluded");
+    expect(document.querySelector('[data-report-section="candidate-evidence"]')).toHaveTextContent("No AI explanation had been generated");
     await user.click(screen.getByRole("button", { name: "Close gene details" }));
 
     expect(screen.getByText("No candidate is hidden because a drug or ASO precedent exists.")).toBeVisible();
@@ -143,6 +160,15 @@ describe("ASO Compass", () => {
     await user.type(await screen.findByLabelText("AI access token"), "shared-demo-token");
     await user.click(screen.getByRole("button", { name: "Use token" }));
     expect(screen.getByRole("heading", { name: "AI access token ready" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "View evidence for GENEA" }));
+    await user.click(screen.getByRole("button", { name: "Explain saved evidence" }));
+    expect(await screen.findByText("GENEA is a modifier based on the saved evidence.")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Print evidence + AI" }));
+    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(4));
+    expect(document.querySelector('[data-report-section="candidate-ai-explanation"]')).toHaveTextContent("Optional AI appendix");
+    expect(document.querySelector('[data-report-section="candidate-ai-explanation"]')).toHaveTextContent("candidate:ENSG1");
+    await user.click(screen.getByRole("button", { name: "Close gene details" }));
 
     await user.click(await screen.findByRole("checkbox", { name: "Select GENEA for comparison" }));
     await user.click(screen.getByRole("checkbox", { name: "Select GENEB for comparison" }));

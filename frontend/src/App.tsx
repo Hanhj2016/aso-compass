@@ -168,7 +168,7 @@ function AIAccessControl({ enabled, required, accessToken, onUnlock, onLock }: {
   </section>;
 }
 
-function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isExample, onPrint, onClose }: { row: Candidate; runId: string; aiEnabled: boolean; accessLocked: boolean; accessToken: string; isExample: boolean; onPrint: () => void; onClose: () => void }) {
+function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isExample, onPrint, onClose }: { row: Candidate; runId: string; aiEnabled: boolean; accessLocked: boolean; accessToken: string; isExample: boolean; onPrint: (explanation: CandidateExplanation | null) => void; onClose: () => void }) {
   const [explanation, setExplanation] = useState<CandidateExplanation | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
@@ -189,7 +189,7 @@ function CandidateDrawer({ row, runId, aiEnabled, accessLocked, accessToken, isE
     finally { setAiLoading(false); }
   }
   return <div className={`drawer-backdrop${maximized ? " drawer-maximized" : ""}`} role="presentation" onMouseDown={onClose}><aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="gene-title" onMouseDown={(e) => e.stopPropagation()}>
-    <div className="drawer-actions"><button className="secondary-button candidate-print-button" type="button" onClick={onPrint}>Print evidence</button><button className="secondary-button drawer-size-button" type="button" aria-label={maximized ? "Restore candidate evidence view" : "Maximize candidate evidence view"} aria-pressed={maximized} onClick={() => setMaximized(current => !current)}><span aria-hidden="true">{maximized ? "↙" : "↗"}</span>{maximized ? "Restore" : "Maximize"}</button><button className="drawer-icon-button close" onClick={onClose} aria-label="Close gene details">×</button></div>
+    <div className="drawer-actions"><button className="secondary-button candidate-print-button" type="button" onClick={() => onPrint(explanation)}>{explanation ? "Print evidence + AI" : "Print evidence"}</button><button className="secondary-button drawer-size-button" type="button" aria-label={maximized ? "Restore candidate evidence view" : "Maximize candidate evidence view"} aria-pressed={maximized} onClick={() => setMaximized(current => !current)}><span aria-hidden="true">{maximized ? "↙" : "↗"}</span>{maximized ? "Restore" : "Maximize"}</button><button className="drawer-icon-button close" onClick={onClose} aria-label="Close gene details">×</button></div>
     <div className="drawer-content">
     <p className="eyebrow">Candidate evidence</p><h2 id="gene-title">{row.gene_symbol}</h2><p>{row.gene_name}</p>
     <span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span>
@@ -316,6 +316,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [printMode, setPrintMode] = useState<PrintMode | "candidate">("summary");
+  const [candidatePrintExplanation, setCandidatePrintExplanation] = useState<CandidateExplanation | null>(null);
   const [reportGeneratedAt, setReportGeneratedAt] = useState(() => new Date().toISOString());
   const [runSummary, setRunSummary] = useState<RunSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -373,7 +374,8 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
     setReportGeneratedAt(new Date().toISOString());
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()));
   }
-  function printCandidate() {
+  function printCandidate(explanation: CandidateExplanation | null) {
+    setCandidatePrintExplanation(explanation);
     setPrintMode("candidate");
     setReportGeneratedAt(new Date().toISOString());
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()));
@@ -381,7 +383,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiAccessRequired, aiAc
 
   return <section className={`results-view${selected ? " evidence-open" : ""}`}>
     {printMode === "candidate" && selected
-      ? <CandidatePrintReport run={run} candidate={selected} generatedAt={reportGeneratedAt}/>
+      ? <CandidatePrintReport run={run} candidate={selected} explanation={candidatePrintExplanation} generatedAt={reportGeneratedAt}/>
       : <PrintReport run={run} candidates={candidates} mode={printMode === "candidate" ? "summary" : printMode} generatedAt={reportGeneratedAt}/>}
     <div className="results-header"><div><p className="eyebrow">{isExample ? "Precomputed example" : "Completed analysis"}</p><h1>{run.disease_label ?? run.disease_id}</h1><p>{run.disease_id} · Engine {run.engine_version} · Open Targets {String(run.upstream_metadata.open_targets_release ?? "release unknown")}</p></div><div className="header-actions"><button className="secondary-button print-report-button" type="button" onClick={() => printReport("summary")}>Print summary</button><button className="secondary-button print-report-button" type="button" onClick={() => printReport("full")}>Print full report</button>{!isExample && <><a className="secondary-button" href={exportUrl(run.id, "csv")}>Export CSV</a><a className="secondary-button" href={exportUrl(run.id, "json")}>Export JSON</a></>}<button className="primary-button compact" onClick={onReset}>New analysis</button></div></div>
     {isExample && <p className="example-banner"><b>Offline-ready example.</b> These versioned results are illustrative and do not refresh with current sources.</p>}

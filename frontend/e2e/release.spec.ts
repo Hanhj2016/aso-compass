@@ -153,7 +153,7 @@ test("full print report uses bounded independent candidate tables", async ({ pag
   await expect(page.getByRole("dialog", { name: "GENE01" })).toBeVisible();
   await page.getByRole("button", { name: "Print evidence" }).click();
   await expect(page.locator('.print-report[data-print-mode="candidate"]')).toHaveCount(1);
-  await expect(page.locator('[data-report-section="candidate-evidence"]')).toContainText("Optional AI explanations are excluded");
+  await expect(page.locator('[data-report-section="candidate-evidence"]')).toContainText("No AI explanation had been generated");
   await page.emulateMedia({ media: "print" });
   const candidatePdf = await page.pdf({
     path: testInfo.outputPath("candidate-evidence.pdf"),

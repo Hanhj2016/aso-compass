@@ -1,4 +1,4 @@
-import type { Candidate, RunRecord } from "./types";
+import type { Candidate, CandidateExplanation, CitedClaim, RunRecord } from "./types";
 
 const TRACK_LABEL: Record<string, string> = {
   knockdown: "Knockdown",
@@ -24,9 +24,14 @@ function EvidenceItem({ label, value }: { label: string; value: string | number 
   return <div><span>{label}</span><b>{value}</b></div>;
 }
 
-export default function CandidatePrintReport({ run, candidate, generatedAt }: {
+function PrintClaims({ claims }: { claims: CitedClaim[] }) {
+  return <ul className="candidate-print-ai-claims">{claims.map((item, index) => <li key={`${item.claim}-${index}`}><span>{item.claim}</span><small>Validated saved sources: {item.source_ids.join(", ")}</small></li>)}</ul>;
+}
+
+export default function CandidatePrintReport({ run, candidate, explanation, generatedAt }: {
   run: RunRecord;
   candidate: Candidate;
+  explanation: CandidateExplanation | null;
   generatedAt: string;
 }) {
   const trials = trialIds(candidate);
@@ -95,11 +100,30 @@ export default function CandidatePrintReport({ run, candidate, generatedAt }: {
         <section>
           <h2>Report provenance</h2>
           <dl><dt>Saved source ID</dt><dd>candidate:{candidate.ensembl_id}</dd><dt>Run ID</dt><dd>{run.id}</dd><dt>Engine</dt><dd>{run.engine_version}</dd><dt>Open Targets release</dt><dd>{release}</dd><dt>Run completed</dt><dd>{run.completed_at ? new Date(run.completed_at).toISOString() : "Not recorded"}</dd><dt>Report generated</dt><dd>{generatedAt}</dd></dl>
-          <p className="candidate-print-ai-note">Optional AI explanations are excluded from this deterministic report.</p>
+          <p className="candidate-print-ai-note">{explanation ? "A separately labeled optional AI appendix follows this deterministic record." : "No AI explanation had been generated when this report was printed."}</p>
         </section>
       </div>
 
-      <footer className="print-page-footer"><span>ASO Compass · Candidate {candidate.gene_symbol} · Run {run.id}</span><span>Research use only · Page 1 of 1</span></footer>
+      <footer className="print-page-footer"><span>ASO Compass · Candidate {candidate.gene_symbol} · Run {run.id}</span><span>Research use only · Deterministic evidence</span></footer>
     </article>
+    {explanation && <article className="print-page candidate-print-ai-page" data-report-section="candidate-ai-explanation">
+      <header className="candidate-print-ai-header">
+        <div><p className="print-report-kicker">Optional AI appendix · generated from saved evidence</p><h1>AI evidence explanation</h1><p>{candidate.gene_symbol} · This appendix cannot change the deterministic classification, scores, or shortlist order.</p></div>
+        <dl><dt>Model</dt><dd>{explanation.model}</dd><dt>Generated</dt><dd>{new Date(explanation.generated_at).toISOString()}</dd><dt>Prompt version</dt><dd>{explanation.prompt_version}</dd><dt>Output schema</dt><dd>{explanation.output_schema_version}</dd><dt>Cache status</dt><dd>{explanation.cached ? "Reused identical-input cache" : "New generation"}</dd></dl>
+      </header>
+      <p className="print-disclaimer">{explanation.research_use_disclaimer}</p>
+      <section className="candidate-print-ai-summary"><h2>Summary</h2><p>{explanation.output.summary}</p></section>
+      <div className="candidate-print-ai-grid">
+        <section><h2>Decision basis</h2><PrintClaims claims={explanation.output.decision_basis}/></section>
+        {explanation.output.supporting_evidence.length > 0 && <section><h2>Supporting evidence</h2><PrintClaims claims={explanation.output.supporting_evidence}/></section>}
+        {explanation.output.conflicting_evidence.length > 0 && <section><h2>Conflicting evidence</h2><PrintClaims claims={explanation.output.conflicting_evidence}/></section>}
+        <section><h2>Uncertainties</h2><ul>{explanation.output.uncertainties.map(item => <li key={item}>{item}</li>)}</ul></section>
+        <section><h2>Manual review</h2><ul>{explanation.output.manual_review_steps.map(item => <li key={item}>{item}</li>)}</ul></section>
+        <section><h2>What this does not mean</h2><ul>{explanation.output.what_this_does_not_mean.map(item => <li key={item}>{item}</li>)}</ul></section>
+        {explanation.output.glossary.length > 0 && <section><h2>Generated glossary</h2><dl>{explanation.output.glossary.map(item => <div key={item.term}><dt>{item.term}</dt><dd>{item.definition}</dd></div>)}</dl></section>}
+      </div>
+      <section className="candidate-print-ai-sources"><h2>Validated source identifiers</h2><p>{explanation.source_ids.join(" · ")}</p><p>Insight ID: {explanation.insight_id}</p></section>
+      <footer className="print-page-footer"><span>ASO Compass · Candidate {candidate.gene_symbol} · Optional AI appendix</span><span>Generated · evidence only</span></footer>
+    </article>}
   </section>;
 }

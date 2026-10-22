@@ -330,6 +330,26 @@ Open Targets association score 是基于可用证据的启发式排序值；Open
 | **Warning** | 警告 | 提醒结果存在范围、来源或完整性限制，不自动等于系统失败或阴性结果。 |
 | **Manual review** | 人工复核 | 回到原始数据库、论文和变异记录检查机制、证据质量和冲突。 |
 
+### 10.1 Candidate Evidence 与打印报告中的术语
+
+| English term | 中文 | 正确理解 |
+|---|---|---|
+| **Deterministic source** | 确定性分类来源 | 哪一层固定规则最终决定 `final_call`，例如人工策展、G2P、ClinVar heuristic 或 association-only；不是 AI 的判断。 |
+| **Convergent evidence** | 汇聚／一致证据 | 两类保存证据支持同一研究方向，例如 G2P 与 ClinVar 规则结果一致；不表示它们完全独立，也不等于机制已被证明。 |
+| **ClinVar heuristic** | ClinVar 启发式规则 | 根据保存的变异类型、数量和比例执行的简化固定规则。`Heuristic` 表示实用判断规则，不是完整生物学模型或临床指南。 |
+| **Variant evidence inventory** | 变异证据清单 | 按 LoF、missense、splice 等类别列出本次保存记录的数量；类别可能不是互斥集合，合计也不一定等于返回总数。 |
+| **LoF fraction** | LoF 记录比例 | 当前规则中，被计为 LoF 的记录占相关已分类记录的比例；它不是患者比例，也不是该基因发生 LoF 的概率。 |
+| **Splice-related fraction** | 剪接相关记录比例 | 被计为 splice 或附加 splice 证据的相对比例；不自动证明存在可被 ASO 纠正的具体剪接位点。 |
+| **Evidence returned / total** | 返回证据数／观察总数 | 例如 `46/46` 表示本次返回 46 条、观察总数为 46；若前者小于后者则说明被截断。 |
+| **Review flag** | 复核标记 | 将安全性、完整性或机制不确定性提升给人工检查，例如 `LoF-intolerant: full knockdown risky`；它不会自动改写 track。 |
+| **Primary record** | 主要原始记录入口 | 指向用于人工复核的上游数据库页面或试验登记；应用中的汇总不能替代阅读这些记录。 |
+| **Report provenance** | 报告来源链 | 保存 run ID、engine 版本、上游 release、完成时间和生成时间，用于追踪结果是在什么条件下产生的。 |
+
+Candidate Evidence 卡片中的 `Classified variants` 当前是界面摘要值，不一定等于
+`Evidence returned / total`。例如它可能只合计 LoF 和 missense，而打印报告另外列出 splice、
+附加 splice 和返回总数。阅读时应以清单字段名称和完整性信息为准，不能把任一计数解释为
+独立患者数。
+
 ### 如何读取 `253/253` 和 `500/629`？
 
 - `253/253`：本次返回 253 条，观察到的总数也是 253；在本次查询范围内未触发上限。
@@ -420,6 +440,8 @@ ASO Compass 是靶点假设生成、机制初步分流、证据复核排序和�
 | **Authoritative facts** | 确定性事实卡 | 由服务器直接从保存记录生成，不是 AI 自由生成文本。 |
 | **Premise corrected** | 问题前提已纠正 | 用户问题与保存事实冲突时，先显示确定性纠正，例如某基因实际不是 insufficient data。 |
 | **Cached** | 使用相同输入的缓存结果 | 相同版本和输入重用先前输出；不是重新查询最新外部数据。 |
+| **Optional AI appendix** | 可选 AI 附录 | 仅在用户已生成 candidate explanation 后附加到 Evidence Print；与确定性证据页分开，不能改变分数、track、shortlist 或 warning。 |
+| **Generated glossary** | AI 生成术语解释 | 模型根据本次证据包生成的辅助定义；应与项目维护的本术语表和原始来源核对，不能升级为可信科学证据。 |
 
 ### 14.2 Provenance、source ID 与 upstream release
 
