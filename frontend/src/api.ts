@@ -15,7 +15,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 async function requestOptional<T>(path: string, init?: RequestInit): Promise<T | null> {
   const response = await fetch(`${API_BASE}${path}`, init);
-  if (response.status === 404) return null;
+  // Cache restoration is a best-effort probe. New backends return 204 when no
+  // matching generated insight exists; keep accepting 404 while older backend
+  // deployments roll forward.
+  if (response.status === 204 || response.status === 404) return null;
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { detail?: { message?: string }; message?: string } | null;
     throw new Error(body?.detail?.message ?? body?.message ?? `Request failed (${response.status})`);

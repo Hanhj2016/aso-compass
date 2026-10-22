@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlmodel import Session, select
 
 from app.api.routes import (
@@ -239,7 +239,7 @@ def get_saved_example_summary(
     request: Request,
     session: SessionDep,
     settings: Annotated[Settings, Depends(get_settings)],
-) -> RunSummaryPublic:
+) -> RunSummaryPublic | Response:
     _require_saved_ai(request, settings)
     bundle = _bundle(example_id, settings)
     _, packet_hash, allowed = build_run_summary_packet(bundle.run, bundle.candidates)
@@ -254,10 +254,7 @@ def get_saved_example_summary(
     )
     cached = session.exec(select(AIInsight).where(AIInsight.cache_key == cache_key)).first()
     if cached is None:
-        raise HTTPException(
-            404,
-            detail={"code": "AI_INSIGHT_NOT_FOUND", "message": "No saved AI summary matches this example."},
-        )
+        return Response(status_code=204)
     try:
         validate_run_summary_source_ids(RunSummaryOutput.model_validate(cached.output), allowed)
     except AIExplanationError as exc:
@@ -415,7 +412,7 @@ def get_saved_example_candidate_explanation(
     request: Request,
     session: SessionDep,
     settings: Annotated[Settings, Depends(get_settings)],
-) -> CandidateExplanationPublic:
+) -> CandidateExplanationPublic | Response:
     _require_saved_ai(request, settings)
     bundle = _bundle(example_id, settings)
     row = _candidates(bundle, [gene_symbol.upper()])[0]
@@ -432,10 +429,7 @@ def get_saved_example_candidate_explanation(
     )
     cached = session.exec(select(AIInsight).where(AIInsight.cache_key == cache_key)).first()
     if cached is None:
-        raise HTTPException(
-            404,
-            detail={"code": "AI_INSIGHT_NOT_FOUND", "message": "No saved AI explanation matches this example candidate."},
-        )
+        return Response(status_code=204)
     try:
         validate_source_ids(CandidateExplanationOutput.model_validate(cached.output), allowed)
     except AIExplanationError as exc:

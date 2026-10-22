@@ -73,6 +73,32 @@ def test_server_example_matches_frontend_bundle() -> None:
     assert json.loads(backend_file.read_text()) == json.loads(frontend_file.read_text())
 
 
+def test_empty_example_ai_cache_probe_returns_no_content(api) -> None:
+    _, engine = api
+    settings = Settings(
+        app_env="test",
+        run_worker_enabled=False,
+        ai_enabled=True,
+        openai_api_key="test-only-not-a-real-key",
+        openai_model="test-model",
+    )
+    request = SimpleNamespace(
+        client=SimpleNamespace(host="example-cache-probe-client"),
+        headers={"authorization": "Bearer test-ai-access-token"},
+    )
+
+    with Session(engine) as session:
+        summary = get_saved_example_summary(
+            "example-als-2026-10", request, session, settings
+        )
+        explanation = get_saved_example_candidate_explanation(
+            "example-als-2026-10", "TARDBP", request, session, settings
+        )
+
+    assert summary.status_code == 204
+    assert explanation.status_code == 204
+
+
 def test_example_explanation_uses_allowlisted_bundle_and_persistent_cache(api) -> None:
     _, engine = api
     settings = Settings(

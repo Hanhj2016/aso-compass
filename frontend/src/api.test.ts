@@ -89,14 +89,16 @@ describe("offline example AI routing", () => {
     expect(headers.get("Authorization")).toBe("Bearer shared-token");
   });
 
-  it("retrieves saved example AI without generating and treats a cache miss as empty", async () => {
+  it("retrieves saved example AI without generating and treats current and legacy cache misses as empty", async () => {
     vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test");
     const fetchMock = vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(new Response(JSON.stringify({ cached: true, output: {} }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ detail: { code: "AI_INSIGHT_NOT_FOUND" } }), { status: 404 }));
     const { getSavedCandidateExplanation, getSavedRunSummary } = await import("./api");
 
     await expect(getSavedRunSummary("example-als-2026-10", "shared-token", true)).resolves.toMatchObject({ cached: true });
+    await expect(getSavedCandidateExplanation("example-als-2026-10", "TARDBP", "shared-token", true)).resolves.toBeNull();
     await expect(getSavedCandidateExplanation("example-als-2026-10", "TARDBP", "shared-token", true)).resolves.toBeNull();
 
     expect(fetchMock).toHaveBeenNthCalledWith(

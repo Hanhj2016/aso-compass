@@ -439,7 +439,7 @@ def get_saved_run_summary(
     request: Request,
     session: SessionDep,
     settings: Annotated[Settings, Depends(get_settings)],
-) -> RunSummaryPublic:
+) -> RunSummaryPublic | Response:
     if not settings.ai_enabled:
         raise HTTPException(503, detail={"code": "AI_DISABLED", "message": "AI summaries are disabled."})
     require_ai_access(request, settings)
@@ -465,10 +465,7 @@ def get_saved_run_summary(
         )
     ).first()
     if cached is None:
-        raise HTTPException(
-            404,
-            detail={"code": "AI_INSIGHT_NOT_FOUND", "message": "No saved AI summary matches this run."},
-        )
+        return Response(status_code=204)
     try:
         validate_run_summary_source_ids(RunSummaryOutput.model_validate(cached.output), allowed_source_ids)
     except AIExplanationError as exc:
@@ -902,7 +899,7 @@ def get_saved_candidate_explanation(
     request: Request,
     session: SessionDep,
     settings: Annotated[Settings, Depends(get_settings)],
-) -> CandidateExplanationPublic:
+) -> CandidateExplanationPublic | Response:
     if not settings.ai_enabled:
         raise HTTPException(
             503,
@@ -939,10 +936,7 @@ def get_saved_candidate_explanation(
         )
     ).first()
     if cached is None:
-        raise HTTPException(
-            404,
-            detail={"code": "AI_INSIGHT_NOT_FOUND", "message": "No saved AI explanation matches this candidate."},
-        )
+        return Response(status_code=204)
     try:
         validate_source_ids(CandidateExplanationOutput.model_validate(cached.output), allowed_source_ids)
     except AIExplanationError as exc:
