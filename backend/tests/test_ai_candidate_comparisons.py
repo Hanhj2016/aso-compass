@@ -9,7 +9,10 @@ from app.api.routes import compare_candidates
 from app.core.settings import Settings
 from app.models import AIInsight, Candidate, Evidence, Run
 from app.schemas.ai import CandidateComparisonOutput, CandidateComparisonRequest
-from app.services.ai_candidate_comparisons import CandidateComparisonProviderResult
+from app.services.ai_candidate_comparisons import (
+    CandidateComparisonProviderResult,
+    build_candidate_comparison_packet,
+)
 
 AI_HEADERS = {"authorization": "Bearer test-ai-access-token"}
 
@@ -224,3 +227,25 @@ def test_candidate_comparison_request_requires_two_or_three_unique_symbols() -> 
         CandidateComparisonRequest(gene_symbols=["GENEA", "genea"])
     with pytest.raises(ValidationError):
         CandidateComparisonRequest(gene_symbols=["A", "B", "C", "D"])
+
+
+def test_candidate_comparison_packet_identifies_selected_evidence_completeness(api) -> None:
+    _, engine = api
+    with Session(engine) as session:
+        run, rows = seed_comparison(session)
+        rows[0].n_evidence = 20
+        rows[0].n_evidence_returned = 20
+        rows[0].evidence_truncated = False
+        rows[0].completeness = "complete"
+        rows[1].n_evidence = 700
+        rows[1].n_evidence_returned = 500
+        rows[1].evidence_truncated = True
+        rows[1].completeness = "capped"
+        session.add_all(rows)
+        session.commit()
+        evidence = list(session.exec(select(Evidence).where(Evidence.run_id == run.id)).all())
+
+        packet, _, _ = build_candidate_comparison_packet(run, rows, evidence)
+
+        assert packet["selected_capped_gene_symbols"] == ["GENEB"]
+        assert packet["selected_complete_gene_symbols"] == ["GENEA"]

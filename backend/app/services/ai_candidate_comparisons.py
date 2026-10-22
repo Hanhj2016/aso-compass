@@ -22,7 +22,7 @@ from app.models import Candidate, Evidence, Run
 from app.schemas.ai import CandidateComparisonOutput
 from app.services.ai_explanations import AIExplanationError
 
-PROMPT_VERSION = "candidate-comparison-v2"
+PROMPT_VERSION = "candidate-comparison-v3"
 OUTPUT_SCHEMA_VERSION = "candidate-comparison-v2"
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,10 @@ overview under 120 words and individual explanations under 45 words. Do not prov
 treatment, or patient-specific advice. Stay within this compact budget: overview at most 90 words; each
 candidate summary at most 35 words; at most 4 key differences with at most 30 words each; at most 2 shared
 features; at most 3 evidence gaps; at most 3 review priorities; at most 3 limitations; and at most 3
-"what this does not mean" items. Prefer fewer items when evidence is sparse."""
+"what this does not mean" items. Prefer fewer items when evidence is sparse. The packet's
+selected_capped_gene_symbols and selected_complete_gene_symbols are authoritative summaries of the selected
+candidates. Never claim that the identity of a capped or complete selected candidate is unknown when those
+lists provide it."""
 
 
 @dataclass(frozen=True)
@@ -215,6 +218,12 @@ def build_candidate_comparison_packet(
     packet = {
         "task": "Compare these saved candidates without ranking or changing them.",
         "compared_gene_symbols": [candidate.gene_symbol for candidate in ordered_candidates],
+        "selected_capped_gene_symbols": [
+            candidate.gene_symbol for candidate in ordered_candidates if candidate.evidence_truncated
+        ],
+        "selected_complete_gene_symbols": [
+            candidate.gene_symbol for candidate in ordered_candidates if not candidate.evidence_truncated
+        ],
         "sources": sources,
     }
     serialized = json.dumps(packet, sort_keys=True, separators=(",", ":"), default=str)

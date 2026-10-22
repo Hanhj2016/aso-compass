@@ -52,10 +52,12 @@ the public configuration boundary, and frontend reachability.
 1. Read `AGENTS.md` for non-negotiable implementation rules.
 2. Read `CODEX_HANDOFF.md` for the build sequence.
 3. Read `docs/01_PRODUCT_AND_SCIENCE.md` and `docs/02_ARCHITECTURE.md`.
-4. Configure the single Supabase project using `docs/04_SUPABASE.md`.
-5. Use the templates as examples; copy them to their real locations only when the application scaffold exists.
-6. Validate each phase against `ACCEPTANCE_CRITERIA.md` and `docs/09_TESTING_VALIDATION.md`.
-7. See `docs/14_IMPLEMENTATION_STATUS.md` for completed work and the remaining external release gates.
+4. For an approachable introduction to ASO biology and interface terminology, read
+   `docs/17_ASO_GLOSSARY_AND_RATIONALE.md`.
+5. Configure the single Supabase project using `docs/04_SUPABASE.md`.
+6. Use the templates as examples; copy them to their real locations only when the application scaffold exists.
+7. Validate each phase against `ACCEPTANCE_CRITERIA.md` and `docs/09_TESTING_VALIDATION.md`.
+8. See `docs/14_IMPLEMENTATION_STATUS.md` for completed work and the remaining external release gates.
 
 ## Contents
 

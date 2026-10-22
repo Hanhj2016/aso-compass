@@ -102,7 +102,11 @@ describe("ASO Compass", () => {
     vi.stubGlobal("fetch", fetchMock);
     localStorage.setItem("aso-compass-run", run.id);
     const user = userEvent.setup();
+    const printSpy = vi.spyOn(window, "print").mockImplementation(() => undefined);
     render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "Print report" }));
+    expect(printSpy).toHaveBeenCalledOnce();
 
     await user.type(await screen.findByLabelText("AI access token"), "shared-demo-token");
     await user.click(screen.getByRole("button", { name: "Use token" }));
