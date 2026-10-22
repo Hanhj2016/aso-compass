@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { askSavedEvidenceQuestion, compareCandidates, createRun, explainCandidate, exportUrl, getCandidates, getEvents, getPublicConfig, getRun, summarizeRun } from "./api";
+import { askSavedEvidenceQuestion, compareCandidates, createRun, explainCandidate, exportUrl, getCandidates, getEvents, getPublicConfig, getRun, getSavedCandidateExplanation, getSavedRunSummary, summarizeRun } from "./api";
 import CandidatePrintReport from "./CandidatePrintReport";
 import Learn from "./Learn";
 import PrintReport from "./PrintReport";
@@ -333,6 +333,25 @@ function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAcce
   const [comparisonError, setComparisonError] = useState("");
   const accessLocked = aiEnabled && aiAccessRequired && !aiAccessToken;
   const aiAvailable = aiEnabled && !accessLocked;
+  useEffect(() => {
+    if (!aiAvailable) return;
+    let active = true;
+    void getSavedRunSummary(run.id, aiAccessToken, isExample)
+      .then(saved => { if (active && saved) setRunSummary(saved); })
+      .catch(() => { /* A saved interpretation is optional; generation remains available. */ });
+    return () => { active = false; };
+  }, [aiAccessToken, aiAvailable, isExample, run.id]);
+  useEffect(() => {
+    if (!aiAvailable || !selected || candidateExplanations[selected.ensembl_id]) return;
+    let active = true;
+    void getSavedCandidateExplanation(run.id, selected.gene_symbol, aiAccessToken, isExample)
+      .then(saved => {
+        if (!active || !saved) return;
+        setCandidateExplanations(current => ({ ...current, [selected.ensembl_id]: saved }));
+      })
+      .catch(() => { /* A saved interpretation is optional; generation remains available. */ });
+    return () => { active = false; };
+  }, [aiAccessToken, aiAvailable, candidateExplanations, isExample, run.id, selected]);
   const counts = useMemo(() => Object.fromEntries(TRACKS.slice(1).map(name => [name, candidates.filter(row => row.final_call === name).length])), [candidates]);
   const filtered = useMemo(() => candidates.filter(row => {
     const inView = researchView === "all"

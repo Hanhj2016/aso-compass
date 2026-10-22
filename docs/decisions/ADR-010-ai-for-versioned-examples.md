@@ -17,11 +17,16 @@ The API owns an allow-list of versioned example bundles and exposes separate `/a
 - load only server-packaged example data;
 - construct the same evidence packets used for persisted runs;
 - enforce the same shared access token, question-safety rules, rate limits, structured outputs, deterministic-field checks, and source-ID validation;
-- do not insert the example, candidates, evidence, or generated insight into PostgreSQL; and
-- return generated responses without database caching.
+- do not insert the example, candidates, or evidence into PostgreSQL;
+- persist only validated generated interpretations as example-scoped `AIInsight` records; and
+- reuse an insight only when environment, example, subject, evidence hash, model, prompt version, and
+  output-schema version all match.
 
 The frontend continues to load the deterministic example locally. It explicitly states that optional AI interpretation requires the API and an unlocked access token.
 
 ## Consequences
 
-The deterministic example stays offline-ready and immutable, while AI features require network access and consume OpenAI API usage. Because example responses are not persisted, repeating a request may generate a new response and incur another API call. The server and frontend copies of the example are checked for exact JSON parity in automated tests.
+The deterministic example stays offline-ready and immutable, while AI features still require network
+access. The first exact request may consume OpenAI API usage; subsequent requests restore the validated
+saved interpretation. A changed evidence bundle, model, prompt, or schema deliberately invalidates reuse.
+The server and frontend copies of the example are checked for exact JSON parity in automated tests.

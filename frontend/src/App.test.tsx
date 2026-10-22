@@ -129,6 +129,9 @@ describe("ASO Compass", () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const requestBody = init?.body ? JSON.parse(String(init.body)) as { question?: string } : null;
+      if ((url.endsWith("/ai-summary") || url.endsWith("/ai-explanation")) && init?.method !== "POST") {
+        return new Response(JSON.stringify({ detail: { code: "AI_INSIGHT_NOT_FOUND", message: "No saved insight." } }), { status: 404, headers: { "Content-Type": "application/json" } });
+      }
       if (url.endsWith("/ai-question") && requestBody?.question?.includes("dose")) {
         return new Response(JSON.stringify({ detail: { code: "CLINICAL_ADVICE", message: "Clinical, treatment, and dosing advice is outside this research tool." } }), { status: 422, headers: { "Content-Type": "application/json" } });
       }
@@ -188,8 +191,14 @@ describe("ASO Compass", () => {
     await user.type(await screen.findByLabelText("AI access token"), "shared-demo-token");
     await user.click(screen.getByRole("button", { name: "Use token" }));
     expect(screen.getByRole("heading", { name: "AI access token ready" })).toBeVisible();
+    await waitFor(() => expect(fetchMock.mock.calls.some(([input, init]) =>
+      String(input).endsWith("/ai-summary") && init?.method !== "POST"
+    )).toBe(true));
 
     await user.click(screen.getByRole("button", { name: "View evidence for GENEA" }));
+    await waitFor(() => expect(fetchMock.mock.calls.some(([input, init]) =>
+      String(input).endsWith("/candidates/GENEA/ai-explanation") && init?.method !== "POST"
+    )).toBe(true));
     await user.click(screen.getByRole("button", { name: "Explain saved evidence" }));
     expect(await screen.findByText("GENEA is a modifier based on the saved evidence.")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Download evidence PDF + AI" }));

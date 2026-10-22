@@ -50,6 +50,14 @@ from app.services.ai_explanations import (
     get_explanation_provider,
     validate_source_ids,
 )
+from app.services.ai_insight_cache import (
+    AIInsightGenerationInProgress,
+    abandon_ai_insight,
+    build_ai_cache_key,
+    complete_ai_insight,
+    invalidate_ai_insight,
+    reserve_ai_insight,
+)
 from app.services.ai_question_safety import assess_ai_question
 from app.services.ai_questions import (
     OUTPUT_SCHEMA_VERSION as QUESTION_OUTPUT_SCHEMA_VERSION,
@@ -342,6 +350,15 @@ def summarize_run(
             409, detail={"code": "RUN_HAS_NO_CANDIDATES", "message": "The run has no candidates to summarize."}
         )
     packet, packet_hash, allowed_source_ids = build_run_summary_packet(run, rows)
+    cache_key = build_ai_cache_key(
+        environment=settings.app_env,
+        run_id=run.id,
+        insight_type="run_summary",
+        model=settings.openai_model,
+        prompt_version=RUN_SUMMARY_PROMPT_VERSION,
+        output_schema_version=RUN_SUMMARY_OUTPUT_SCHEMA_VERSION,
+        input_hash=packet_hash,
+    )
     cached = session.exec(
         select(AIInsight).where(
             AIInsight.run_id == run_id,
@@ -359,6 +376,7 @@ def summarize_run(
         try:
             validate_run_summary_source_ids(RunSummaryOutput.model_validate(cached.output), allowed_source_ids)
         except AIExplanationError:
+            invalidate_ai_insight(session, cached)
             cached = None
     if cached is not None:
         return _run_summary_response(cached, cached=True)
@@ -371,16 +389,7 @@ def summarize_run(
             detail={"code": "AI_RATE_LIMITED", "message": "Too many summary requests."},
             headers={"Retry-After": "60"},
         )
-    try:
-        generated = provider.generate(packet, packet_hash, settings)
-        source_ids = validate_run_summary_source_ids(generated.output, allowed_source_ids)
-    except AIExplanationError as exc:
-        status_code = 503 if exc.code in {"AI_NOT_CONFIGURED", "AI_UPSTREAM_UNAVAILABLE"} else 502
-        if exc.code == "AI_UPSTREAM_RATE_LIMITED":
-            status_code = 429
-        raise HTTPException(status_code, detail={"code": exc.code, "message": exc.message}) from exc
-
-    insight = AIInsight(
+    pending = AIInsight(
         environment=run.environment,
         run_id=run.id,
         candidate_id=None,
@@ -389,15 +398,85 @@ def summarize_run(
         prompt_version=RUN_SUMMARY_PROMPT_VERSION,
         input_hash=packet_hash,
         output_schema_version=RUN_SUMMARY_OUTPUT_SCHEMA_VERSION,
+        cache_key=cache_key,
+    )
+    try:
+        reservation = reserve_ai_insight(session, pending)
+    except AIInsightGenerationInProgress as exc:
+        raise HTTPException(
+            409,
+            detail={"code": "AI_GENERATION_IN_PROGRESS", "message": "This summary is already being generated."},
+            headers={"Retry-After": "3"},
+        ) from exc
+    if not reservation.acquired:
+        validate_run_summary_source_ids(
+            RunSummaryOutput.model_validate(reservation.insight.output), allowed_source_ids
+        )
+        return _run_summary_response(reservation.insight, cached=True)
+    try:
+        generated = provider.generate(packet, packet_hash, settings)
+        source_ids = validate_run_summary_source_ids(generated.output, allowed_source_ids)
+    except AIExplanationError as exc:
+        abandon_ai_insight(session, reservation.insight)
+        status_code = 503 if exc.code in {"AI_NOT_CONFIGURED", "AI_UPSTREAM_UNAVAILABLE"} else 502
+        if exc.code == "AI_UPSTREAM_RATE_LIMITED":
+            status_code = 429
+        raise HTTPException(status_code, detail={"code": exc.code, "message": exc.message}) from exc
+
+    insight = complete_ai_insight(
+        session,
+        reservation.insight,
         output=generated.output.model_dump(mode="json"),
         source_ids=source_ids,
         response_id=generated.response_id,
-        status="generated",
     )
-    session.add(insight)
-    session.commit()
-    session.refresh(insight)
     return _run_summary_response(insight, cached=False)
+
+
+@router.get("/api/v1/runs/{run_id}/ai-summary", response_model=RunSummaryPublic)
+def get_saved_run_summary(
+    run_id: UUID,
+    request: Request,
+    session: SessionDep,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> RunSummaryPublic:
+    if not settings.ai_enabled:
+        raise HTTPException(503, detail={"code": "AI_DISABLED", "message": "AI summaries are disabled."})
+    require_ai_access(request, settings)
+    run = require_run(session, run_id, settings)
+    rows = list(session.exec(select(Candidate).where(Candidate.run_id == run_id)).all())
+    if run.status != "succeeded" or not rows:
+        raise HTTPException(
+            409,
+            detail={"code": "RUN_NOT_COMPLETE", "message": "Saved summaries require a succeeded run."},
+        )
+    _, packet_hash, allowed_source_ids = build_run_summary_packet(run, rows)
+    cached = session.exec(
+        select(AIInsight).where(
+            AIInsight.run_id == run.id,
+            col(AIInsight.candidate_id).is_(None),
+            AIInsight.environment == settings.app_env,
+            AIInsight.insight_type == "run_summary",
+            AIInsight.model == settings.openai_model,
+            AIInsight.prompt_version == RUN_SUMMARY_PROMPT_VERSION,
+            AIInsight.output_schema_version == RUN_SUMMARY_OUTPUT_SCHEMA_VERSION,
+            AIInsight.input_hash == packet_hash,
+            AIInsight.status == "generated",
+        )
+    ).first()
+    if cached is None:
+        raise HTTPException(
+            404,
+            detail={"code": "AI_INSIGHT_NOT_FOUND", "message": "No saved AI summary matches this run."},
+        )
+    try:
+        validate_run_summary_source_ids(RunSummaryOutput.model_validate(cached.output), allowed_source_ids)
+    except AIExplanationError as exc:
+        raise HTTPException(
+            404,
+            detail={"code": "AI_INSIGHT_INVALID", "message": "The saved AI summary is no longer valid."},
+        ) from exc
+    return _run_summary_response(cached, cached=True)
 
 
 @router.post("/api/v1/runs/{run_id}/ai-compare", response_model=CandidateComparisonPublic)
@@ -728,6 +807,16 @@ def explain_candidate(
         ).all()
     )
     packet, packet_hash, allowed_source_ids = build_evidence_packet(run, row, evidence_rows)
+    cache_key = build_ai_cache_key(
+        environment=settings.app_env,
+        run_id=run.id,
+        subject_key=row.gene_symbol,
+        insight_type="candidate_explanation",
+        model=settings.openai_model,
+        prompt_version=PROMPT_VERSION,
+        output_schema_version=OUTPUT_SCHEMA_VERSION,
+        input_hash=packet_hash,
+    )
     cached = session.exec(
         select(AIInsight).where(
             AIInsight.run_id == run_id,
@@ -745,6 +834,7 @@ def explain_candidate(
         try:
             validate_source_ids(CandidateExplanationOutput.model_validate(cached.output), allowed_source_ids)
         except AIExplanationError:
+            invalidate_ai_insight(session, cached)
             cached = None
     if cached is not None:
         return _explanation_response(cached, cached=True)
@@ -757,33 +847,110 @@ def explain_candidate(
             detail={"code": "AI_RATE_LIMITED", "message": "Too many explanation requests."},
             headers={"Retry-After": "60"},
         )
-    try:
-        generated = provider.generate(packet, packet_hash, settings)
-        source_ids = validate_source_ids(generated.output, allowed_source_ids)
-    except AIExplanationError as exc:
-        status_code = 503 if exc.code in {"AI_NOT_CONFIGURED", "AI_UPSTREAM_UNAVAILABLE"} else 502
-        if exc.code == "AI_UPSTREAM_RATE_LIMITED":
-            status_code = 429
-        raise HTTPException(status_code, detail={"code": exc.code, "message": exc.message}) from exc
-
-    insight = AIInsight(
+    pending = AIInsight(
         environment=run.environment,
         run_id=run.id,
         candidate_id=row.id,
+        subject_key=row.gene_symbol,
         insight_type="candidate_explanation",
         model=settings.openai_model,
         prompt_version=PROMPT_VERSION,
         input_hash=packet_hash,
         output_schema_version=OUTPUT_SCHEMA_VERSION,
+        cache_key=cache_key,
+    )
+    try:
+        reservation = reserve_ai_insight(session, pending)
+    except AIInsightGenerationInProgress as exc:
+        raise HTTPException(
+            409,
+            detail={"code": "AI_GENERATION_IN_PROGRESS", "message": "This explanation is already being generated."},
+            headers={"Retry-After": "3"},
+        ) from exc
+    if not reservation.acquired:
+        validate_source_ids(
+            CandidateExplanationOutput.model_validate(reservation.insight.output), allowed_source_ids
+        )
+        return _explanation_response(reservation.insight, cached=True)
+    try:
+        generated = provider.generate(packet, packet_hash, settings)
+        source_ids = validate_source_ids(generated.output, allowed_source_ids)
+    except AIExplanationError as exc:
+        abandon_ai_insight(session, reservation.insight)
+        status_code = 503 if exc.code in {"AI_NOT_CONFIGURED", "AI_UPSTREAM_UNAVAILABLE"} else 502
+        if exc.code == "AI_UPSTREAM_RATE_LIMITED":
+            status_code = 429
+        raise HTTPException(status_code, detail={"code": exc.code, "message": exc.message}) from exc
+
+    insight = complete_ai_insight(
+        session,
+        reservation.insight,
         output=generated.output.model_dump(mode="json"),
         source_ids=source_ids,
         response_id=generated.response_id,
-        status="generated",
     )
-    session.add(insight)
-    session.commit()
-    session.refresh(insight)
     return _explanation_response(insight, cached=False)
+
+
+@router.get(
+    "/api/v1/runs/{run_id}/candidates/{gene_symbol}/ai-explanation",
+    response_model=CandidateExplanationPublic,
+)
+def get_saved_candidate_explanation(
+    run_id: UUID,
+    gene_symbol: str,
+    request: Request,
+    session: SessionDep,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> CandidateExplanationPublic:
+    if not settings.ai_enabled:
+        raise HTTPException(
+            503,
+            detail={"code": "AI_DISABLED", "message": "AI explanations are currently disabled."},
+        )
+    require_ai_access(request, settings)
+    run = require_run(session, run_id, settings)
+    row = session.exec(
+        select(Candidate).where(Candidate.run_id == run_id, Candidate.gene_symbol == gene_symbol.upper())
+    ).first()
+    if row is None:
+        raise HTTPException(404, detail={"code": "CANDIDATE_NOT_FOUND", "message": "Candidate not found"})
+    evidence_rows = list(
+        session.exec(
+            select(Evidence).where(
+                Evidence.run_id == run_id,
+                Evidence.candidate_id == row.id,
+                Evidence.environment == settings.app_env,
+            )
+        ).all()
+    )
+    _, packet_hash, allowed_source_ids = build_evidence_packet(run, row, evidence_rows)
+    cached = session.exec(
+        select(AIInsight).where(
+            AIInsight.run_id == run.id,
+            AIInsight.candidate_id == row.id,
+            AIInsight.environment == settings.app_env,
+            AIInsight.insight_type == "candidate_explanation",
+            AIInsight.model == settings.openai_model,
+            AIInsight.prompt_version == PROMPT_VERSION,
+            AIInsight.output_schema_version == OUTPUT_SCHEMA_VERSION,
+            AIInsight.input_hash == packet_hash,
+            AIInsight.status == "generated",
+        )
+    ).first()
+    if cached is None:
+        raise HTTPException(
+            404,
+            detail={"code": "AI_INSIGHT_NOT_FOUND", "message": "No saved AI explanation matches this candidate."},
+        )
+    try:
+        validate_source_ids(CandidateExplanationOutput.model_validate(cached.output), allowed_source_ids)
+    except AIExplanationError as exc:
+        raise HTTPException(
+            404,
+            detail={"code": "AI_INSIGHT_INVALID", "message": "The saved AI explanation is no longer valid."},
+        ) from exc
+    return _explanation_response(cached, cached=True)
 
 
 @router.post("/api/v1/runs/{run_id}/retry", response_model=RunPublic, status_code=202)

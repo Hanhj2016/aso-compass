@@ -33,6 +33,25 @@ POST /api/v1/runs/{run_id}/ai-summary
 
 It accepts no user-supplied text. The server computes a deterministic run aggregate covering candidate and track counts, shortlist membership, evidence caps, flags, completeness, and ASO precedent. The model receives that aggregate, saved run warnings and metadata, and at most 25 deterministic candidate excerpts selected by shortlist position and then overall score. Run-wide claims must cite the aggregate source. The output cannot choose a best target or alter any saved result.
 
+Saved summaries and candidate explanations can be restored without invoking the model:
+
+```text
+GET /api/v1/runs/{run_id}/ai-summary
+GET /api/v1/runs/{run_id}/candidates/{gene}/ai-explanation
+GET /api/v1/examples/{example_id}/ai-summary
+GET /api/v1/examples/{example_id}/candidates/{gene}/ai-explanation
+```
+
+These routes require the same shared AI access token as generation routes. They rebuild the canonical
+evidence packet, require an exact environment/model/prompt/schema/input-hash match, and revalidate saved
+structured output and source identifiers before disclosure. A cache miss returns `404` and never calls
+OpenAI. The frontend checks these routes after AI access is unlocked and restores available output.
+
+Versioned educational examples remain separate from user runs, but their validated AI interpretations
+are persisted as example-scoped `AIInsight` records. Changing the bundled evidence, model, prompt, or
+output schema changes the cache identity and forces an explicit new generation. Deterministic example
+records themselves are not inserted into PostgreSQL.
+
 The constrained candidate comparison is implemented:
 
 ```text
@@ -93,10 +112,11 @@ POST /api/v1/runs/{run_id}/ai-summary
 POST /api/v1/runs/{run_id}/ai-compare
 POST /api/v1/runs/{run_id}/candidates/{gene}/ai-explanation
 POST /api/v1/runs/{run_id}/ai-question
-GET  /api/v1/ai-insights/{insight_id}
+GET  /api/v1/runs/{run_id}/ai-summary
+GET  /api/v1/runs/{run_id}/candidates/{gene}/ai-explanation
 ```
 
-The candidate explanation, run summary, constrained candidate comparison, and guarded saved-evidence Q&A endpoints are implemented. They all follow the global `AI_ENABLED` switch; there is no separate Q&A activation flag. The results page includes a guarded Q&A panel with explicit zero-to-three candidate context, a 500-character limit, patient-information warning, refusal/error states, and separately labeled cited output. Q&A schema v2 also displays server-generated deterministic candidate facts separately from AI prose, corrects explicit false classification premises, and rejects outputs that conflict with selected-candidate fields or introduce numeric claims absent from the supplied sources. Insight retrieval remains future work; see `docs/16_GUARDED_QA_SAFETY.md`.
+The candidate explanation, run summary, their exact-match saved-result retrieval routes, constrained candidate comparison, and guarded saved-evidence Q&A endpoints are implemented. They all follow the global `AI_ENABLED` switch; there is no separate Q&A activation flag. The results page includes a guarded Q&A panel with explicit zero-to-three candidate context, a 500-character limit, patient-information warning, refusal/error states, and separately labeled cited output. Q&A schema v2 also displays server-generated deterministic candidate facts separately from AI prose, corrects explicit false classification premises, and rejects outputs that conflict with selected-candidate fields or introduce numeric claims absent from the supplied sources. See `docs/16_GUARDED_QA_SAFETY.md`.
 
 ## Structured response schema
 

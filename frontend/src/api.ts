@@ -13,6 +13,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+async function requestOptional<T>(path: string, init?: RequestInit): Promise<T | null> {
+  const response = await fetch(`${API_BASE}${path}`, init);
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { detail?: { message?: string }; message?: string } | null;
+    throw new Error(body?.detail?.message ?? body?.message ?? `Request failed (${response.status})`);
+  }
+  return response.json() as Promise<T>;
+}
+
 export function createRun(payload: Record<string, unknown>): Promise<RunRecord> {
   return request("/api/v1/runs", {
     method: "POST",
@@ -54,6 +64,8 @@ const aiResource = (runId: string, isExample: boolean) => `/api/v1/${isExample ?
 
 export const explainCandidate = (runId: string, geneSymbol: string, accessToken: string, isExample = false) => request<CandidateExplanation>(`${aiResource(runId, isExample)}/candidates/${encodeURIComponent(geneSymbol)}/ai-explanation`, { method: "POST", headers: aiHeaders(accessToken) });
 export const summarizeRun = (runId: string, accessToken: string, isExample = false) => request<RunSummary>(`${aiResource(runId, isExample)}/ai-summary`, { method: "POST", headers: aiHeaders(accessToken) });
+export const getSavedCandidateExplanation = (runId: string, geneSymbol: string, accessToken: string, isExample = false) => requestOptional<CandidateExplanation>(`${aiResource(runId, isExample)}/candidates/${encodeURIComponent(geneSymbol)}/ai-explanation`, { headers: aiHeaders(accessToken) });
+export const getSavedRunSummary = (runId: string, accessToken: string, isExample = false) => requestOptional<RunSummary>(`${aiResource(runId, isExample)}/ai-summary`, { headers: aiHeaders(accessToken) });
 export const compareCandidates = (runId: string, geneSymbols: string[], accessToken: string, isExample = false) => request<CandidateComparison>(`${aiResource(runId, isExample)}/ai-compare`, {
   method: "POST",
   headers: aiHeaders(accessToken, true),

@@ -4,7 +4,7 @@ import pytest
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from app.api.routes import summarize_run
+from app.api.routes import get_saved_run_summary, summarize_run
 from app.core.settings import Settings
 from app.models import AIInsight, Candidate, Run
 from app.schemas.ai import RunSummaryOutput
@@ -106,10 +106,13 @@ def test_run_summary_is_validated_persisted_and_cached(api) -> None:
 
         first = summarize_run(run.id, request, session, settings, provider)
         second = summarize_run(run.id, request, session, settings, provider)
+        restored = get_saved_run_summary(run.id, request, session, settings)
 
         assert not first.cached
         assert second.cached
         assert first.insight_id == second.insight_id
+        assert restored.cached
+        assert restored.insight_id == first.insight_id
         assert provider.calls == 1
         assert first.ai_generated
         assert "Not for clinical decision-making" in first.research_use_disclaimer
@@ -118,6 +121,7 @@ def test_run_summary_is_validated_persisted_and_cached(api) -> None:
         assert stored.candidate_id is None
         assert stored.insight_type == "run_summary"
         assert stored.response_id == "resp_run_summary_test"
+        assert stored.cache_key is not None
         unchanged = list(
             session.exec(select(Candidate).where(Candidate.run_id == run.id).order_by(Candidate.gene_symbol)).all()
         )

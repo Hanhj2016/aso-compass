@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import JSON, Column, Index, UniqueConstraint
+from sqlalchemy import JSON, CheckConstraint, Column, Index, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
@@ -134,8 +134,10 @@ class ExportArtifact(AuditMixin, table=True):
 class AIInsight(AuditMixin, table=True):
     __tablename__ = "ai_insights"
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    run_id: UUID = Field(foreign_key="runs.id", ondelete="CASCADE", index=True)
+    run_id: UUID | None = Field(default=None, foreign_key="runs.id", ondelete="CASCADE", index=True)
+    example_id: str | None = Field(default=None, index=True, max_length=128)
     candidate_id: UUID | None = Field(default=None, foreign_key="candidates.id", ondelete="CASCADE")
+    subject_key: str | None = Field(default=None, max_length=128)
     insight_type: str = Field(max_length=32)
     model: str = Field(max_length=128)
     prompt_version: str = Field(max_length=32)
@@ -145,3 +147,13 @@ class AIInsight(AuditMixin, table=True):
     source_ids: list[str] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
     response_id: str | None = Field(default=None, max_length=255)
     status: str = Field(default="created", max_length=32)
+    cache_key: str | None = Field(default=None, max_length=64)
+
+    __table_args__ = (
+        CheckConstraint(
+            "(run_id IS NOT NULL AND example_id IS NULL) OR "
+            "(run_id IS NULL AND example_id IS NOT NULL)",
+            name="ck_ai_insight_owner",
+        ),
+        Index("uq_ai_insight_cache_key", "cache_key", unique=True),
+    )

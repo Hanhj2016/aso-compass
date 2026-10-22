@@ -21,6 +21,7 @@ Updated: 2026-10-21
 - Deployment-readiness hardening: Render and Hugging Face configuration was rechecked against current official documentation; container builds exclude environment files and run as a non-root user; PostgreSQL pooling is bounded for the Supabase session pooler; Static Spaces can consume the public API URL through Hugging Face runtime variables; CI scans the production browser bundle for secret markers; and a read-only deployed health/CORS/frontend smoke script is available.
 - Automated Static Space publishing: the existing GitHub CI builds the frontend with the public Render API URL, validates and audits the bundle, and publishes only `README.md` plus `dist/` after all backend and frontend gates pass. Hugging Face authentication uses a repository-, branch-, and workflow-scoped Trusted Publisher with short-lived GitHub OIDC credentials, leaving GitHub as the only manually maintained source repository.
 - Guided learning path: the English Learn view explains the evidence pipeline, five deterministic tracks, evidence-reading order, AI boundaries, minimum terminology, knowledge checks, and a direct walkthrough into the bundled ALS example.
+- Persistent AI restoration: live-run and versioned-example summaries and candidate explanations use exact evidence/model/prompt/schema cache identities in `AIInsight`; authenticated GET routes restore validated saved output without an OpenAI request, and the frontend restores it after AI access is unlocked. Versioned examples remain distinct from user runs.
 
 ## Deliberately not enabled
 

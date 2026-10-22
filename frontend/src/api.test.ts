@@ -88,4 +88,26 @@ describe("offline example AI routing", () => {
     const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
     expect(headers.get("Authorization")).toBe("Bearer shared-token");
   });
+
+  it("retrieves saved example AI without generating and treats a cache miss as empty", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test");
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({ cached: true, output: {} }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ detail: { code: "AI_INSIGHT_NOT_FOUND" } }), { status: 404 }));
+    const { getSavedCandidateExplanation, getSavedRunSummary } = await import("./api");
+
+    await expect(getSavedRunSummary("example-als-2026-10", "shared-token", true)).resolves.toMatchObject({ cached: true });
+    await expect(getSavedCandidateExplanation("example-als-2026-10", "TARDBP", "shared-token", true)).resolves.toBeNull();
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "https://api.example.test/api/v1/examples/example-als-2026-10/ai-summary",
+      expect.not.objectContaining({ method: "POST" }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://api.example.test/api/v1/examples/example-als-2026-10/candidates/TARDBP/ai-explanation",
+      expect.not.objectContaining({ method: "POST" }),
+    );
+  });
 });

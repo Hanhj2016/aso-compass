@@ -4,7 +4,7 @@ import pytest
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from app.api.routes import explain_candidate
+from app.api.routes import explain_candidate, get_saved_candidate_explanation
 from app.core.settings import Settings
 from app.models import AIInsight, Candidate, Evidence, Run
 from app.schemas.ai import CandidateExplanationOutput
@@ -105,16 +105,20 @@ def test_candidate_explanation_is_validated_persisted_and_cached(api) -> None:
         run, candidate = seed_candidate(session)
         first = explain_candidate(run.id, "sod1", request, session, settings, provider)
         second = explain_candidate(run.id, "SOD1", request, session, settings, provider)
+        restored = get_saved_candidate_explanation(run.id, "SOD1", request, session, settings)
 
         assert not first.cached
         assert second.cached
         assert first.insight_id == second.insight_id
+        assert restored.cached
+        assert restored.insight_id == first.insight_id
         assert provider.calls == 1
         assert first.ai_generated
         assert "Not for clinical decision-making" in first.research_use_disclaimer
         assert first.source_ids == [f"candidate:{candidate.ensembl_id}"]
         stored = session.exec(select(AIInsight)).one()
         assert stored.response_id == "resp_test_123"
+        assert stored.cache_key is not None
         unchanged = session.get(Candidate, candidate.id)
         assert unchanged is not None
         assert unchanged.final_call == "modifier"
