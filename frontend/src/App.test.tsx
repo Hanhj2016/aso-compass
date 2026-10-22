@@ -101,6 +101,22 @@ describe("ASO Compass", () => {
         glossary: [{ term: "Modifier", definition: "Association evidence without a resolved intervention direction." }],
       },
     };
+    const runSummary = {
+      insight_id: "00000000-0000-0000-0000-000000000005", cached: false,
+      generated_at: "2026-01-01T00:00:00Z", model: "test-model",
+      prompt_version: "run-summary-v1", output_schema_version: "run-summary-v1",
+      source_ids: ["run:00000000-0000-0000-0000-000000000001", "candidate:ENSG1"],
+      ai_generated: true, research_use_disclaimer: run.research_use_disclaimer,
+      output: {
+        overview: "The saved run contains four candidates and one target-level approved-drug precedent.",
+        key_findings: [{ claim: "GENEA has target-level approved-drug precedent.", source_ids: ["candidate:ENSG1"] }],
+        track_breakdown: [{ track: "modifier", count: 4, interpretation: "Direction remains unresolved.", source_ids: ["run:00000000-0000-0000-0000-000000000001"] }],
+        evidence_gaps: [{ claim: "Variant evidence was not checked.", source_ids: ["candidate:ENSG1"] }],
+        review_priorities: [{ claim: "Review indication and direction for GENEA.", source_ids: ["candidate:ENSG1"] }],
+        limitations: ["Only saved evidence was summarized."],
+        what_this_does_not_mean: ["This is not a treatment recommendation."],
+      },
+    };
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const requestBody = init?.body ? JSON.parse(String(init.body)) as { question?: string } : null;
@@ -112,6 +128,7 @@ describe("ASO Compass", () => {
         : url.endsWith("/events") ? []
         : url.includes("/candidates?limit=500") ? candidates
         : url.endsWith("/candidates/GENEA/ai-explanation") && init?.method === "POST" ? candidateExplanation
+        : url.endsWith("/ai-summary") && init?.method === "POST" ? runSummary
         : url.endsWith("/ai-compare") && init?.method === "POST" ? comparison
         : url.endsWith("/ai-question") && requestBody?.question?.includes("weather") ? unsupportedAnswer
         : url.endsWith("/ai-question") && init?.method === "POST" ? questionAnswer
@@ -121,15 +138,18 @@ describe("ASO Compass", () => {
     vi.stubGlobal("fetch", fetchMock);
     localStorage.setItem("aso-compass-run", run.id);
     const user = userEvent.setup();
-    const printSpy = vi.spyOn(window, "print").mockImplementation(() => undefined);
+    const printTitles: string[] = [];
+    const printSpy = vi.spyOn(window, "print").mockImplementation(() => { printTitles.push(document.title); });
     render(<App />);
 
     await user.click(await screen.findByRole("button", { name: "Print summary" }));
     await waitFor(() => expect(printSpy).toHaveBeenCalledOnce());
+    expect(printTitles[0]).toBe("ASO-Compass_Example-disease_summary-report_00000000");
     expect(document.querySelector(".print-report")).toHaveAttribute("data-print-mode", "summary");
     expect(document.querySelector('[data-report-section="review"]')).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Print full report" }));
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(2));
+    expect(printTitles[1]).toBe("ASO-Compass_Example-disease_full-report_00000000");
     expect(document.querySelector(".print-report")).toHaveAttribute("data-print-mode", "full");
     expect(document.querySelector('[data-report-section="appendix"]')).toBeInTheDocument();
 
@@ -142,6 +162,7 @@ describe("ASO Compass", () => {
     expect(document.querySelector(".drawer-backdrop")).not.toHaveClass("drawer-maximized");
     await user.click(screen.getByRole("button", { name: "Print evidence" }));
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(3));
+    expect(printTitles[2]).toBe("ASO-Compass_Example-disease_GENEA_candidate-evidence_00000000");
     expect(document.querySelector('.print-report[data-print-mode="candidate"]')).toBeInTheDocument();
     expect(document.querySelector('[data-report-section="candidate-evidence"]')).toHaveTextContent("candidate:ENSG1");
     expect(document.querySelector('[data-report-section="candidate-evidence"]')).toHaveTextContent("No AI explanation had been generated");
@@ -175,6 +196,16 @@ describe("ASO Compass", () => {
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(5));
     expect(document.querySelector('[data-report-section="candidate-ai-explanation"]')).toHaveTextContent("GENEA is a modifier based on the saved evidence.");
     await user.click(screen.getByRole("button", { name: "Close gene details" }));
+
+    await user.click(screen.getByRole("button", { name: "Summarize this run" }));
+    expect(await screen.findByText("The saved run contains four candidates and one target-level approved-drug precedent.")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Print full report + AI" }));
+    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(6));
+    const runSummaryAppendix = document.querySelector('[data-report-section="run-ai-summary"]');
+    expect(runSummaryAppendix).toHaveTextContent("Optional AI appendix");
+    expect(runSummaryAppendix).toHaveTextContent("GENEA has target-level approved-drug precedent.");
+    expect(runSummaryAppendix).toHaveTextContent("Validated saved sources: candidate:ENSG1");
+    expect(runSummaryAppendix).toHaveTextContent("test-model");
 
     await user.click(await screen.findByRole("checkbox", { name: "Select GENEA for comparison" }));
     await user.click(screen.getByRole("checkbox", { name: "Select GENEB for comparison" }));

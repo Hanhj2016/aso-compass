@@ -306,6 +306,25 @@ function compareNullable(a: number | string | null, b: number | string | null, d
   return direction === "asc" ? comparison : -comparison;
 }
 
+function printFilenamePart(value: string) {
+  const normalized = value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+  return normalized.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 72) || "report";
+}
+
+function openPrintDialog(title: string) {
+  const previousTitle = document.title;
+  document.title = title;
+  const restoreTitle = () => {
+    document.title = previousTitle;
+    window.removeEventListener("afterprint", restoreTitle);
+  };
+  window.addEventListener("afterprint", restoreTitle, { once: true });
+  window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+    window.print();
+    window.setTimeout(restoreTitle, 0);
+  }));
+}
+
 function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAccessRequired, aiAccessToken, onRetryAIConfig, onUnlockAI, onLockAI, onReset }: { run: RunRecord; candidates: Candidate[]; isExample: boolean; aiEnabled: boolean; aiConfigStatus: AIConfigStatus; aiAccessRequired: boolean; aiAccessToken: string; onRetryAIConfig: () => void; onUnlockAI: (token: string) => void; onLockAI: () => void; onReset: () => void }) {
   const [query, setQuery] = useState(""); const [track, setTrack] = useState("all");
   const [researchView, setResearchView] = useState<ResearchView>("all");
@@ -373,20 +392,24 @@ function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAcce
   function printReport(mode: PrintMode) {
     setPrintMode(mode);
     setReportGeneratedAt(new Date().toISOString());
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()));
+    const disease = printFilenamePart(run.disease_label ?? run.disease_id);
+    openPrintDialog(`ASO-Compass_${disease}_${mode}-report_${run.id.slice(0, 8)}`);
   }
   function printCandidate(explanation: CandidateExplanation | null) {
     setCandidatePrintExplanation(explanation);
     setPrintMode("candidate");
     setReportGeneratedAt(new Date().toISOString());
-    window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.print()));
+    if (!selected) return;
+    const disease = printFilenamePart(run.disease_label ?? run.disease_id);
+    const gene = printFilenamePart(selected.gene_symbol);
+    openPrintDialog(`ASO-Compass_${disease}_${gene}_candidate-evidence_${run.id.slice(0, 8)}`);
   }
 
   return <section className={`results-view${selected ? " evidence-open" : ""}`}>
     {printMode === "candidate" && selected
       ? <CandidatePrintReport run={run} candidate={selected} explanation={candidatePrintExplanation} generatedAt={reportGeneratedAt}/>
-      : <PrintReport run={run} candidates={candidates} mode={printMode === "candidate" ? "summary" : printMode} generatedAt={reportGeneratedAt}/>}
-    <div className="results-header"><div><p className="eyebrow">{isExample ? "Precomputed example" : "Completed analysis"}</p><h1>{run.disease_label ?? run.disease_id}</h1><p>{run.disease_id} · Engine {run.engine_version} · Open Targets {String(run.upstream_metadata.open_targets_release ?? "release unknown")}</p></div><div className="header-actions"><button className="secondary-button print-report-button" type="button" onClick={() => printReport("summary")}>Print summary</button><button className="secondary-button print-report-button" type="button" onClick={() => printReport("full")}>Print full report</button>{!isExample && <><a className="secondary-button" href={exportUrl(run.id, "csv")}>Export CSV</a><a className="secondary-button" href={exportUrl(run.id, "json")}>Export JSON</a></>}<button className="primary-button compact" onClick={onReset}>New analysis</button></div></div>
+      : <PrintReport run={run} candidates={candidates} mode={printMode === "candidate" ? "summary" : printMode} generatedAt={reportGeneratedAt} runSummary={runSummary}/>}
+    <div className="results-header"><div><p className="eyebrow">{isExample ? "Precomputed example" : "Completed analysis"}</p><h1>{run.disease_label ?? run.disease_id}</h1><p>{run.disease_id} · Engine {run.engine_version} · Open Targets {String(run.upstream_metadata.open_targets_release ?? "release unknown")}</p></div><div className="header-actions"><button className="secondary-button print-report-button" type="button" onClick={() => printReport("summary")}>Print summary</button><button className="secondary-button print-report-button" type="button" onClick={() => printReport("full")}>{runSummary ? "Print full report + AI" : "Print full report"}</button>{!isExample && <><a className="secondary-button" href={exportUrl(run.id, "csv")}>Export CSV</a><a className="secondary-button" href={exportUrl(run.id, "json")}>Export JSON</a></>}<button className="primary-button compact" onClick={onReset}>New analysis</button></div></div>
     {isExample && <p className="example-banner"><b>Offline-ready deterministic example.</b> These versioned results are illustrative and do not refresh with current sources. Optional AI interpretation requires the API and an unlocked access token.</p>}
     {[...new Set(run.warnings.map(normalizeRunWarning))].map((warning) => <p className="notice" key={warning}>{warning}</p>)}
     <div className="metrics"><Metric label="Candidates" value={candidates.length} detail="Passed association filters"/><Metric label="Priority shortlist" value={shortlistCount} detail="Retained by configured shortlist rules"/><Metric label="Evidence capped" value={capped} detail={capped ? "Manual review required" : "No truncated gene records"}/><Metric label="ASO precedent" value={candidates.filter(row => row.aso_precedent).length} detail="Drug or trial source match"/></div>

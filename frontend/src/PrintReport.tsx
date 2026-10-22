@@ -1,4 +1,4 @@
-import type { Candidate, RunRecord } from "./types";
+import type { Candidate, CitedClaim, RunRecord, RunSummary } from "./types";
 import { normalizeRunWarning, type PrintMode } from "./printReportUtils";
 
 // Keep a conservative row budget. Candidate names and browser font metrics can
@@ -88,11 +88,46 @@ function PageFooter({ run, page, total }: { run: RunRecord; page: number; total:
   </footer>;
 }
 
-export default function PrintReport({ run, candidates, mode, generatedAt }: {
+function SummaryClaims({ claims }: { claims: CitedClaim[] }) {
+  if (claims.length === 0) return <p className="print-ai-empty">None returned.</p>;
+  return <ul className="print-run-ai-claims">{claims.map((item, index) => <li key={`${item.claim}-${index}`}>
+    <span>{item.claim}</span>
+    <small>Validated saved sources: {item.source_ids.join(", ")}</small>
+  </li>)}</ul>;
+}
+
+function SummaryList({ items }: { items: string[] }) {
+  if (items.length === 0) return <p className="print-ai-empty">None returned.</p>;
+  return <ul>{items.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul>;
+}
+
+function RunSummaryAppendix({ run, summary, page, total }: { run: RunRecord; summary: RunSummary; page: number; total: number }) {
+  return <article className="print-page print-run-ai-page" data-report-section="run-ai-summary">
+    <header className="print-run-ai-header">
+      <div><p className="print-report-kicker">Optional AI appendix · generated from saved evidence</p><h2>AI run summary</h2><p>This interpretation is separate from the deterministic report and cannot change its classifications, scores, shortlist, or warnings.</p></div>
+      <dl><dt>Model</dt><dd>{summary.model}</dd><dt>Generated</dt><dd>{summary.generated_at}</dd><dt>Prompt</dt><dd>{summary.prompt_version}</dd><dt>Schema</dt><dd>{summary.output_schema_version}</dd></dl>
+    </header>
+    <p className="print-disclaimer">{summary.research_use_disclaimer}</p>
+    <section className="print-run-ai-overview"><h3>Overview</h3><p>{summary.output.overview}</p></section>
+    <div className="print-run-ai-grid">
+      <section><h3>Key findings</h3><SummaryClaims claims={summary.output.key_findings}/></section>
+      <section><h3>Review priorities</h3><SummaryClaims claims={summary.output.review_priorities}/></section>
+      <section><h3>Track breakdown</h3><div className="print-run-ai-tracks">{summary.output.track_breakdown.map(item => <article key={item.track}><div><b>{TRACK_LABEL[item.track] ?? item.track}</b><strong>{item.count}</strong></div><p>{item.interpretation}</p><small>Validated saved sources: {item.source_ids.join(", ")}</small></article>)}</div></section>
+      <section><h3>Evidence gaps</h3><SummaryClaims claims={summary.output.evidence_gaps}/></section>
+      <section><h3>Limitations</h3><SummaryList items={summary.output.limitations}/></section>
+      <section><h3>What this does not mean</h3><SummaryList items={summary.output.what_this_does_not_mean}/></section>
+    </div>
+    <section className="print-run-ai-provenance"><h3>Validated provenance</h3><p>Insight {summary.insight_id} · {summary.cached ? "Reused identical-input cache" : "New generation"} · source identifiers were validated server-side.</p><p>{summary.source_ids.join(", ")}</p></section>
+    <PageFooter run={run} page={page} total={total}/>
+  </article>;
+}
+
+export default function PrintReport({ run, candidates, mode, generatedAt, runSummary }: {
   run: RunRecord;
   candidates: Candidate[];
   mode: PrintMode;
   generatedAt: string;
+  runSummary: RunSummary | null;
 }) {
   const ordered = stableCandidateOrder(candidates);
   const shortlist = ordered.filter(row => row.shortlist_position !== null);
@@ -120,7 +155,8 @@ export default function PrintReport({ run, candidates, mode, generatedAt }: {
       section: "appendix" as const,
     })) : []),
   ];
-  const totalPages = 1 + sections.length;
+  const includeRunSummary = mode === "full" && runSummary !== null;
+  const totalPages = 1 + sections.length + (includeRunSummary ? 1 : 0);
   const warnings = [...new Set(run.warnings.map(normalizeRunWarning))];
   const tracks = Object.entries(TRACK_LABEL).map(([track, label]) => ({
     track,
@@ -155,6 +191,7 @@ export default function PrintReport({ run, candidates, mode, generatedAt }: {
         <p><b>None found</b> The checked sources returned no match; absence is limited to those sources and that run.</p>
         <p><b>Target-level approval</b> A drug may be approved for another disease, direction, modality, or population.</p>
       </div></section>
+      {mode === "full" && <p className="print-ai-inclusion-note"><b>Optional AI appendix:</b> {includeRunSummary ? "Included from the already-generated, server-validated run summary." : "Not included because no AI run summary had been generated before printing."}</p>}
       <PageFooter run={run} page={1} total={totalPages}/>
     </article>
     {sections.map((section, index) => <article className="print-page print-table-page" data-report-section={section.section} key={section.key}>
@@ -163,5 +200,6 @@ export default function PrintReport({ run, candidates, mode, generatedAt }: {
       <p className="print-source-note">Therapeutic precedent is target-level unless indication-matched provenance is explicitly shown. ASO/trial text matches require manual confirmation.</p>
       <PageFooter run={run} page={index + 2} total={totalPages}/>
     </article>)}
+    {includeRunSummary && <RunSummaryAppendix run={run} summary={runSummary} page={totalPages} total={totalPages}/>}
   </section>;
 }
