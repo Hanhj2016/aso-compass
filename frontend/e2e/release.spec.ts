@@ -50,6 +50,53 @@ test("guided tutorial leads into the offline evidence example", async ({ page })
   await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
 });
 
+test("a bundled example can return to the latest persisted live run", async ({ page }) => {
+  const exampleUrl = new URL("../public/examples/als-v4.1.json", import.meta.url);
+  const bundle = JSON.parse(await readFile(exampleUrl, "utf8"));
+  const runId = "22222222-2222-4222-8222-222222222222";
+  const liveRun = {
+    ...bundle.run,
+    id: runId,
+    status: "succeeded",
+    disease_label: "Persistent ALS analysis",
+  };
+  const liveCandidates = Array.from({ length: 114 }, (_, index) => ({
+    ...bundle.candidates[index % bundle.candidates.length],
+    ensembl_id: `ENSGPERSIST${String(index).padStart(6, "0")}`,
+    gene_symbol: `PERSIST${index + 1}`,
+  }));
+
+  await page.route(`**/api/v1/runs/${runId}`, route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify(liveRun),
+  }));
+  await page.route(`**/api/v1/runs/${runId}/events`, route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: "[]",
+  }));
+  await page.route(`**/api/v1/runs/${runId}/candidates?*`, route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify(liveCandidates),
+  }));
+
+  await page.goto(`/?run=${runId}`);
+  await expect(page.getByRole("heading", { name: "Persistent ALS analysis" })).toBeVisible();
+  await expect(page.locator(".metric").filter({ hasText: "Candidates" }).getByText("114", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Learn" }).click();
+  await page.getByRole("button", { name: /open the guided ALS example/i }).first().click();
+  await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
+  await expect(page.locator(".metric").filter({ hasText: "Candidates" }).getByText("6", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Return to latest saved analysis" }).click();
+  await expect(page.getByRole("heading", { name: "Persistent ALS analysis" })).toBeVisible();
+  await expect(page.locator(".metric").filter({ hasText: "Candidates" }).getByText("114", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`\\?run=${runId}$`));
+});
+
 test("a failed scientific run offers a safe offline fallback", async ({ page }) => {
   const run = {
     id: "11111111-1111-4111-8111-111111111111",

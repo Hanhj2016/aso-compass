@@ -1,6 +1,7 @@
 type LearnProps = {
   disclaimer: string;
   onExample: () => void;
+  onResumeSaved?: () => void;
 };
 
 const COPY = {
@@ -89,7 +90,7 @@ const COPY = {
   },
 } as const;
 
-export default function Learn({ disclaimer, onExample }: LearnProps) {
+export default function Learn({ disclaimer, onExample, onResumeSaved }: LearnProps) {
   const copy = COPY.en;
 
   return <main id="main" className="learn-view">
@@ -98,7 +99,10 @@ export default function Learn({ disclaimer, onExample }: LearnProps) {
       <p className="eyebrow">{copy.eyebrow}</p>
       <h1>{copy.title}</h1>
       <p className="lede">{copy.intro}</p>
-      <button className="primary-button compact" onClick={onExample}>{copy.start}<span aria-hidden="true">→</span></button>
+      <div className="learn-hero-actions">
+        <button className="primary-button compact" onClick={onExample}>{copy.start}<span aria-hidden="true">→</span></button>
+        {onResumeSaved && <button className="secondary-button" onClick={onResumeSaved}>Return to latest saved analysis</button>}
+      </div>
     </section>
 
     <section className="learn-section" aria-labelledby="learn-boundaries">

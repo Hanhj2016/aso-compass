@@ -8,6 +8,7 @@ import type { AIQuestionAnswer, Candidate, CandidateComparison, CandidateExplana
 
 const DISCLAIMER = "For hypothesis generation and education only. Not for clinical decision-making.";
 const AI_ACCESS_STORAGE_KEY = "aso-compass-ai-access-token";
+const LAST_RUN_STORAGE_KEY = "aso-compass-run";
 type AIConfigStatus = "loading" | "ready" | "error";
 const PRESETS = [
   ["MONDO_0004976", "Amyotrophic lateral sclerosis (ALS)"],
@@ -69,7 +70,7 @@ function RunForm({ onCreated, onExample }: { onCreated: (run: RunRecord) => void
           use_variants: true, use_g2p: true, check_drugs: true, check_trials: true,
           include_modifiers: true },
       });
-      localStorage.setItem("aso-compass-run", run.id);
+      localStorage.setItem(LAST_RUN_STORAGE_KEY, run.id);
       onCreated(run);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The analysis could not be started.");
@@ -311,7 +312,7 @@ function printFilenamePart(value: string) {
   return normalized.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 72) || "report";
 }
 
-function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAccessRequired, aiAccessToken, onRetryAIConfig, onUnlockAI, onLockAI, onReset }: { run: RunRecord; candidates: Candidate[]; isExample: boolean; aiEnabled: boolean; aiConfigStatus: AIConfigStatus; aiAccessRequired: boolean; aiAccessToken: string; onRetryAIConfig: () => void; onUnlockAI: (token: string) => void; onLockAI: () => void; onReset: () => void }) {
+function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAccessRequired, aiAccessToken, onRetryAIConfig, onUnlockAI, onLockAI, onReset, onResumeSaved }: { run: RunRecord; candidates: Candidate[]; isExample: boolean; aiEnabled: boolean; aiConfigStatus: AIConfigStatus; aiAccessRequired: boolean; aiAccessToken: string; onRetryAIConfig: () => void; onUnlockAI: (token: string) => void; onLockAI: () => void; onReset: () => void; onResumeSaved?: () => void }) {
   const [query, setQuery] = useState(""); const [track, setTrack] = useState("all");
   const [researchView, setResearchView] = useState<ResearchView>("all");
   const [precedentFilter, setPrecedentFilter] = useState<PrecedentFilter>("all");
@@ -420,7 +421,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAcce
     {printMode === "candidate" && selected
       ? <CandidatePrintReport run={run} candidate={selected} explanation={candidatePrintExplanation} generatedAt={reportGeneratedAt}/>
       : <PrintReport run={run} candidates={candidates} mode={printMode === "candidate" ? "summary" : printMode} generatedAt={reportGeneratedAt} runSummary={runSummary}/>}
-    <div className="results-header"><div><p className="eyebrow">{isExample ? "Precomputed example" : "Completed analysis"}</p><h1>{run.disease_label ?? run.disease_id}</h1><p>{run.disease_id} · Engine {run.engine_version} · Open Targets {String(run.upstream_metadata.open_targets_release ?? "release unknown")}</p></div><div className="header-actions"><button className="secondary-button print-report-button" type="button" onClick={() => void downloadReport("summary")}>Download summary PDF</button><button className="secondary-button print-report-button" type="button" onClick={() => void downloadReport("full")}>{runSummary ? "Download full PDF + AI" : "Download full PDF"}</button>{!isExample && <><a className="secondary-button" href={exportUrl(run.id, "csv")}>Export CSV</a><a className="secondary-button" href={exportUrl(run.id, "json")}>Export JSON</a></>}<button className="primary-button compact" onClick={onReset}>New analysis</button></div></div>
+    <div className="results-header"><div><p className="eyebrow">{isExample ? "Precomputed example" : "Completed analysis"}</p><h1>{run.disease_label ?? run.disease_id}</h1><p>{run.disease_id} · Engine {run.engine_version} · Open Targets {String(run.upstream_metadata.open_targets_release ?? "release unknown")}</p></div><div className="header-actions"><button className="secondary-button print-report-button" type="button" onClick={() => void downloadReport("summary")}>Download summary PDF</button><button className="secondary-button print-report-button" type="button" onClick={() => void downloadReport("full")}>{runSummary ? "Download full PDF + AI" : "Download full PDF"}</button>{!isExample && <><a className="secondary-button" href={exportUrl(run.id, "csv")}>Export CSV</a><a className="secondary-button" href={exportUrl(run.id, "json")}>Export JSON</a></>}{isExample && onResumeSaved && <button className="secondary-button" type="button" onClick={onResumeSaved}>Return to latest saved analysis</button>}<button className="primary-button compact" onClick={onReset}>New analysis</button></div></div>
     {isExample && <p className="example-banner"><b>Offline-ready deterministic example.</b> These versioned results are illustrative and do not refresh with current sources. Optional AI interpretation requires the API and an unlocked access token.</p>}
     {[...new Set(run.warnings.map(normalizeRunWarning))].map((warning) => <p className="notice" key={warning}>{warning}</p>)}
     <div className="metrics"><Metric label="Candidates" value={candidates.length} detail="Passed association filters"/><Metric label="Priority shortlist" value={shortlistCount} detail="Retained by configured shortlist rules"/><Metric label="Evidence capped" value={capped} detail={capped ? "Manual review required" : "No truncated gene records"}/><Metric label="ASO precedent" value={candidates.filter(row => row.aso_precedent).length} detail="Drug or trial source match"/></div>
@@ -479,6 +480,7 @@ export default function App() {
   const [aiAccessRequired, setAiAccessRequired] = useState(false);
   const [aiConfigStatus, setAiConfigStatus] = useState<AIConfigStatus>("loading");
   const [aiAccessToken, setAiAccessToken] = useState(() => sessionStorage.getItem(AI_ACCESS_STORAGE_KEY) ?? "");
+  const [savedRunId, setSavedRunId] = useState(() => localStorage.getItem(LAST_RUN_STORAGE_KEY));
   const runId = run?.id;
   const runStatus = run?.status;
 
@@ -495,37 +497,66 @@ export default function App() {
     }
   }, []);
 
+  const showRunInUrl = useCallback((id: string | null) => {
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("run", id);
+    else url.searchParams.delete("run");
+    window.history.replaceState(null, "", url);
+  }, []);
+
+  const restoreRun = useCallback(async (id: string) => {
+    const [restored, restoredEvents] = await Promise.all([getRun(id), getEvents(id)]);
+    const restoredCandidates = restored.status === "succeeded" ? await getCandidates(id) : [];
+    localStorage.setItem(LAST_RUN_STORAGE_KEY, id);
+    setSavedRunId(id);
+    setRun(restored);
+    setEvents(restoredEvents);
+    setCandidates(restoredCandidates);
+    setExample(false);
+    setView("analyze");
+    showRunInUrl(id);
+  }, [showRunInUrl]);
+
   useEffect(() => {
     const configTimer = window.setTimeout(() => void refreshAIConfig(), 0);
-    const saved = localStorage.getItem("aso-compass-run");
+    const saved = new URLSearchParams(window.location.search).get("run") ?? localStorage.getItem(LAST_RUN_STORAGE_KEY);
     if (saved) {
       void (async () => {
         try {
-          const restored = await getRun(saved);
-          setRun(restored);
-          setEvents(await getEvents(saved));
-          if (restored.status === "succeeded") setCandidates(await getCandidates(saved));
+          await restoreRun(saved);
         } catch {
-          localStorage.removeItem("aso-compass-run");
+          if (localStorage.getItem(LAST_RUN_STORAGE_KEY) === saved) {
+            localStorage.removeItem(LAST_RUN_STORAGE_KEY);
+            setSavedRunId(null);
+          }
+          showRunInUrl(null);
         }
       })();
     }
     return () => window.clearTimeout(configTimer);
-  }, [refreshAIConfig]);
+  }, [refreshAIConfig, restoreRun, showRunInUrl]);
 
   useEffect(() => { if (!runId || !runStatus || example || !["queued", "running"].includes(runStatus)) return;
     const poll = async () => { try { const [next, nextEvents] = await Promise.all([getRun(runId), getEvents(runId)]); setRun(next); setEvents(nextEvents); if (next.status === "succeeded") setCandidates(await getCandidates(next.id)); } catch { /* transient cold start */ } };
     void poll(); const timer = window.setInterval(() => void poll(), 2500); return () => window.clearInterval(timer);
   }, [runId, runStatus, example]);
 
-  async function loadExample() { const response = await fetch("/examples/als-v4.1.json"); const bundle = await response.json() as ExampleBundle; setRun(bundle.run); setCandidates(bundle.candidates); setEvents(bundle.events); setExample(true); setView("analyze"); }
-  function reset() { setRun(null); setCandidates([]); setEvents([]); setExample(false); localStorage.removeItem("aso-compass-run"); }
+  function rememberRun(created: RunRecord) { localStorage.setItem(LAST_RUN_STORAGE_KEY, created.id); setSavedRunId(created.id); setRun(created); setCandidates([]); setEvents([]); setExample(false); showRunInUrl(created.id); }
+  async function loadExample() { const response = await fetch("/examples/als-v4.1.json"); const bundle = await response.json() as ExampleBundle; setRun(bundle.run); setCandidates(bundle.candidates); setEvents(bundle.events); setExample(true); setView("analyze"); showRunInUrl(null); }
+  function reset() { setRun(null); setCandidates([]); setEvents([]); setExample(false); showRunInUrl(null); }
   function unlockAI(token: string) { sessionStorage.setItem(AI_ACCESS_STORAGE_KEY, token); setAiAccessToken(token); }
   function lockAI() { sessionStorage.removeItem(AI_ACCESS_STORAGE_KEY); setAiAccessToken(""); }
   function retryAIConfig() { setAiConfigStatus("loading"); void refreshAIConfig(); }
-  let content = <RunForm onCreated={(created) => { setRun(created); setExample(false); }} onExample={() => void loadExample()} />;
+  const resumeSaved = savedRunId ? () => {
+    void restoreRun(savedRunId).catch(() => {
+      if (localStorage.getItem(LAST_RUN_STORAGE_KEY) === savedRunId) localStorage.removeItem(LAST_RUN_STORAGE_KEY);
+      setSavedRunId(null);
+      showRunInUrl(null);
+    });
+  } : undefined;
+  let content = <RunForm onCreated={rememberRun} onExample={() => void loadExample()} />;
   if (run && ["queued", "running"].includes(run.status)) content = <Progress run={run} events={events} onReset={reset}/>;
-  if (run?.status === "succeeded" && candidates.length) content = <Results run={run} candidates={candidates} isExample={example} aiEnabled={aiEnabled} aiConfigStatus={aiConfigStatus} aiAccessRequired={aiAccessRequired} aiAccessToken={aiAccessToken} onRetryAIConfig={retryAIConfig} onUnlockAI={unlockAI} onLockAI={lockAI} onReset={reset}/>;
+  if (run?.status === "succeeded" && candidates.length) content = <Results run={run} candidates={candidates} isExample={example} aiEnabled={aiEnabled} aiConfigStatus={aiConfigStatus} aiAccessRequired={aiAccessRequired} aiAccessToken={aiAccessToken} onRetryAIConfig={retryAIConfig} onUnlockAI={unlockAI} onLockAI={lockAI} onReset={reset} onResumeSaved={example ? resumeSaved : undefined}/>;
   if (run?.status === "failed") content = <section className="progress-view"><p className="eyebrow">Analysis stopped</p><h1>The run could not be completed.</h1><p>{run.error_message}</p><button className="primary-button compact" onClick={reset}>Start again</button><button className="text-button" onClick={() => void loadExample()}>Open the example instead →</button></section>;
-  return <><Header view={view} onView={setView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
+  return <><Header view={view} onView={setView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()} onResumeSaved={resumeSaved}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
 }
