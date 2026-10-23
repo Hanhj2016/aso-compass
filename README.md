@@ -8,7 +8,7 @@ This is a planning and implementation handoff for building **ASO Compass**, base
 
 Target architecture:
 
-- React + Vite + TypeScript static frontend on Hugging Face Spaces;
+- React + Vite + TypeScript static frontend deployed identically to two Hugging Face Spaces;
 - FastAPI backend on Render;
 - SQLModel and Alembic with a shared Supabase PostgreSQL project;
 - optional OpenAI explanation features, isolated from deterministic scientific scoring;
@@ -40,9 +40,9 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The deployment targets remain Render for the API and a Hugging Face Static Space for the frontend. GitHub is
+The deployment targets remain Render for the API and Hugging Face Static Spaces for the frontend. GitHub is
 the only manually maintained source repository: after all CI gates pass on `main`, GitHub Actions builds and
-audits the browser bundle and publishes `README.md` plus `dist/` to the Space with a short-lived OIDC credential.
+audits the browser bundle and publishes `README.md` plus `dist/` to each Space with a separate short-lived OIDC credential.
 See `docs/06_HUGGINGFACE_STATIC_SPACE.md` for setup. After deployment, use
 `backend/scripts/deployment_smoke.py` with the final HTTPS origins to verify health, database readiness, CORS,
 the public configuration boundary, and frontend reachability.

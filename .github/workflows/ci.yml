@@ -65,7 +65,7 @@ jobs:
           if-no-files-found: error
 
   deploy-huggingface:
-    name: Deploy Hugging Face Space
+    name: Deploy Hugging Face Space (${{ matrix.space }})
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs:
       - backend
@@ -74,6 +74,12 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        space:
+          - scotthan2021/aso-compass
+          - jefferyhan2026/aso-compass
     steps:
       - uses: actions/checkout@v4
       - name: Download built frontend
@@ -90,10 +96,11 @@ jobs:
         run: pip install "huggingface_hub>=1.19,<3"
       - name: Publish Space
         env:
-          HF_OIDC_RESOURCE: spaces/scotthan2021/aso-compass
+          HF_SPACE: ${{ matrix.space }}
+          HF_OIDC_RESOURCE: spaces/${{ matrix.space }}
         run: >-
           hf upload
-          scotthan2021/aso-compass
+          "$HF_SPACE"
           .hf-space
           .
           --repo-type space

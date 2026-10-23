@@ -28,11 +28,13 @@ is the only manually maintained source repository.
 3. Add YAML metadata to `frontend/README.md`; CI copies this file to the Space repository root.
 4. In GitHub, create the public repository variable
    `VITE_API_BASE_URL=https://aso-compass-api.onrender.com`.
-5. In the Space settings, add a GitHub Actions Trusted Publisher restricted to repository
+5. In each destination Space's settings, add a GitHub Actions Trusted Publisher restricted to repository
    `Hanhj2016/aso-compass`, branch `main`, and workflow `ci.yml`.
-6. Push to `main`. The `deploy-huggingface` CI job runs only after backend and frontend validation pass, then
-   uploads `README.md` and `dist/` with a short-lived OIDC credential.
-7. Open the Space URL after Hugging Face publishes the new commit.
+6. Add each Space identifier to the deployment matrix in `.github/workflows/ci.yml`.
+7. Push to `main`. The `deploy-huggingface` matrix runs only after backend and frontend validation pass, then
+   uploads the same `README.md` and audited `dist/` artifact to every Space with separate short-lived,
+   repository-scoped OIDC credentials.
+8. Open each Space URL after Hugging Face publishes the new commits.
 
 Read the authoritative deployed host from the `host` field returned by:
 
@@ -85,22 +87,41 @@ README.md
 dist/
 ```
 
-The job publishes the payload with the Hugging Face CLI and deletes obsolete files in the Space repository so
-stale hashed assets cannot accumulate. Hugging Face retains repository history for rollback. The main GitHub
-repository continues to ignore `frontend/dist/`.
+The deployment matrix publishes the same payload to `scotthan2021/aso-compass` and
+`jefferyhan2026/aso-compass`. Each matrix entry uses the Hugging Face CLI to delete obsolete files in only that
+destination Space, so stale hashed assets cannot accumulate. Hugging Face retains each repository's history
+for rollback. The main GitHub repository continues to ignore `frontend/dist/`.
 
 The publishing credential is obtained through the Space's Trusted Publisher registration and GitHub OIDC. Do
 not create an `HF_TOKEN` secret when OIDC is configured. This deployment credential is unrelated to the OpenAI
 key and the shared ASO Compass AI access token; both remain server-side Render configuration.
 
-For a first deployment, verify the workflow's requested identity exactly matches the Trusted Publisher:
+For a first deployment, verify the workflow's requested identity exactly matches the Trusted Publisher in
+each destination Space:
 
 ```text
 repository: Hanhj2016/aso-compass
 branch: main
 workflow: ci.yml
-resource: spaces/scotthan2021/aso-compass
+resource: spaces/<space-owner>/aso-compass
 ```
+
+The currently authorized resources are:
+
+```text
+spaces/scotthan2021/aso-compass
+spaces/jefferyhan2026/aso-compass
+```
+
+The authoritative frontend origins are:
+
+```text
+https://scotthan2021-aso-compass.static.hf.space
+https://jefferyhan2026-aso-compass.static.hf.space
+```
+
+Configure both exact origins in Render's comma-separated `FRONTEND_ORIGINS`; do not use a wildcard. Run the
+deployment smoke script once for each frontend URL.
 
 ## Validation
 

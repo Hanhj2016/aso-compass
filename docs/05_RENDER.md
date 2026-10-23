@@ -49,7 +49,7 @@ Free resources are appropriate for a demonstration, not a production or clinical
 ```text
 APP_ENV=demo
 DATABASE_URL=<Supabase session-pooler or reachable direct URL>
-FRONTEND_ORIGINS=https://<assigned-space-host>.static.hf.space
+FRONTEND_ORIGINS=https://scotthan2021-aso-compass.static.hf.space,https://jefferyhan2026-aso-compass.static.hf.space
 AI_ENABLED=false
 OPENAI_API_KEY=<only if AI is enabled later>
 OPENAI_MODEL=<configured supported model>
@@ -64,7 +64,8 @@ configuration; model access still depends on the configured OpenAI project.
 
 ## CORS
 
-Use the exact production Space origin reported by the Hugging Face Space API and explicit localhost origins.
+Use every exact production Space origin reported by the Hugging Face Space API, separated by commas, and
+explicit localhost origins where required.
 Do not infer the hostname from the repository name: directly served Static Spaces can use a
 `.static.hf.space` host. Do not combine credentialed requests with a wildcard origin. If the Space URL changes,
 update the backend and redeploy.
