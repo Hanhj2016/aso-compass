@@ -12,6 +12,13 @@
       "fixture_version": "2026-10-18",
       "engine_version": "4.1-guided",
       "source_releases": { "open_targets": "26.09" },
+      "research_question": "How can strongly associated ALS candidates support different ASO research directions and review priorities?",
+      "capabilities_demonstrated": [
+        "Mechanism-direction interpretation",
+        "Evidence-completeness assessment",
+        "Therapeutic-precedent analysis",
+        "Constraint-aware safety reasoning"
+      ],
       "learning_objectives": [
         "Compare multiple deterministic mechanism tracks without treating them as treatment recommendations.",
         "Distinguish gene–disease association strength from intervention direction.",
@@ -28,6 +35,14 @@
         "SOD1 demonstrates therapeutic precedent without turning precedent into a recommendation.",
         "TARDBP demonstrates why direction and population-constraint safety context must be read separately.",
         "FUS demonstrates why a saved track does not remove the need to review capped evidence."
+      ],
+      "limitations": [
+        "The frozen quick-mode fixture is illustrative and does not refresh current source records.",
+        "Gene-level tracks do not establish sequence design, tissue delivery, dose, efficacy, or safety."
+      ],
+      "next_research_questions": [
+        "How do primary mechanism studies distinguish toxic activity from loss of normal function for each candidate?",
+        "Which current trial and regulatory records refine the therapeutic precedent saved in this fixture?"
       ],
       "references": [
         { "label": "NCBI GeneReviews — Amyotrophic Lateral Sclerosis Overview", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1450/" },
@@ -50,6 +65,12 @@
       "fixture_version": "2026-10-20",
       "engine_version": "4.1-guided",
       "source_releases": { "open_targets": "26.09" },
+      "research_question": "Why can an established Huntington disease gene receive an insufficient-data result in a small-variant heuristic?",
+      "capabilities_demonstrated": [
+        "Model-boundary recognition",
+        "Repeat-expansion reasoning",
+        "Association-versus-causation analysis"
+      ],
       "learning_objectives": ["Understand why ordinary small-variant counts can miss repeat-expansion biology."],
       "teaching_candidates": ["HTT", "SLC2A3"],
       "candidate_lessons": [
@@ -60,6 +81,14 @@
       "debrief_points": [
         "Repeat expansions are a model boundary for ordinary small-variant consequence counts.",
         "Association strength, causal mechanism, and intervention direction remain separate claims."
+      ],
+      "limitations": [
+        "The saved heuristic does not model the HTT CAG repeat expansion that defines Huntington disease.",
+        "Only two candidates passed the unchanged default-threshold run, so this is intentionally a sparse comparison."
+      ],
+      "next_research_questions": [
+        "Which repeat-specific assays and primary records are needed to represent HTT mechanism directly?",
+        "How should a future evidence schema distinguish repeat expansions from ordinary sequence variants?"
       ],
       "references": [
         { "label": "NCBI GeneReviews — Huntington Disease", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1305/" }
@@ -81,6 +110,12 @@
       "fixture_version": "2026-10-20",
       "engine_version": "4.1-guided",
       "source_releases": { "open_targets": "26.09" },
+      "research_question": "How do SMN1 disease causation and SMN2-directed splice modulation answer different biological questions?",
+      "capabilities_demonstrated": [
+        "Gene-versus-therapeutic-target reasoning",
+        "Splice-modulation interpretation",
+        "Precedent-without-overgeneralization"
+      ],
       "learning_objectives": ["Distinguish SMN1 disease biology from SMN2 splice modulation and known ASO precedent."],
       "teaching_candidates": ["SMN1", "SMN2", "IGHMBP2"],
       "candidate_lessons": [
@@ -93,6 +128,14 @@
         "SMN1 disease causation and SMN2-directed splice modulation answer different biological questions.",
         "Therapeutic precedent can be informative even when an aggregate variant heuristic is insufficient.",
         "A shared phenotype label does not make candidate genes mechanistically interchangeable."
+      ],
+      "limitations": [
+        "The aggregate gene-level record does not model transcript-specific splice correction or oligonucleotide sequence design.",
+        "A precedent linked to SMN2 cannot be transferred to comparator genes without their own mechanism evidence."
+      ],
+      "next_research_questions": [
+        "Which SMN2 splicing event is modified by established ASO therapy, and how does it change productive SMN expression?",
+        "How do delivery route and tissue exposure constrain translation of the splice-modulation strategy?"
       ],
       "references": [
         { "label": "NCBI GeneReviews — Spinal Muscular Atrophy", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1352/" },
@@ -115,6 +158,12 @@
       "fixture_version": "2026-10-24",
       "engine_version": "4.2-guided",
       "source_releases": { "open_targets": "26.09" },
+      "research_question": "What additional evidence is required to move from a gene-level DMD direction to a mutation-specific exon-skipping strategy?",
+      "capabilities_demonstrated": [
+        "Reading-frame reasoning",
+        "Gene-to-transcript boundary recognition",
+        "Modifier and precedent interpretation"
+      ],
       "learning_objectives": ["Separate gene-level direction from exon skipping, reading-frame restoration, and sequence design."],
       "teaching_candidates": ["DMD", "UTRN", "LTBP4"],
       "candidate_lessons": [
@@ -127,6 +176,14 @@
         "A gene-level splice/upregulation direction cannot choose an exon or oligonucleotide sequence.",
         "Mutation amenability and reading-frame restoration are required downstream questions.",
         "Modifier and precedent records remain context, not treatment recommendations."
+      ],
+      "limitations": [
+        "The saved gene-level evidence cannot determine exon eligibility, reading-frame rescue, sequence, dose, or patient-specific suitability.",
+        "Development precedent and modifier association do not establish efficacy for a new intervention."
+      ],
+      "next_research_questions": [
+        "Which mutation classes are amenable to specific exon-skipping strategies, and how is reading-frame restoration verified?",
+        "What delivery and durability evidence is needed for skeletal and cardiac muscle?"
       ],
       "references": [
         { "label": "FDA clinical review — DMD exon-skipping therapies", "url": "https://www.fda.gov/media/179486/download?attachment=" },
@@ -149,6 +206,12 @@
       "fixture_version": "2026-10-24",
       "engine_version": "4.2-guided",
       "source_releases": { "open_targets": "26.09" },
+      "research_question": "How should toxic-protein reduction, tissue delivery, and indication-specific precedent be combined when evaluating TTR?",
+      "capabilities_demonstrated": [
+        "Toxic-protein knockdown reasoning",
+        "Indication-bounded precedent analysis",
+        "Cross-amyloidosis comparison"
+      ],
       "learning_objectives": ["Connect toxic protein reduction, tissue delivery, and indication-specific therapeutic precedent."],
       "teaching_candidates": ["TTR", "LYZ", "B2M"],
       "candidate_lessons": [
@@ -161,6 +224,14 @@
         "TTR reduction has mechanism and precedent context, but delivery and phenotype still matter.",
         "Genes associated with other amyloid processes are not interchangeable with TTR.",
         "Approved precedent remains bounded by indication, modality, tissue, and population."
+      ],
+      "limitations": [
+        "The fixture does not establish equivalent delivery or benefit across every tissue and hereditary ATTR phenotype.",
+        "Association with another amyloid process does not make LYZ or B2M mechanistically interchangeable with TTR."
+      ],
+      "next_research_questions": [
+        "How do tissue distribution and target-product turnover influence the expected effect of TTR reduction?",
+        "Which clinical and biomarker endpoints distinguish precedent across ATTR phenotypes?"
       ],
       "references": [
         { "label": "NCBI GeneReviews — Hereditary Transthyretin Amyloidosis", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1194/" },
@@ -183,6 +254,12 @@
       "fixture_version": "2026-10-21",
       "engine_version": "4.1-guided",
       "source_releases": { "open_targets": "26.09" },
+      "research_question": "Why can dosage-sensitive SCN1A biology make non-selective knockdown reasoning directionally hazardous?",
+      "capabilities_demonstrated": [
+        "Haploinsufficiency interpretation",
+        "Direction-versus-safety reasoning",
+        "Conflicting-evidence assessment"
+      ],
       "learning_objectives": ["Recognize haploinsufficiency and why non-selective knockdown logic can be hazardous."],
       "teaching_candidates": ["SCN1A", "SNX27", "PCDH19"],
       "candidate_lessons": [
@@ -195,6 +272,14 @@
         "SCN1A illustrates why aggregate variant mixtures cannot replace dosage-sensitive mechanism review.",
         "Haploinsufficiency makes indiscriminate knockdown logic particularly hazardous.",
         "Other phenotype-associated genes require their own causal and inheritance evidence."
+      ],
+      "limitations": [
+        "The capped aggregate variant mixture cannot replace variant-, cell-type-, and dosage-specific SCN1A review.",
+        "A restoration-oriented hypothesis does not establish a feasible expression level, delivery method, efficacy, or safety."
+      ],
+      "next_research_questions": [
+        "Which dosage-sensitivity and functional studies best establish the relevant SCN1A mechanism for the condition?",
+        "How could a restoration strategy be evaluated for cell-type specificity and controlled expression?"
       ],
       "references": [
         { "label": "ClinGen Dosage Sensitivity — SCN1A", "url": "https://search.clinicalgenome.org/kb/gene-dosage/SCN1A" },

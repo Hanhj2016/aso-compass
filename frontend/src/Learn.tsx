@@ -10,12 +10,12 @@ type LearnProps = {
 
 const COPY = {
   en: {
-    eyebrow: "Capability-guided learning",
-    title: "Understand why a candidate was classified—and what the evidence cannot prove.",
-    intro: "ASO Compass brings disease association, mechanism, constraint, variant, and therapeutic-precedent evidence into one traceable research view. Use it to compare candidates, inspect uncertainty, and learn how evidence supports—or fails to support—an intervention direction.",
-    start: "Open the guided ALS example",
-    capabilitiesEyebrow: "Core application capabilities",
-    capabilitiesTitle: "What ASO Compass helps you investigate",
+    eyebrow: "Student research-software portfolio",
+    title: "Explore how biological evidence becomes a defensible research interpretation.",
+    intro: "ASO Compass demonstrates a student's ability to connect biomedical reasoning with reproducible software. Each case brings association, mechanism, constraint, variant, and therapeutic-precedent evidence into one traceable view—while keeping uncertainty and scientific limits visible.",
+    start: "Open the ALS case study",
+    capabilitiesEyebrow: "Research capabilities demonstrated",
+    capabilitiesTitle: "What this portfolio demonstrates",
     capabilitiesIntro: "Start with the scientific questions the application can help you examine. The workflow that assembles the result is supporting context, not the main lesson.",
     capabilities: [
       ["Synthesize target evidence", "Bring association, variant, mechanism, constraint, drug, and trial context together without treating any one source as a complete answer."],
@@ -76,8 +76,8 @@ const COPY = {
       "Which uncertainty still requires human review?",
     ],
     casesEyebrow: "Curated case series",
-    casesTitle: "Build interpretation skills one mechanism at a time",
-    casesIntro: "Each module has a distinct learning objective. Only scientifically reviewed, frozen evidence fixtures become runnable; pending modules are a curriculum roadmap, not candidate results.",
+    casesTitle: "Explore evidence through curated biomedical case studies",
+    casesIntro: "Each case demonstrates a distinct research capability. Candidate records are frozen from completed ASO Compass runs and interpreted within clearly stated evidence boundaries.",
     aiEyebrow: "Optional interpretation",
     aiTitle: "Where the LLM fits",
     aiFlow: ["Saved deterministic record", "Bounded evidence packet", "Structured model output", "Server-side fact and citation validation", "Separately labeled explanation"],
@@ -123,6 +123,33 @@ export default function Learn({ disclaimer, onExample, onCase, onResumeSaved }: 
       </div>
     </section>
 
+    <section className="learn-section portfolio-about" aria-labelledby="portfolio-about-title">
+      <div>
+        <p className="eyebrow">Project &amp; contribution</p>
+        <h2 id="portfolio-about-title">A portfolio in biomedical reasoning and research software</h2>
+        <p className="learn-intro">ASO Compass is a student-built research demonstration. It shows how public biomedical evidence can be transformed into traceable, reproducible, and appropriately limited interpretations without presenting them as clinical conclusions.</p>
+      </div>
+      <div className="portfolio-contribution-grid">
+        <article><h3>Biomedical reasoning</h3><p>Frame gene–disease evidence as testable mechanism questions, not treatment claims.</p></article>
+        <article><h3>Research software</h3><p>Build a typed FastAPI, SQLModel/PostgreSQL, React, and TypeScript application around a deterministic engine.</p></article>
+        <article><h3>Responsible AI</h3><p>Constrain generated explanations to saved evidence and validate their claims and citations server-side.</p></article>
+        <article><h3>Reproducible communication</h3><p>Preserve provenance, versioned fixtures, limitations, exports, and source-adjacent citations.</p></article>
+      </div>
+      <a className="portfolio-source-link" href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Review the implementation and documentation on GitHub ↗</a>
+    </section>
+
+    <section className="learn-section" aria-labelledby="learn-cases">
+      <p className="eyebrow">{copy.casesEyebrow}</p><h2 id="learn-cases">{copy.casesTitle}</h2><p className="learn-intro">{copy.casesIntro}</p>
+      <div className="learn-case-grid">{EDUCATIONAL_CASES.map((caseStudy, index) => <article key={caseStudy.case_id} className={caseStudy.status === "published" ? "case-available" : "case-pending"}>
+        <div><span>{String(index + 1).padStart(2, "0")}</span><small>{caseStudy.status === "published" ? "Published case" : "Fixture review pending"}</small></div>
+        <h3>{caseStudy.title}</h3>
+        <small className="case-card-label">Research question</small><p className="case-card-question">{caseStudy.research_question}</p>
+        <div className="case-card-capabilities" aria-label="Capabilities demonstrated">{caseStudy.capabilities_demonstrated.slice(0, 3).map(capability => <span key={capability}>{capability}</span>)}</div>
+        <b>{caseStudy.status === "published" ? `${caseStudy.teaching_candidates.length} selected evidence examples` : "Curriculum roadmap"}</b>
+        {caseStudy.status === "published" && <button className="secondary-button" onClick={() => onCase(caseStudy.slug)}>Open case study <span aria-hidden="true">→</span></button>}
+      </article>)}</div>
+    </section>
+
     <section className="learn-section learn-capabilities" aria-labelledby="learn-capabilities">
       <p className="eyebrow">{copy.capabilitiesEyebrow}</p><h2 id="learn-capabilities">{copy.capabilitiesTitle}</h2><p className="learn-intro">{copy.capabilitiesIntro}</p>
       <div>{copy.capabilities.map(([title, text], index) => <article key={title}><span>{String(index + 1).padStart(2, "0")}</span><h3>{title}</h3><p>{text}</p></article>)}</div>
@@ -142,14 +169,6 @@ export default function Learn({ disclaimer, onExample, onCase, onResumeSaved }: 
     <section className="learn-section learn-example" aria-labelledby="learn-example">
       <div><p className="eyebrow">{copy.exampleEyebrow}</p><h2 id="learn-example">{copy.exampleTitle}</h2><p>{copy.exampleIntro}</p><button className="secondary-button" onClick={onExample}>{copy.start}<span aria-hidden="true">→</span></button></div>
       <ol>{copy.questions.map((question) => <li key={question}>{question}</li>)}</ol>
-    </section>
-
-    <section className="learn-section" aria-labelledby="learn-cases">
-      <p className="eyebrow">{copy.casesEyebrow}</p><h2 id="learn-cases">{copy.casesTitle}</h2><p className="learn-intro">{copy.casesIntro}</p>
-      <div className="learn-case-grid">{EDUCATIONAL_CASES.map((caseStudy, index) => <article key={caseStudy.case_id} className={caseStudy.status === "published" ? "case-available" : "case-pending"}>
-        <div><span>{String(index + 1).padStart(2, "0")}</span><small>{caseStudy.status === "published" ? "Available" : "Fixture review pending"}</small></div><h3>{caseStudy.title}</h3><p>{caseStudy.learning_objectives[0]}</p><b>{caseStudy.status === "published" ? `${caseStudy.teaching_candidates.length} guided candidates` : "Curriculum roadmap"}</b>
-        {caseStudy.status === "published" && <button className="secondary-button" onClick={() => onCase(caseStudy.slug)}>Open published case <span aria-hidden="true">→</span></button>}
-      </article>)}</div>
     </section>
 
     <section className="learn-section" aria-labelledby="learn-boundaries">

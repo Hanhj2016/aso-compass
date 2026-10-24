@@ -24,9 +24,9 @@
   candidate evidence-source convergence diagram;
 - a bounded ClinVar interpretation checkpoint with versioned review-status, conflict, date, and
   variant-condition metadata; submitter count remains explicitly unavailable in the current upstream contract;
-- a review-gated educational case series following `docs/18_EDUCATIONAL_CASE_SERIES.md`; the typed manifest
-  and interactive frozen ALS module are implemented; publication guards and a review worksheet are in place,
-  while the other five fixtures remain pending independent scientific review;
+- a review-gated educational case series following `docs/18_EDUCATIONAL_CASE_SERIES.md`; the typed manifest,
+  publication guards, review worksheet, and six interactive source-bounded case fixtures are implemented;
+  independent specialist review remains a future enhancement and is not claimed by the interface;
 - saved parameter presets and shareable read-only run links;
 - stronger accessibility/usability testing with students;
 - source-status dashboard; deterministic summary/full print reports are implemented, while signed or

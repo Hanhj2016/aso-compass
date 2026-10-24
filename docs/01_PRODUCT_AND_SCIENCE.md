@@ -40,13 +40,14 @@ These rules are simplifying heuristics. Missense-heavy evidence does not prove t
 
 ## Recommended screens
 
-1. **Learn / About** — an English guided tutorial covering the evidence pipeline, deterministic track meanings, source and missingness caveats, AI boundaries, knowledge checks, and an offline example walkthrough.
+1. **Case Studies** — a portfolio-oriented English case series that foregrounds research questions, demonstrated capabilities, source-bounded interpretation, limitations, and next research questions.
 2. **New analysis** — disease selector, Basic/Advanced parameters, workload warning, consent to research-use statement.
 3. **Run progress** — stage timeline, retries/cache status, current counts, warnings, and recoverable errors.
 4. **Results overview** — run metadata, cards, mechanism distribution, association scatter, evidence completeness, and concise interpretation.
 5. **Candidate explorer** — searchable/filterable table and a gene-detail panel with source-specific evidence.
 6. **Exports** — CSV/JSON/report bundle with a manifest and warnings.
-7. **Examples** — precomputed, versioned results for education and cold-start resilience.
+7. **Methods & Glossary** — the interpretation method, application boundaries, and contextual terminology in one in-application reference.
+8. **Examples** — precomputed, versioned results for education and cold-start resilience.
 
 ## Visualization set
 

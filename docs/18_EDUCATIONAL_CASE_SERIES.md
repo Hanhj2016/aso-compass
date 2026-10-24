@@ -2,9 +2,9 @@
 
 ## Purpose
 
-The English Learn view provides a versioned sequence of evidence-interpretation cases. Cases teach source
-scope, mechanism direction, missingness, therapeutic precedent, and uncertainty. They are educational
-research demonstrations, not clinical simulations.
+The English Case Studies view provides a versioned sequence of evidence-interpretation cases. It is organized
+as a student research portfolio: each case demonstrates biomedical reasoning, source evaluation, reproducible
+analysis, and scientific communication. Cases are educational research demonstrations, not clinical simulations.
 
 ## Publication contract
 
@@ -12,7 +12,8 @@ Every published case contains:
 
 - a stable `example_id`, disease ontology identifier, creation date, engine version, and source releases;
 - a frozen run copied from a completed application run and a deliberately selected teaching subset;
-- explicit learning objectives, candidate-specific questions, and a short debrief;
+- an explicit research question, demonstrated capabilities, learning objectives, and candidate-specific questions;
+- separate interpretation, limitation, and next-research-question sections;
 - primary references for the biological premise and source identifiers beside application claims;
 - visible missingness, truncation, and known model limitations;
 - reviewer attribution, the source run ID, and a verified SHA-256 fixture digest;
@@ -23,7 +24,7 @@ run does not contain a third defensible candidate and the reason is recorded. Ca
 unchanged from completed runs; the teaching layer must not invent values or present candidate selection as a
 treatment ranking.
 
-The current five new cases received a **source-bounded educational review by the ASO Compass maintainers**.
+The cases received a **source-bounded educational review by the ASO Compass maintainers**.
 That review checks saved evidence, primary references, wording boundaries, fixture identity, and application
 behavior. It is not represented as independent clinical or specialist review.
 
@@ -88,9 +89,10 @@ behavior. It is not represented as independent clinical or specialist review.
 2. Backend and frontend loaders fail closed unless a published case has provenance, a verified fixture digest,
    candidate lessons, debrief points, references, and candidate-count compliance.
 3. The backend verifies the disease, engine version, and selected symbols against each frozen fixture.
-4. Learn routes directly to every published module and then to its complete saved teaching excerpt.
-5. Each module includes candidate comparisons, a visual evidence-source flow, source claim boundaries,
-   ClinVar metadata exercises, primary reading, and optional evidence-bound AI on the saved fixture.
+4. Case Studies routes directly to every published module and then to its complete saved evidence workspace.
+5. Each module includes a research question, capabilities demonstrated, candidate comparisons, a visual
+   evidence-source flow, source claim boundaries, ClinVar metadata exercises, interpretation, limitations,
+   next research questions, primary reading, and optional evidence-bound AI on the saved fixture.
 6. Tests verify manifest parity, fixture mirroring, candidate presence, route allow-listing, and deterministic
    fixture loading. The fixture generator performs read-only extraction and does no scientific recalculation.
 

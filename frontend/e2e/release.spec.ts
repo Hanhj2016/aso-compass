@@ -55,9 +55,9 @@ test("guided form and offline evidence example are usable", async ({ page }) => 
 
 test("guided tutorial leads into the offline evidence example", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Learn" }).click();
-  await expect(page.getByRole("heading", { name: /understand why a candidate was classified/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "What ASO Compass helps you investigate" })).toBeVisible();
+  await page.getByRole("button", { name: "Case Studies" }).click();
+  await expect(page.getByRole("heading", { name: /biological evidence becomes a defensible research interpretation/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What this portfolio demonstrates" })).toBeVisible();
   await expect(page.getByText("Synthesize target evidence", { exact: true })).toBeVisible();
   const operations = page.locator("details.learn-operations");
   await expect(operations).not.toHaveAttribute("open", "");
@@ -66,11 +66,11 @@ test("guided tutorial leads into the offline evidence example", async ({ page })
   await expect(operations).toHaveAttribute("open", "");
   await expect(operations.getByRole("heading", { name: "Disease query" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "The five research tracks" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /build interpretation skills/i })).toBeVisible();
-  await expect(page.locator(".learn-case-grid").getByText("Available")).toHaveCount(6);
+  await expect(page.getByRole("heading", { name: /explore evidence through curated biomedical case studies/i })).toBeVisible();
+  await expect(page.locator(".learn-case-grid").getByText("Published case")).toHaveCount(6);
   await expect(page.getByText("Fixture review pending")).toHaveCount(0);
 
-  await page.getByRole("button", { name: /open the guided ALS example/i }).first().click();
+  await page.getByRole("button", { name: /open the ALS case study/i }).first().click();
   await expect(page.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();
   await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
 });
@@ -79,6 +79,8 @@ test("published ALS case is directly addressable and leads to the complete froze
   await page.goto("/#/learn/cases/als");
   await expect(page.getByRole("heading", { name: "Amyotrophic lateral sclerosis (ALS)" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Learning objectives" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Question guiding this case" })).toBeVisible();
+  await expect(page.getByText("Capabilities demonstrated", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /SOD1 Knockdown/i })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText("Approved: TOFERSEN")).toBeVisible();
 
@@ -91,7 +93,10 @@ test("published ALS case is directly addressable and leads to the complete froze
   const audit = await new AxeBuilder({ page }).analyze();
   expect(audit.violations.filter(item => item.impact === "critical" || item.impact === "serious")).toEqual([]);
 
-  await page.getByRole("button", { name: /open saved teaching result/i }).click();
+  await expect(page.getByRole("heading", { name: "Interpretation", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Important limitations" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Next research questions" })).toBeVisible();
+  await page.getByRole("button", { name: /open evidence workspace/i }).click();
   await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
   await expect(page.locator("main .metrics .metric").filter({ hasText: "Candidates" }).locator("b")).toHaveText("6");
 });
@@ -118,7 +123,8 @@ test("all reviewed case fixtures are directly teachable", async ({ page }) => {
 
 test("English glossary is directly addressable and searchable", async ({ page }) => {
   await page.goto("/#/glossary");
-  await expect(page.getByRole("heading", { name: "Glossary & interpretation guide" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Methods & Glossary" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /how the application builds a defensible result/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Core biology" })).toBeVisible();
 
   await page.getByRole("searchbox", { name: "Search glossary" }).fill("dominant negative");
@@ -164,8 +170,8 @@ test("a bundled example can return to the latest persisted live run", async ({ p
   await expect(page.getByRole("heading", { name: "Persistent ALS analysis" })).toBeVisible();
   await expect(page.locator(".metric").filter({ hasText: "Candidates" }).getByText("114", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Learn" }).click();
-  await page.getByRole("button", { name: /open the guided ALS example/i }).first().click();
+  await page.getByRole("button", { name: "Case Studies" }).click();
+  await page.getByRole("button", { name: /open the ALS case study/i }).first().click();
   await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
   await expect(page.locator(".metric").filter({ hasText: "Candidates" }).getByText("6", { exact: true })).toBeVisible();
 

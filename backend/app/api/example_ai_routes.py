@@ -98,9 +98,13 @@ def list_published_examples() -> dict[str, object]:
                 "fixture_version": case.fixture_version,
                 "engine_version": case.engine_version,
                 "source_releases": case.source_releases,
+                "research_question": case.research_question,
+                "capabilities_demonstrated": list(case.capabilities_demonstrated),
                 "learning_objectives": list(case.learning_objectives),
                 "teaching_candidates": list(case.teaching_candidates),
                 "debrief": case.debrief,
+                "limitations": list(case.limitations),
+                "next_research_questions": list(case.next_research_questions),
                 "review_status": case.review_status,
                 "reviewer": case.reviewer,
             }

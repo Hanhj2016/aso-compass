@@ -42,12 +42,12 @@ function Header({ view, onView }: { view: AppView; onView: (view: AppView) => vo
   return <header className="site-header">
     <button className="brand" type="button" onClick={() => onView("analyze")}>
       <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
-      <span><b>ASO</b> Compass<small>Evidence-guided exploration</small></span>
+      <span><b>ASO</b> Compass<small>Evidence-guided research portfolio</small></span>
     </button>
     <nav aria-label="Primary navigation">
-      <button type="button" className={view === "analyze" ? "active" : ""} onClick={() => onView("analyze")}>Analyze</button>
-      <button type="button" className={view === "learn" ? "active" : ""} onClick={() => onView("learn")}>Learn</button>
-      <button type="button" className={view === "glossary" ? "active" : ""} onClick={() => onView("glossary")}>Glossary</button>
+      <button type="button" aria-label="Research Workspace" className={view === "analyze" ? "active" : ""} onClick={() => onView("analyze")}><span className="nav-full">Research Workspace</span><span className="nav-short">Research</span></button>
+      <button type="button" aria-label="Case Studies" className={view === "learn" ? "active" : ""} onClick={() => onView("learn")}><span className="nav-full">Case Studies</span><span className="nav-short">Cases</span></button>
+      <button type="button" aria-label="Methods & Glossary" className={view === "glossary" ? "active" : ""} onClick={() => onView("glossary")}><span className="nav-full">Methods &amp; Glossary</span><span className="nav-short">Methods</span></button>
     </nav>
     <span className="research-pill">Research use only</span>
   </header>;

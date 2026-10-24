@@ -279,11 +279,15 @@ export interface EducationalCase {
   fixture_version: string | null;
   engine_version: string | null;
   source_releases: Record<string, string>;
+  research_question: string;
+  capabilities_demonstrated: string[];
   learning_objectives: string[];
   teaching_candidates: string[];
   candidate_lessons: EducationalCandidateLesson[];
   debrief: string;
   debrief_points: string[];
+  limitations: string[];
+  next_research_questions: string[];
   references: EducationalCaseReference[];
   source_run_id: string | null;
   fixture_sha256: string | null;

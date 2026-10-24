@@ -185,11 +185,22 @@ export default function GlossaryPage({ disclaimer }: { disclaimer: string }) {
 
   return <main id="main" className="glossary-page">
     <header className="glossary-hero">
-      <p className="eyebrow">In-application reference</p>
-      <h1>Glossary &amp; interpretation guide</h1>
-      <p className="lede">Plain-language definitions for the biological concepts, evidence sources, deterministic tracks, and limitations shown in ASO Compass.</p>
+      <p className="eyebrow">Research methods reference</p>
+      <h1>Methods &amp; Glossary</h1>
+      <p className="lede">See how ASO Compass turns source-bounded evidence into reproducible interpretations, then explore plain-language definitions for the concepts, sources, tracks, and limitations used throughout the application.</p>
       <p className="notice"><b>Educational scope:</b> these definitions support interpretation of the application. They are not clinical guidance and do not replace review of primary records.</p>
     </header>
+
+    <section className="methods-overview" aria-labelledby="methods-overview-title">
+      <p className="eyebrow">Interpretation method</p>
+      <h2 id="methods-overview-title">How the application builds a defensible result</h2>
+      <div className="methods-grid">
+        <article><span>01</span><h3>Evidence synthesis</h3><p>Combine association, mechanism, submitted variants, population constraint, and therapeutic precedent while preserving each source's scope.</p></article>
+        <article><span>02</span><h3>Deterministic interpretation</h3><p>Apply visible precedence and thresholds to assign a research track. The result is reproducible and is not an AI prediction.</p></article>
+        <article><span>03</span><h3>Provenance and limitations</h3><p>Retain source identifiers, release metadata, missingness, truncation, conflicts, and review flags beside the claims they qualify.</p></article>
+        <article><span>04</span><h3>Bounded AI explanation</h3><p>Allow optional AI to explain saved evidence only; it cannot alter classifications, scores, shortlist order, or warnings.</p></article>
+      </div>
+    </section>
 
     <section className="glossary-search" aria-labelledby="glossary-search-title">
       <div><h2 id="glossary-search-title">Find a term</h2><p>{filtered.length} of {GLOSSARY_ENTRIES.length} terms shown</p></div>

@@ -50,24 +50,29 @@ export default function CaseStudyPage({ caseStudy, disclaimer, onBack, onOpenRes
   const hasClinVarMetadata = selected?.clinvar_interpretation?.metadata_status === "available" || selected?.clinvar_interpretation?.metadata_status === "partial";
 
   return <main id="main" className="case-study-page">
-    <button className="text-button case-back" type="button" onClick={onBack}>← Back to Learn</button>
+    <button className="text-button case-back" type="button" onClick={onBack}>← Back to Case Studies</button>
     <header className="case-study-hero">
       <div>
-        <p className="eyebrow">Published educational case · {caseStudy.fixture_version}</p>
+        <p className="eyebrow">Curated case study · {caseStudy.fixture_version}</p>
         <h1>{caseStudy.title}</h1>
-        <p className="lede">A guided exercise using a frozen deterministic result. Read the saved evidence before opening optional AI interpretation.</p>
+        <p className="lede">A source-bounded analysis of a versioned deterministic result. Examine the evidence, defend an interpretation, and keep every conclusion within the recorded limitations.</p>
         <div className="case-meta"><span>{caseStudy.disease_id}</span><span>Engine {caseStudy.engine_version}</span><span>Open Targets {caseStudy.source_releases.open_targets ?? "release not recorded"}</span><span>Versioned fixture</span></div>
       </div>
-      <aside aria-labelledby="case-objectives-title"><h2 id="case-objectives-title">Learning objectives</h2><ol>{caseStudy.learning_objectives.map(objective => <li key={objective}>{objective}</li>)}</ol></aside>
+      <aside aria-labelledby="case-question-title"><p className="eyebrow">Research question</p><h2 id="case-question-title">Question guiding this case</h2><p>{caseStudy.research_question}</p></aside>
     </header>
+
+    <section className="case-portfolio-context" aria-label="Case study capabilities and learning objectives">
+      <div><h2 className="eyebrow">Capabilities demonstrated</h2><div className="case-capability-tags">{caseStudy.capabilities_demonstrated.map(capability => <span key={capability}>{capability}</span>)}</div></div>
+      <div><h2 className="eyebrow">Learning objectives</h2><ul>{caseStudy.learning_objectives.map(objective => <li key={objective}>{objective}</li>)}</ul></div>
+    </section>
 
     {error && <section className="error" role="alert"><b>Case unavailable.</b> {error}</section>}
     {!bundle && !error && <section className="case-loading" aria-live="polite">Loading the frozen teaching record…</section>}
 
     {bundle && <>
       <section className="case-study-section" aria-labelledby="case-compare-title">
-        <p className="eyebrow">Step 1 · Compare</p><h2 id="case-compare-title">{candidates.length} candidates, {candidates.length} different review questions</h2>
-        <p className="learn-intro">These candidates are copied unchanged from a completed, versioned run for teaching. Their inclusion is not a therapeutic ranking.</p>
+        <p className="eyebrow">Candidate comparison</p><h2 id="case-compare-title">{candidates.length} candidates, {candidates.length} different review questions</h2>
+        <p className="learn-intro">These records are copied unchanged from a completed, versioned run for source-bounded analysis. Their inclusion is not a therapeutic ranking.</p>
         <div className="case-candidate-tabs" role="group" aria-label="Teaching candidates">{candidates.map(candidate => <button key={candidate.gene_symbol} type="button" aria-pressed={selected?.gene_symbol === candidate.gene_symbol} onClick={() => setSelectedSymbol(candidate.gene_symbol)}><b>{candidate.gene_symbol}</b><span>{TRACK_LABELS[candidate.final_call] ?? candidate.final_call}</span></button>)}</div>
 
         {selected && <article className="case-candidate-focus">
@@ -87,16 +92,22 @@ export default function CaseStudyPage({ caseStudy, disclaimer, onBack, onOpenRes
       </section>
 
       {selected && <section className="case-study-section case-evidence-lab" aria-labelledby="case-evidence-title">
-        <div><p className="eyebrow">Step 2 · Trace</p><h2 id="case-evidence-title">Follow each claim to its source</h2><p className="learn-intro">Open every source and distinguish supporting context from claims it cannot establish.</p><EvidenceSourceMap candidate={selected}/></div>
-        <div><p className="eyebrow">Step 3 · Interpret</p><h2>Check the ClinVar boundary</h2><p className="learn-intro">{hasClinVarMetadata ? "Use the retained review, conflict, date, and condition context without treating an aggregate label as a complete variant interpretation." : "This frozen record demonstrates an important missingness lesson: detailed interpretation metadata was not retained."}</p><ClinVarLearningCheckpoint candidate={selected}/></div>
+        <div><p className="eyebrow">Evidence provenance</p><h2 id="case-evidence-title">Follow each claim to its source</h2><p className="learn-intro">Open every source and distinguish supporting context from claims it cannot establish.</p><EvidenceSourceMap candidate={selected}/></div>
+        <div><p className="eyebrow">Source interpretation</p><h2>Check the ClinVar boundary</h2><p className="learn-intro">{hasClinVarMetadata ? "Use the retained review, conflict, date, and condition context without treating an aggregate label as a complete variant interpretation." : "This frozen record demonstrates an important missingness lesson: detailed interpretation metadata was not retained."}</p><ClinVarLearningCheckpoint candidate={selected}/></div>
       </section>}
 
-      <section className="case-study-section case-debrief" aria-labelledby="case-debrief-title">
-        <div><p className="eyebrow">Step 4 · Debrief</p><h2 id="case-debrief-title">What this case should leave you with</h2><p>{caseStudy.debrief}</p><ul>{caseStudy.debrief_points.map(point => <li key={point}>{point}</li>)}</ul></div>
-        <aside><h3>Continue with the frozen excerpt</h3><p>Open the selected candidate records, comparison tool, printable reports, and optional evidence-bound AI.</p><button className="primary-button compact" type="button" onClick={onOpenResults}>Open saved teaching result →</button><small>Published by {caseStudy.reviewer}. Candidate selection is educational, not clinical.</small></aside>
+      <section className="case-study-section case-conclusions" aria-labelledby="case-conclusions-title">
+        <p className="eyebrow">Conclusion and limitations</p><h2 id="case-conclusions-title">Interpretation summary</h2>
+        <div className="case-conclusion-grid">
+          <article><h3>Interpretation</h3><p>{caseStudy.debrief}</p><ul>{caseStudy.debrief_points.map(point => <li key={point}>{point}</li>)}</ul></article>
+          <article><h3>Important limitations</h3><ul>{caseStudy.limitations.map(limitation => <li key={limitation}>{limitation}</li>)}</ul></article>
+          <article><h3>Next research questions</h3><ol>{caseStudy.next_research_questions.map(question => <li key={question}>{question}</li>)}</ol></article>
+        </div>
+        <aside className="case-workspace-cta"><div><h3>Examine the complete saved evidence</h3><p>Review candidate records, compare deterministic classifications, inspect source provenance, and explore optional evidence-bound AI explanations.</p></div><button className="primary-button compact" type="button" onClick={onOpenResults}>Open evidence workspace →</button></aside>
+        <p className="case-provenance"><b>Evidence provenance:</b> candidate records were frozen from a completed ASO Compass run and selected for source-bounded educational analysis by {caseStudy.reviewer}. This is not a clinical interpretation.</p>
       </section>
 
-      <section className="case-study-section case-references" aria-labelledby="case-references-title"><p className="eyebrow">Primary reading</p><h2 id="case-references-title">Check the biological premise outside the heuristic</h2><p className="learn-intro">The frozen application result and these external references answer different questions. Follow the primary records before drawing a biological conclusion.</p><ul>{caseStudy.references.map(reference => <li key={reference.url}><a href={reference.url} target="_blank" rel="noreferrer">{reference.label} ↗</a></li>)}</ul>{caseStudy.candidate_count_exception && <p className="notice"><b>Reviewed candidate-count exception:</b> {caseStudy.candidate_count_exception}</p>}</section>
+      <section className="case-study-section case-references" aria-labelledby="case-references-title"><p className="eyebrow">Biological context and references</p><h2 id="case-references-title">Check the biological premise outside the heuristic</h2><p className="learn-intro">The frozen application result and these external references answer different questions. Follow the primary records before drawing a biological conclusion.</p><ul>{caseStudy.references.map(reference => <li key={reference.url}><a href={reference.url} target="_blank" rel="noreferrer">{reference.label} ↗</a></li>)}</ul>{caseStudy.candidate_count_exception && <p className="notice"><b>Reviewed candidate-count exception:</b> {caseStudy.candidate_count_exception}</p>}</section>
     </>}
     <p className="persistent-disclaimer">{disclaimer}</p>
   </main>;

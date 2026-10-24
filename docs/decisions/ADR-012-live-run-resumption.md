@@ -16,7 +16,7 @@ The same frontend is deployed to more than one Hugging Face Space. Browser stora
 - The browser stores only the opaque ID of the latest live run in `localStorage`; it does not duplicate scientific records in browser storage.
 - Live result URLs include `?run=<run-id>`. Loading such a URL restores the run from the API and makes it the latest run for that Space origin.
 - Opening the bundled example removes the live-run query parameter but preserves the latest-live-run pointer.
-- Learn and bundled-example views provide an explicit **Return to latest saved analysis** action.
+- Case Studies and bundled-example views provide an explicit **Return to latest saved analysis** action.
 - Starting a new analysis replaces the latest-live-run pointer. Merely opening the new-analysis form does not delete the persisted pointer or backend data.
 
 ## Consequences

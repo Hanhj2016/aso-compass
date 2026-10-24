@@ -25,11 +25,15 @@ class ExampleCase:
     fixture_version: str | None
     engine_version: str | None
     source_releases: dict[str, str]
+    research_question: str
+    capabilities_demonstrated: tuple[str, ...]
     learning_objectives: tuple[str, ...]
     teaching_candidates: tuple[str, ...]
     candidate_lessons: tuple[dict[str, str], ...]
     debrief: str
     debrief_points: tuple[str, ...]
+    limitations: tuple[str, ...]
+    next_research_questions: tuple[str, ...]
     references: tuple[dict[str, str], ...]
     source_run_id: str | None
     fixture_sha256: str | None
@@ -58,11 +62,15 @@ def load_example_cases() -> tuple[ExampleCase, ...]:
             fixture_version=item.get("fixture_version"),
             engine_version=item.get("engine_version"),
             source_releases=dict(item.get("source_releases", {})),
+            research_question=item.get("research_question", ""),
+            capabilities_demonstrated=tuple(item.get("capabilities_demonstrated", [])),
             learning_objectives=tuple(item.get("learning_objectives", [])),
             teaching_candidates=tuple(item.get("teaching_candidates", [])),
             candidate_lessons=tuple(item.get("candidate_lessons", [])),
             debrief=item["debrief"],
             debrief_points=tuple(item.get("debrief_points", [])),
+            limitations=tuple(item.get("limitations", [])),
+            next_research_questions=tuple(item.get("next_research_questions", [])),
             references=tuple(item.get("references", [])),
             source_run_id=item.get("source_run_id"),
             fixture_sha256=item.get("fixture_sha256"),
@@ -89,6 +97,8 @@ def load_example_cases() -> tuple[ExampleCase, ...]:
                 or not case.reviewer
                 or not case.source_run_id
                 or not case.fixture_sha256
+                or not case.research_question
+                or not case.capabilities_demonstrated
                 or case.review_status != "published"
             ):
                 raise ValueError(
@@ -106,6 +116,8 @@ def load_example_cases() -> tuple[ExampleCase, ...]:
             if (
                 any(symbol not in lesson_symbols for symbol in case.teaching_candidates)
                 or not case.debrief_points
+                or not case.limitations
+                or not case.next_research_questions
                 or not case.references
             ):
                 raise ValueError("Published cases require reviewed lessons, debrief points, and references")
@@ -115,6 +127,10 @@ def load_example_cases() -> tuple[ExampleCase, ...]:
             or case.teaching_candidates
             or case.candidate_lessons
             or case.debrief_points
+            or case.limitations
+            or case.next_research_questions
+            or case.capabilities_demonstrated
+            or case.research_question
             or case.references
             or case.source_run_id is not None
             or case.fixture_sha256 is not None

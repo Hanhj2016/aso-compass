@@ -94,6 +94,10 @@ def test_case_manifests_match_and_all_reviewed_fixtures_are_published() -> None:
     public_cases = public["cases"]
     assert isinstance(public_cases, list)
     assert len(public_cases) == 6
+    assert all(case["research_question"] for case in public_cases)
+    assert all(case["capabilities_demonstrated"] for case in public_cases)
+    assert all(case["limitations"] for case in public_cases)
+    assert all(case["next_research_questions"] for case in public_cases)
 
 
 def test_unknown_case_cannot_be_loaded_as_example() -> None:

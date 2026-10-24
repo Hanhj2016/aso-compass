@@ -28,9 +28,10 @@ describe("ASO Compass", () => {
   it("leads with application capabilities and keeps operations secondary", async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole("button", { name: "Learn" }));
-    expect(screen.getByRole("heading", { name: /understand why a candidate was classified/i })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "What ASO Compass helps you investigate" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Case Studies" }));
+    expect(screen.getByRole("heading", { name: /biological evidence becomes a defensible research interpretation/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "What this portfolio demonstrates" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /portfolio in biomedical reasoning and research software/i })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Synthesize target evidence" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "The five research tracks" })).toBeVisible();
     expect(screen.getByText("Disease query", { selector: "h3" })).not.toBeVisible();
@@ -42,10 +43,11 @@ describe("ASO Compass", () => {
   it("provides a searchable English in-application glossary", async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole("button", { name: "Glossary" }));
+    await user.click(screen.getByRole("button", { name: "Methods & Glossary" }));
 
     expect(window.location.hash).toBe("#/glossary");
-    expect(screen.getByRole("heading", { name: "Glossary & interpretation guide" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Methods & Glossary" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /how the application builds a defensible result/i })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Core biology" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "LOEUF" })).toBeVisible();
     expect(screen.queryByText("简体中文")).not.toBeInTheDocument();

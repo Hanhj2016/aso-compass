@@ -7,6 +7,12 @@ describe("educational case manifest", () => {
     expect(PUBLISHED_CASES).toHaveLength(6);
     expect(DEFAULT_CASE.teaching_candidates).toEqual(["SOD1", "TARDBP", "FUS"]);
     expect(DEFAULT_CASE.fixture_file).toBe("als-v4.1.json");
+    for (const caseStudy of PUBLISHED_CASES) {
+      expect(caseStudy.research_question).not.toBe("");
+      expect(caseStudy.capabilities_demonstrated.length).toBeGreaterThan(0);
+      expect(caseStudy.limitations.length).toBeGreaterThan(0);
+      expect(caseStudy.next_research_questions.length).toBeGreaterThan(0);
+    }
   });
 
   it("records a reviewed sparse-result exception without changing thresholds", () => {
