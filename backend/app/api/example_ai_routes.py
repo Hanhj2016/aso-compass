@@ -75,11 +75,38 @@ from app.services.ai_run_summaries import (
     get_run_summary_provider,
     validate_run_summary_source_ids,
 )
-from app.services.example_bundles import ExampleBundle, load_example_bundle
+from app.services.example_bundles import ExampleBundle, load_example_bundle, published_example_cases
 from app.services.rate_limit import ai_explanation_limiter
 
 router = APIRouter(prefix="/api/v1/examples")
 SessionDep = Annotated[Session, Depends(get_session)]
+
+
+@router.get("")
+def list_published_examples() -> dict[str, object]:
+    """Expose reviewed example metadata without exposing unpublished fixtures."""
+
+    return {
+        "schema_version": "educational-case-manifest-v1",
+        "cases": [
+            {
+                "case_id": case.case_id,
+                "slug": case.slug,
+                "example_id": case.example_id,
+                "title": case.title,
+                "disease_id": case.disease_id,
+                "fixture_version": case.fixture_version,
+                "engine_version": case.engine_version,
+                "source_releases": case.source_releases,
+                "learning_objectives": list(case.learning_objectives),
+                "teaching_candidates": list(case.teaching_candidates),
+                "debrief": case.debrief,
+                "review_status": case.review_status,
+                "reviewer": case.reviewer,
+            }
+            for case in published_example_cases()
+        ],
+    }
 
 
 def _require_ai(request: Request, settings: Settings) -> None:

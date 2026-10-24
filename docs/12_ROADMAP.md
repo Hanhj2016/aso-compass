@@ -23,7 +23,8 @@
 - contextual terminology popovers and candidate evidence-source maps;
 - a bounded ClinVar interpretation checkpoint with versioned review-status, conflict, date, and
   variant-condition metadata; submitter count remains explicitly unavailable in the current upstream contract;
-- a scientifically reviewed educational case series following `docs/18_EDUCATIONAL_CASE_SERIES.md`;
+- a review-gated educational case series following `docs/18_EDUCATIONAL_CASE_SERIES.md`; the typed manifest
+  and interactive frozen ALS module are implemented, while the other five fixtures remain pending review;
 - saved parameter presets and shareable read-only run links;
 - stronger accessibility/usability testing with students;
 - source-status dashboard; deterministic summary/full print reports are implemented, while signed or

@@ -8,6 +8,7 @@ from app.api.example_ai_routes import (
     explain_example_candidate,
     get_saved_example_candidate_explanation,
     get_saved_example_summary,
+    list_published_examples,
     summarize_example,
 )
 from app.core.settings import Settings
@@ -15,7 +16,7 @@ from app.models import AIInsight, Run
 from app.schemas.ai import CandidateExplanationOutput, RunSummaryOutput
 from app.services.ai_explanations import ProviderResult
 from app.services.ai_run_summaries import RunSummaryProviderResult
-from app.services.example_bundles import load_example_bundle
+from app.services.example_bundles import load_example_bundle, load_example_cases, published_example_cases
 
 
 class FakeProvider:
@@ -71,6 +72,28 @@ def test_server_example_matches_frontend_bundle() -> None:
     backend_file = Path(__file__).parents[1] / "app/data/examples/als-v4.1.json"
     frontend_file = Path(__file__).parents[2] / "frontend/public/examples/als-v4.1.json"
     assert json.loads(backend_file.read_text()) == json.loads(frontend_file.read_text())
+
+
+def test_case_manifests_match_and_only_reviewed_fixture_is_published() -> None:
+    backend_file = Path(__file__).parents[1] / "app/data/examples/manifest.json"
+    frontend_file = Path(__file__).parents[2] / "frontend/src/caseManifest.json"
+    assert json.loads(backend_file.read_text()) == json.loads(frontend_file.read_text())
+
+    cases = load_example_cases()
+    published = published_example_cases()
+    assert len(cases) == 6
+    assert [case.slug for case in published] == ["als"]
+    assert published[0].teaching_candidates == ("SOD1", "TARDBP", "FUS")
+    assert all(case.fixture_file is None for case in cases if case.status == "planned")
+
+    public = list_published_examples()
+    public_cases = public["cases"]
+    assert isinstance(public_cases, list)
+    assert [case["slug"] for case in public_cases] == ["als"]
+
+
+def test_unreviewed_case_cannot_be_loaded_as_example() -> None:
+    assert load_example_bundle("huntington-model-boundaries", "test") is None
 
 
 def test_empty_example_ai_cache_probe_returns_no_content(api) -> None:

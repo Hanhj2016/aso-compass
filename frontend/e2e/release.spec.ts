@@ -66,6 +66,27 @@ test("guided tutorial leads into the offline evidence example", async ({ page })
   await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
 });
 
+test("published ALS case is directly addressable and leads to the complete frozen result", async ({ page }) => {
+  await page.goto("/#/learn/cases/als");
+  await expect(page.getByRole("heading", { name: "Amyotrophic lateral sclerosis (ALS)" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Learning objectives" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /SOD1 Knockdown/i })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("Approved: TOFERSEN")).toBeVisible();
+
+  await page.getByRole("button", { name: /TARDBP Knockdown/i }).click();
+  await expect(page.getByText(/LoF-intolerant: full knockdown risky/i)).toBeVisible();
+  await expect(page.getByText("What does the recorded therapeutic precedent add—and what does it not prove?")).not.toBeVisible();
+  await page.getByRole("button", { name: /FUS Splice \/ upregulation/i }).click();
+  await expect(page.getByText("500/542")).toBeVisible();
+
+  const audit = await new AxeBuilder({ page }).analyze();
+  expect(audit.violations.filter(item => item.impact === "critical" || item.impact === "serious")).toEqual([]);
+
+  await page.getByRole("button", { name: /open full saved result/i }).click();
+  await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
+  await expect(page.locator("main .metrics .metric").filter({ hasText: "Candidates" }).locator("b")).toHaveText("6");
+});
+
 test("English glossary is directly addressable and searchable", async ({ page }) => {
   await page.goto("/#/glossary");
   await expect(page.getByRole("heading", { name: "Glossary & interpretation guide" })).toBeVisible();

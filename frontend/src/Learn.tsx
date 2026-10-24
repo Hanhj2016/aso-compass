@@ -1,6 +1,9 @@
+import { EDUCATIONAL_CASES } from "./caseStudies";
+
 type LearnProps = {
   disclaimer: string;
   onExample: () => void;
+  onCase: (slug: string) => void;
   onResumeSaved?: () => void;
 };
 
@@ -63,14 +66,6 @@ const COPY = {
     casesEyebrow: "Curated case series",
     casesTitle: "Build interpretation skills one mechanism at a time",
     casesIntro: "Each module has a distinct learning objective. Only scientifically reviewed, frozen evidence fixtures become runnable; pending modules are a curriculum roadmap, not candidate results.",
-    cases: [
-      ["01", "Amyotrophic lateral sclerosis", "Available", "Compare multiple mechanism tracks, constraint warnings, capped evidence, and SOD1 precedent.", "Multiple evidence paths"],
-      ["02", "Huntington disease", "Fixture review pending", "Learn why repeat expansion can remain invisible to ordinary small-variant count heuristics.", "Model boundaries"],
-      ["03", "Spinal muscular atrophy", "Fixture review pending", "Distinguish SMN1 disease biology from SMN2 splice modulation and known ASO precedent.", "Splice modulation"],
-      ["04", "Duchenne muscular dystrophy", "Fixture review pending", "Separate gene-level direction from exon skipping, reading-frame restoration, and sequence design.", "Exon concepts"],
-      ["05", "Hereditary ATTR amyloidosis", "Fixture review pending", "Connect toxic protein reduction, tissue delivery, and indication-specific therapeutic precedent.", "Knockdown precedent"],
-      ["06", "Dravet syndrome", "Fixture review pending", "Recognize haploinsufficiency and why applying non-selective knockdown logic can be hazardous.", "Direction and safety"],
-    ],
     aiEyebrow: "Optional interpretation",
     aiTitle: "Where the LLM fits",
     aiFlow: ["Saved deterministic record", "Bounded evidence packet", "Structured model output", "Server-side fact and citation validation", "Separately labeled explanation"],
@@ -101,7 +96,7 @@ const COPY = {
   },
 } as const;
 
-export default function Learn({ disclaimer, onExample, onResumeSaved }: LearnProps) {
+export default function Learn({ disclaimer, onExample, onCase, onResumeSaved }: LearnProps) {
   const copy = COPY.en;
 
   return <main id="main" className="learn-view">
@@ -144,9 +139,9 @@ export default function Learn({ disclaimer, onExample, onResumeSaved }: LearnPro
 
     <section className="learn-section" aria-labelledby="learn-cases">
       <p className="eyebrow">{copy.casesEyebrow}</p><h2 id="learn-cases">{copy.casesTitle}</h2><p className="learn-intro">{copy.casesIntro}</p>
-      <div className="learn-case-grid">{copy.cases.map(([number, title, status, objective, concept], index) => <article key={title} className={index === 0 ? "case-available" : "case-pending"}>
-        <div><span>{number}</span><small>{status}</small></div><h3>{title}</h3><p>{objective}</p><b>{concept}</b>
-        {index === 0 && <button className="secondary-button" onClick={onExample}>Open reviewed case <span aria-hidden="true">→</span></button>}
+      <div className="learn-case-grid">{EDUCATIONAL_CASES.map((caseStudy, index) => <article key={caseStudy.case_id} className={caseStudy.status === "published" ? "case-available" : "case-pending"}>
+        <div><span>{String(index + 1).padStart(2, "0")}</span><small>{caseStudy.status === "published" ? "Available" : "Fixture review pending"}</small></div><h3>{caseStudy.title}</h3><p>{caseStudy.learning_objectives[0]}</p><b>{caseStudy.status === "published" ? `${caseStudy.teaching_candidates.length} guided candidates` : "Curriculum roadmap"}</b>
+        {caseStudy.status === "published" && <button className="secondary-button" onClick={() => onCase(caseStudy.slug)}>Open published case <span aria-hidden="true">→</span></button>}
       </article>)}</div>
     </section>
 

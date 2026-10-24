@@ -256,3 +256,26 @@ export interface AIQuestionAnswer {
 }
 
 export interface ExampleBundle { run: RunRecord; candidates: Candidate[]; events: RunEvent[] }
+
+export interface EducationalCase {
+  case_id: string;
+  slug: string;
+  example_id: string | null;
+  title: string;
+  disease_id: string;
+  status: "published" | "planned";
+  fixture_file: string | null;
+  fixture_version: string | null;
+  engine_version: string | null;
+  source_releases: Record<string, string>;
+  learning_objectives: string[];
+  teaching_candidates: string[];
+  debrief: string;
+  review_status: "published" | "pending";
+  reviewer: string | null;
+}
+
+export interface EducationalCaseManifest {
+  schema_version: "educational-case-manifest-v1";
+  cases: EducationalCase[];
+}

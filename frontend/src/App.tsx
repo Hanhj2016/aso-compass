@@ -1,6 +1,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { askSavedEvidenceQuestion, compareCandidates, createRun, explainCandidate, exportUrl, getCandidates, getEvents, getPublicConfig, getRun, getSavedCandidateExplanation, getSavedRunSummary, summarizeRun } from "./api";
+import CaseStudyPage from "./CaseStudyPage";
 import CandidatePrintReport from "./CandidatePrintReport";
+import { DEFAULT_CASE, findCaseBySlug } from "./caseStudies";
 import GlossaryPage from "./GlossaryPage";
 import Learn from "./Learn";
 import { ClinVarLearningCheckpoint, EvidenceSourceMap, MechanismHelp, TermHelp } from "./education";
@@ -12,7 +14,7 @@ const DISCLAIMER = "For hypothesis generation and education only. Not for clinic
 const AI_ACCESS_STORAGE_KEY = "aso-compass-ai-access-token";
 const LAST_RUN_STORAGE_KEY = "aso-compass-run";
 type AIConfigStatus = "loading" | "ready" | "error";
-type AppView = "analyze" | "learn" | "glossary";
+type AppView = "analyze" | "learn" | "case" | "glossary";
 const PRESETS = [
   ["MONDO_0004976", "Amyotrophic lateral sclerosis (ALS)"],
   ["MONDO_0004975", "Alzheimer disease"],
@@ -504,6 +506,7 @@ function Glossary() {
 }
 
 function viewFromHash(): AppView {
+  if (window.location.hash.startsWith("#/learn/cases/")) return "case";
   if (window.location.hash === "#/learn") return "learn";
   if (window.location.hash === "#/glossary") return "glossary";
   return "analyze";
@@ -526,6 +529,15 @@ export default function App() {
     url.hash = nextView === "analyze" ? "" : `/${nextView}`;
     window.history.pushState(null, "", url);
     setView(nextView);
+  }, []);
+
+  const navigateToCase = useCallback((slug: string) => {
+    const caseStudy = findCaseBySlug(slug);
+    if (!caseStudy || caseStudy.status !== "published") return;
+    const url = new URL(window.location.href);
+    url.hash = `/learn/cases/${caseStudy.slug}`;
+    window.history.pushState(null, "", url);
+    setView("case");
   }, []);
 
   useEffect(() => {
@@ -596,7 +608,7 @@ export default function App() {
   }, [runId, runStatus, example]);
 
   function rememberRun(created: RunRecord) { localStorage.setItem(LAST_RUN_STORAGE_KEY, created.id); setSavedRunId(created.id); setRun(created); setCandidates([]); setEvents([]); setExample(false); showRunInUrl(created.id); }
-  async function loadExample() { const response = await fetch("/examples/als-v4.1.json"); const bundle = await response.json() as ExampleBundle; setRun(bundle.run); setCandidates(bundle.candidates); setEvents(bundle.events); setExample(true); navigateToView("analyze"); showRunInUrl(null); }
+  async function loadExample() { const response = await fetch(`/examples/${DEFAULT_CASE.fixture_file}`); const bundle = await response.json() as ExampleBundle; setRun(bundle.run); setCandidates(bundle.candidates); setEvents(bundle.events); setExample(true); navigateToView("analyze"); showRunInUrl(null); }
   function reset() { setRun(null); setCandidates([]); setEvents([]); setExample(false); showRunInUrl(null); }
   function unlockAI(token: string) { sessionStorage.setItem(AI_ACCESS_STORAGE_KEY, token); setAiAccessToken(token); }
   function lockAI() { sessionStorage.removeItem(AI_ACCESS_STORAGE_KEY); setAiAccessToken(""); }
@@ -612,5 +624,8 @@ export default function App() {
   if (run && ["queued", "running"].includes(run.status)) content = <Progress run={run} events={events} onReset={reset}/>;
   if (run?.status === "succeeded" && candidates.length) content = <Results run={run} candidates={candidates} isExample={example} aiEnabled={aiEnabled} aiConfigStatus={aiConfigStatus} aiAccessRequired={aiAccessRequired} aiAccessToken={aiAccessToken} onRetryAIConfig={retryAIConfig} onUnlockAI={unlockAI} onLockAI={lockAI} onReset={reset} onResumeSaved={example ? resumeSaved : undefined}/>;
   if (run?.status === "failed") content = <section className="progress-view"><p className="eyebrow">Analysis stopped</p><h1>The run could not be completed.</h1><p>{run.error_message}</p><button className="primary-button compact" onClick={reset}>Start again</button><button className="text-button" onClick={() => void loadExample()}>Open the example instead →</button></section>;
-  return <><Header view={view} onView={navigateToView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()} onResumeSaved={resumeSaved}/> : view === "glossary" ? <GlossaryPage disclaimer={DISCLAIMER}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
+  const caseSlug = view === "case" ? window.location.hash.slice("#/learn/cases/".length) : null;
+  const caseStudy = findCaseBySlug(caseSlug);
+  const headerView = view === "case" ? "learn" : view;
+  return <><Header view={headerView} onView={navigateToView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()} onCase={navigateToCase} onResumeSaved={resumeSaved}/> : view === "case" && caseStudy?.status === "published" ? <CaseStudyPage key={caseStudy.case_id} caseStudy={caseStudy} disclaimer={DISCLAIMER} onBack={() => navigateToView("learn")} onOpenResults={() => void loadExample()}/> : view === "glossary" ? <GlossaryPage disclaimer={DISCLAIMER}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
 }

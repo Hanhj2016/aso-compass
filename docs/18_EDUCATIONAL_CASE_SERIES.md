@@ -24,13 +24,14 @@ candidate was selected for teaching, but must not present the selection as a tre
 
 ## Progression
 
-### 1. Amyotrophic lateral sclerosis — available foundation
+### 1. Amyotrophic lateral sclerosis — published module
 
 - **Identifier:** `MONDO_0004976`
 - **Learning objectives:** compare multiple mechanism tracks; distinguish association from direction;
   recognize constraint warnings, capped evidence, and SOD1 therapeutic precedent.
-- **Current teaching candidates:** the bundled fixture contains SOD1, TARDBP, TUBA4A, FUS, C9orf72, and
-  NEK1. A future exercise view should select three to five per activity rather than changing the fixture.
+- **Current teaching candidates:** the interactive module selects SOD1, TARDBP, and FUS from the bundled
+  six-candidate fixture. It teaches therapeutic precedent, direction-versus-safety review, and capped-evidence
+  interpretation without changing the underlying candidate records.
 - **Debrief:** similar association strength can coexist with different mechanisms, safety context, evidence
   completeness, and translational precedent.
 
@@ -83,15 +84,19 @@ candidate was selected for teaching, but must not present the selection as a tre
 - **Debrief:** association strength alone cannot choose intervention direction, and restoration-oriented logic
   still requires feasibility and safety review.
 
-## Implementation sequence
+## Implementation status and sequence
 
-1. Keep ALS as the only published case until the next fixture passes scientific review.
-2. Add a typed case manifest separate from candidate data; the manifest holds objectives, debrief, review
-   status, and fixture filename.
-3. Generalize the current example loader and example AI routes from one hard-coded file to the reviewed
-   manifest allow-list.
-4. Add case selection to Learn only for `published` manifests. Never display placeholder candidate results.
-5. Add schema, fixture, golden-case, UI, and AI grounding tests for each case independently.
+1. **Implemented:** ALS remains the only published case until another fixture passes the review gates.
+2. **Implemented:** a typed case manifest, separate from candidate data, holds objectives, debrief, status,
+   reviewer attribution, source releases, teaching candidates, and fixture filename.
+3. **Implemented:** the backend example loader and example AI routes use the published-manifest allow-list;
+   unreviewed manifest entries cannot be loaded through those routes.
+4. **Implemented:** Learn shows the complete curriculum but opens exercises only for `published` manifests;
+   placeholder candidate results are never displayed.
+5. **Implemented for ALS:** direct routing, three-candidate exercises, evidence-source tracing, a ClinVar
+   missingness checkpoint, responsive/accessibility tests, and entry into the complete frozen result.
+6. **Required for every next case:** add and scientifically review the fixture, then add schema, golden-case,
+   UI, and AI-grounding tests independently before changing its manifest status to `published`.
 
 ## ClinVar exercise contract
 
