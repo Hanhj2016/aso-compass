@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { askSavedEvidenceQuestion, compareCandidates, createRun, explainCandidate, exportUrl, getCandidates, getEvents, getPublicConfig, getRun, getSavedCandidateExplanation, getSavedRunSummary, summarizeRun } from "./api";
 import CandidatePrintReport from "./CandidatePrintReport";
+import GlossaryPage from "./GlossaryPage";
 import Learn from "./Learn";
 import { ClinVarLearningCheckpoint, EvidenceSourceMap, MechanismHelp, TermHelp } from "./education";
 import PrintReport from "./PrintReport";
@@ -11,6 +12,7 @@ const DISCLAIMER = "For hypothesis generation and education only. Not for clinic
 const AI_ACCESS_STORAGE_KEY = "aso-compass-ai-access-token";
 const LAST_RUN_STORAGE_KEY = "aso-compass-run";
 type AIConfigStatus = "loading" | "ready" | "error";
+type AppView = "analyze" | "learn" | "glossary";
 const PRESETS = [
   ["MONDO_0004976", "Amyotrophic lateral sclerosis (ALS)"],
   ["MONDO_0004975", "Alzheimer disease"],
@@ -34,15 +36,16 @@ function AIIcon({ size = 16 }: { size?: number }) {
   </svg>;
 }
 
-function Header({ view, onView }: { view: string; onView: (view: "analyze" | "learn") => void }) {
+function Header({ view, onView }: { view: AppView; onView: (view: AppView) => void }) {
   return <header className="site-header">
-    <button className="brand" onClick={() => onView("analyze")}>
+    <button className="brand" type="button" onClick={() => onView("analyze")}>
       <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
       <span><b>ASO</b> Compass<small>Evidence-guided exploration</small></span>
     </button>
     <nav aria-label="Primary navigation">
-      <button className={view === "analyze" ? "active" : ""} onClick={() => onView("analyze")}>Analyze</button>
-      <button className={view === "learn" ? "active" : ""} onClick={() => onView("learn")}>Learn</button>
+      <button type="button" className={view === "analyze" ? "active" : ""} onClick={() => onView("analyze")}>Analyze</button>
+      <button type="button" className={view === "learn" ? "active" : ""} onClick={() => onView("learn")}>Learn</button>
+      <button type="button" className={view === "glossary" ? "active" : ""} onClick={() => onView("glossary")}>Glossary</button>
     </nav>
     <span className="research-pill">Research use only</span>
   </header>;
@@ -497,11 +500,17 @@ function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAcce
 
 function Glossary() {
   const entries = [["LOEUF","A population constraint measure. Lower values suggest less tolerance for loss-of-function variation."],["G2P","Gene2Phenotype annotations that can provide mechanism and inheritance evidence."],["Modifier","An association without enough directional variant evidence to infer knockdown or upregulation."],["ASO precedent","A target-linked oligonucleotide drug or text-matched interventional trial that still requires manual confirmation."]];
-  return <section className="glossary"><p className="eyebrow">Educational glossary</p><h2>Read the evidence, not just the rank</h2><div className="glossary-cards">{entries.map(([term, definition]) => <details key={term}><summary>{term}<span>+</span></summary><p>{definition}</p></details>)}</div><div className="print-glossary" aria-hidden="true">{entries.map(([term, definition]) => <article key={term}><b>{term}</b><p>{definition}</p></article>)}</div></section>;
+  return <section className="glossary"><p className="eyebrow">Quick glossary</p><h2>Read the evidence, not just the rank</h2><p><a className="text-button" href="#/glossary">Browse the complete in-application glossary →</a></p><div className="glossary-cards">{entries.map(([term, definition]) => <details key={term}><summary>{term}<span>+</span></summary><p>{definition}</p></details>)}</div><div className="print-glossary" aria-hidden="true">{entries.map(([term, definition]) => <article key={term}><b>{term}</b><p>{definition}</p></article>)}</div></section>;
+}
+
+function viewFromHash(): AppView {
+  if (window.location.hash === "#/learn") return "learn";
+  if (window.location.hash === "#/glossary") return "glossary";
+  return "analyze";
 }
 
 export default function App() {
-  const [view, setView] = useState<"analyze" | "learn">("analyze");
+  const [view, setView] = useState<AppView>(viewFromHash);
   const [run, setRun] = useState<RunRecord | null>(null); const [events, setEvents] = useState<RunEvent[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]); const [example, setExample] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
@@ -511,6 +520,23 @@ export default function App() {
   const [savedRunId, setSavedRunId] = useState(() => localStorage.getItem(LAST_RUN_STORAGE_KEY));
   const runId = run?.id;
   const runStatus = run?.status;
+
+  const navigateToView = useCallback((nextView: AppView) => {
+    const url = new URL(window.location.href);
+    url.hash = nextView === "analyze" ? "" : `/${nextView}`;
+    window.history.pushState(null, "", url);
+    setView(nextView);
+  }, []);
+
+  useEffect(() => {
+    const syncView = () => setView(viewFromHash());
+    window.addEventListener("hashchange", syncView);
+    window.addEventListener("popstate", syncView);
+    return () => {
+      window.removeEventListener("hashchange", syncView);
+      window.removeEventListener("popstate", syncView);
+    };
+  }, []);
 
   const refreshAIConfig = useCallback(async () => {
     try {
@@ -532,7 +558,7 @@ export default function App() {
     window.history.replaceState(null, "", url);
   }, []);
 
-  const restoreRun = useCallback(async (id: string) => {
+  const restoreRun = useCallback(async (id: string, navigateToRun = true) => {
     const [restored, restoredEvents] = await Promise.all([getRun(id), getEvents(id)]);
     const restoredCandidates = restored.status === "succeeded" ? await getCandidates(id) : [];
     localStorage.setItem(LAST_RUN_STORAGE_KEY, id);
@@ -541,9 +567,9 @@ export default function App() {
     setEvents(restoredEvents);
     setCandidates(restoredCandidates);
     setExample(false);
-    setView("analyze");
+    if (navigateToRun) navigateToView("analyze");
     showRunInUrl(id);
-  }, [showRunInUrl]);
+  }, [navigateToView, showRunInUrl]);
 
   useEffect(() => {
     const configTimer = window.setTimeout(() => void refreshAIConfig(), 0);
@@ -551,7 +577,7 @@ export default function App() {
     if (saved) {
       void (async () => {
         try {
-          await restoreRun(saved);
+          await restoreRun(saved, false);
         } catch {
           if (localStorage.getItem(LAST_RUN_STORAGE_KEY) === saved) {
             localStorage.removeItem(LAST_RUN_STORAGE_KEY);
@@ -570,7 +596,7 @@ export default function App() {
   }, [runId, runStatus, example]);
 
   function rememberRun(created: RunRecord) { localStorage.setItem(LAST_RUN_STORAGE_KEY, created.id); setSavedRunId(created.id); setRun(created); setCandidates([]); setEvents([]); setExample(false); showRunInUrl(created.id); }
-  async function loadExample() { const response = await fetch("/examples/als-v4.1.json"); const bundle = await response.json() as ExampleBundle; setRun(bundle.run); setCandidates(bundle.candidates); setEvents(bundle.events); setExample(true); setView("analyze"); showRunInUrl(null); }
+  async function loadExample() { const response = await fetch("/examples/als-v4.1.json"); const bundle = await response.json() as ExampleBundle; setRun(bundle.run); setCandidates(bundle.candidates); setEvents(bundle.events); setExample(true); navigateToView("analyze"); showRunInUrl(null); }
   function reset() { setRun(null); setCandidates([]); setEvents([]); setExample(false); showRunInUrl(null); }
   function unlockAI(token: string) { sessionStorage.setItem(AI_ACCESS_STORAGE_KEY, token); setAiAccessToken(token); }
   function lockAI() { sessionStorage.removeItem(AI_ACCESS_STORAGE_KEY); setAiAccessToken(""); }
@@ -586,5 +612,5 @@ export default function App() {
   if (run && ["queued", "running"].includes(run.status)) content = <Progress run={run} events={events} onReset={reset}/>;
   if (run?.status === "succeeded" && candidates.length) content = <Results run={run} candidates={candidates} isExample={example} aiEnabled={aiEnabled} aiConfigStatus={aiConfigStatus} aiAccessRequired={aiAccessRequired} aiAccessToken={aiAccessToken} onRetryAIConfig={retryAIConfig} onUnlockAI={unlockAI} onLockAI={lockAI} onReset={reset} onResumeSaved={example ? resumeSaved : undefined}/>;
   if (run?.status === "failed") content = <section className="progress-view"><p className="eyebrow">Analysis stopped</p><h1>The run could not be completed.</h1><p>{run.error_message}</p><button className="primary-button compact" onClick={reset}>Start again</button><button className="text-button" onClick={() => void loadExample()}>Open the example instead →</button></section>;
-  return <><Header view={view} onView={setView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()} onResumeSaved={resumeSaved}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
+  return <><Header view={view} onView={navigateToView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()} onResumeSaved={resumeSaved}/> : view === "glossary" ? <GlossaryPage disclaimer={DISCLAIMER}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
 }

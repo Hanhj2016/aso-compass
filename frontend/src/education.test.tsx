@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { ClinVarLearningCheckpoint, EvidenceSourceMap, MechanismHelp, TermHelp } from "./education";
 import type { Candidate } from "./types";
@@ -30,13 +31,42 @@ const candidate: Candidate = {
 };
 
 describe("contextual education", () => {
-  it("provides all four terminology explanation layers and a glossary link", () => {
+  it("provides all four terminology explanation layers and a glossary link", async () => {
+    const user = userEvent.setup();
     render(<TermHelp term="loeuf"/>);
+    await user.click(screen.getByRole("button", { name: "Explain LOEUF" }));
     expect(screen.getByText("Plain language")).toBeInTheDocument();
     expect(screen.getByText("Biological meaning")).toBeInTheDocument();
     expect(screen.getByText("Inside ASO Compass")).toBeInTheDocument();
     expect(screen.getByText("Common mistake")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /full glossary/i })).toHaveAttribute("href", expect.stringContaining("17_ASO_GLOSSARY"));
+    expect(screen.getByRole("link", { name: /full glossary/i })).toHaveAttribute("href", "#/glossary");
+    await user.click(screen.getByRole("button", { name: "Close LOEUF explanation" }));
+  });
+
+  it("keeps one explanation open and supports Escape and outside-click dismissal", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<div>
+      <TermHelp term="loeuf"/>
+      <TermHelp term="capped"/>
+      <button type="button">Outside</button>
+    </div>);
+
+    const loeufTrigger = within(container).getByRole("button", { name: "Explain LOEUF" });
+    const cappedTrigger = within(container).getByRole("button", { name: "Explain evidence capped" });
+    await user.click(loeufTrigger);
+    expect(screen.getByRole("dialog", { name: "LOEUF" })).toBeInTheDocument();
+
+    await user.click(cappedTrigger);
+    expect(screen.queryByRole("dialog", { name: "LOEUF" })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "evidence capped" })).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(cappedTrigger).toHaveFocus();
+
+    await user.click(loeufTrigger);
+    await user.click(within(container).getByRole("button", { name: "Outside" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("separates support from limitations for every candidate source", () => {

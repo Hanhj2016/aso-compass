@@ -33,7 +33,10 @@ test("guided form and offline evidence example are usable", async ({ page }) => 
   await expect(page.getByRole("heading", { name: /a ClinVar classification is more than a label/i })).toBeVisible();
   const evidenceDialog = page.getByRole("dialog", { name: "SOD1" });
   await evidenceDialog.getByLabel("Explain LOEUF").click();
-  await expect(evidenceDialog.getByRole("note").filter({ hasText: "LOEUF" })).toBeVisible();
+  const termDialog = page.getByRole("dialog", { name: "LOEUF" });
+  await expect(termDialog).toBeVisible();
+  await termDialog.getByRole("button", { name: "Close LOEUF explanation" }).click();
+  await expect(termDialog).not.toBeVisible();
   const clinVarSource = evidenceDialog.locator(".source-map-list details").filter({ hasText: "ClinVar / EVA" });
   await clinVarSource.getByText("ClinVar / EVA", { exact: true }).click();
   await expect(clinVarSource.getByText("Cannot support", { exact: true })).toBeVisible();
@@ -61,6 +64,18 @@ test("guided tutorial leads into the offline evidence example", async ({ page })
   await page.getByRole("button", { name: /open the guided ALS example/i }).first().click();
   await expect(page.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();
   await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
+});
+
+test("English glossary is directly addressable and searchable", async ({ page }) => {
+  await page.goto("/#/glossary");
+  await expect(page.getByRole("heading", { name: "Glossary & interpretation guide" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Core biology" })).toBeVisible();
+
+  await page.getByRole("searchbox", { name: "Search glossary" }).fill("dominant negative");
+  await expect(page.getByRole("heading", { name: "DN" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ASO" })).not.toBeVisible();
+  await page.getByRole("button", { name: "Clear" }).click();
+  await expect(page.getByRole("heading", { name: "ASO" })).toBeVisible();
 });
 
 test("a bundled example can return to the latest persisted live run", async ({ page }) => {

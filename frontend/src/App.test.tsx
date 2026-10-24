@@ -12,7 +12,7 @@ vi.mock("./pdfExport", () => ({
   downloadCandidatePdf: downloadCandidatePdfMock,
 }));
 
-afterEach(() => { cleanup(); localStorage.clear(); sessionStorage.clear(); vi.clearAllMocks(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); localStorage.clear(); sessionStorage.clear(); window.history.replaceState(null, "", "/"); vi.clearAllMocks(); vi.restoreAllMocks(); });
 
 describe("ASO Compass", () => {
   it("requires acknowledgement before a run can start", async () => {
@@ -33,6 +33,24 @@ describe("ASO Compass", () => {
     expect(screen.getByText(/not a clinical answer/i)).toBeVisible();
     expect(screen.getByRole("heading", { name: "The five research tracks" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "简体中文" })).not.toBeInTheDocument();
+  });
+
+  it("provides a searchable English in-application glossary", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Glossary" }));
+
+    expect(window.location.hash).toBe("#/glossary");
+    expect(screen.getByRole("heading", { name: "Glossary & interpretation guide" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Core biology" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "LOEUF" })).toBeVisible();
+    expect(screen.queryByText("简体中文")).not.toBeInTheDocument();
+
+    await user.type(screen.getByRole("searchbox", { name: "Search glossary" }), "dominant negative");
+    expect(screen.getByRole("heading", { name: "DN" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "ASO" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Clear" }));
+    expect(screen.getByRole("heading", { name: "ASO" })).toBeVisible();
   });
 
   it("constrains AI comparison selection to saved candidates", async () => {

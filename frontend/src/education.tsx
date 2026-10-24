@@ -1,83 +1,157 @@
-import { useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { TERMS, type TermKey } from "./glossaryTerms";
 import type { Candidate } from "./types";
 
-const FULL_GLOSSARY_URL = "https://github.com/Hanhj2016/aso-compass/blob/main/docs/17_ASO_GLOSSARY_AND_RATIONALE.md";
+const FULL_GLOSSARY_URL = "#/glossary";
 
-type TermDefinition = {
-  label: string;
-  plain: string;
-  biology: string;
-  app: string;
-  mistake: string;
-};
+let activeTermHelpId: string | null = null;
+const termHelpListeners = new Set<() => void>();
 
-const TERMS = {
-  loeuf: {
-    label: "LOEUF",
-    plain: "A population-based estimate of how tolerant a gene is to loss-of-function variants; lower values indicate less tolerance.",
-    biology: "Genes depleted of loss-of-function variants in population data may be dosage-sensitive or important for normal function.",
-    app: "ASO Compass uses LOEUF as safety context and a review flag. It does not choose the mechanism track.",
-    mistake: "A low LOEUF does not prove that a target is undruggable, and a high LOEUF does not prove that knockdown is safe.",
-  },
-  gof: {
-    label: "GoF",
-    plain: "Gain of function: a variant gives a gene product increased, new, or abnormally active function.",
-    biology: "Disease can arise from harmful activity rather than from too little normal function.",
-    app: "A curated G2P GoF annotation can support a knockdown direction, subject to safety and manual review.",
-    mistake: "GoF does not mean that every variant in the gene acts the same way or that full knockdown is safe.",
-  },
-  dn: {
-    label: "DN",
-    plain: "Dominant negative: an altered gene product interferes with the normal product.",
-    biology: "One altered copy can disrupt the function of the product made by the unaffected copy.",
-    app: "A curated G2P DN annotation can support a knockdown direction, but allele specificity and residual normal function still matter.",
-    mistake: "DN is not simply another name for dominant inheritance, and it does not automatically justify non-selective knockdown.",
-  },
-  haploinsufficiency: {
-    label: "haploinsufficiency",
-    plain: "One working copy of a gene does not produce enough normal function.",
-    biology: "Reducing functional dosage to roughly one copy can contribute to disease.",
-    app: "ASO Compass treats dominant loss-of-function evidence as a warning against indiscriminate knockdown and as support for restoration-oriented review.",
-    mistake: "It does not prove that upregulation or splice correction is feasible, effective, or safe.",
-  },
-  capped: {
-    label: "evidence capped",
-    plain: "The source contained more records than the run was configured to retrieve.",
-    biology: "The observed evidence mixture may not represent the complete set of known records.",
-    app: "ASO Compass marks the candidate for manual review and warns that calculated consequence fractions may be incomplete.",
-    mistake: "Capped does not mean negative, low quality, or absent evidence; it means the retrieval was truncated.",
-  },
-  reviewStatus: {
-    label: "review status",
-    plain: "ClinVar's indication of the review and consensus supporting a submitted or aggregate classification.",
-    biology: "Expert-panel review, multiple agreeing submitters, a single submitter, and conflicting submissions carry different evidentiary context.",
-    app: "New ASO Compass runs retain the review-status text returned through Open Targets EVA and summarize its coverage. Older bundled examples may not contain it.",
-    mistake: "A pathogenic label without its review status, condition, submitter evidence, and date should not be treated as equally certain in every context.",
-  },
-  lof: {
-    label: "LoF",
-    plain: "Loss of function: a variant is expected to reduce or remove normal gene-product function.",
-    biology: "Loss of normal function may contribute to disease, but the effect depends on gene, allele, inheritance, transcript, and condition.",
-    app: "ASO Compass uses categorized consequence counts and curated G2P mechanism evidence to infer a research direction.",
-    mistake: "A predicted LoF consequence is not automatically a pathogenic classification or proof of haploinsufficiency.",
-  },
-} satisfies Record<string, TermDefinition>;
+function subscribeToActiveTermHelp(listener: () => void) {
+  termHelpListeners.add(listener);
+  return () => termHelpListeners.delete(listener);
+}
 
-export type TermKey = keyof typeof TERMS;
+function setActiveTermHelp(id: string | null) {
+  if (activeTermHelpId === id) return;
+  activeTermHelpId = id;
+  termHelpListeners.forEach(listener => listener());
+}
+
+function getActiveTermHelp() {
+  return activeTermHelpId;
+}
 
 export function TermHelp({ term, children }: { term: TermKey; children?: ReactNode }) {
   const entry = TERMS[term];
-  const [open, setOpen] = useState(false);
-  return <span className={`term-help${open ? " term-help-open" : ""}`}>
-    <button type="button" aria-label={`Explain ${entry.label}`} aria-expanded={open} onClick={() => setOpen(current => !current)}>{children ?? entry.label}<span aria-hidden="true">?</span></button>
-    <span className="term-popover" role="note">
-      <b className="term-popover-title">{entry.label}</b>
+  const reactId = useId();
+  const id = `term-help-${reactId.replaceAll(":", "")}`;
+  const activeId = useSyncExternalStore(subscribeToActiveTermHelp, getActiveTermHelp, getActiveTermHelp);
+  const open = activeId === id;
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const [mobile, setMobile] = useState(false);
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+
+  const close = useCallback((restoreFocus = false) => {
+    setActiveTermHelp(null);
+    if (restoreFocus) triggerRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia?.("(max-width: 650px)");
+    if (!query) return;
+    const update = () => setMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || mobile) return;
+    const place = () => {
+      const trigger = triggerRef.current?.getBoundingClientRect();
+      const popover = popoverRef.current?.getBoundingClientRect();
+      if (!trigger || !popover) return;
+      const margin = 12;
+      const gap = 8;
+      const left = Math.min(
+        Math.max(margin, trigger.left),
+        Math.max(margin, window.innerWidth - popover.width - margin),
+      );
+      const fitsBelow = trigger.bottom + gap + popover.height <= window.innerHeight - margin;
+      const top = fitsBelow
+        ? trigger.bottom + gap
+        : Math.max(margin, trigger.top - gap - popover.height);
+      setPosition({ left, top });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [mobile, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const dismissOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!triggerRef.current?.contains(target) && !popoverRef.current?.contains(target)) close(false);
+    };
+    const dismissWithKeyboard = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close(true);
+      } else if (mobile && event.key === "Tab" && popoverRef.current) {
+        const focusable = [...popoverRef.current.querySelectorAll<HTMLElement>("button, a[href]")];
+        const first = focusable.at(0);
+        const last = focusable.at(-1);
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    document.addEventListener("pointerdown", dismissOutside);
+    document.addEventListener("keydown", dismissWithKeyboard);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside);
+      document.removeEventListener("keydown", dismissWithKeyboard);
+    };
+  }, [close, mobile, open]);
+
+  useEffect(() => {
+    if (!open || !mobile) return;
+    closeButtonRef.current?.focus();
+  }, [mobile, open]);
+
+  useEffect(() => () => {
+    if (getActiveTermHelp() === id) setActiveTermHelp(null);
+  }, [id]);
+
+  const popover = open && createPortal(<>
+    {mobile && <button className="term-popover-backdrop" type="button" aria-label={`Close ${entry.label} explanation`} onClick={() => close(true)}/>}
+    <div
+      ref={popoverRef}
+      id={`${id}-popover`}
+      className={`term-popover${mobile || position ? " term-popover-positioned" : ""}`}
+      role="dialog"
+      aria-modal={mobile || undefined}
+      aria-labelledby={`${id}-title`}
+      style={!mobile && position ? position : undefined}
+    >
+      <div className="term-popover-heading">
+        <b id={`${id}-title`} className="term-popover-title">{entry.label}</b>
+        <button ref={closeButtonRef} type="button" aria-label={`Close ${entry.label} explanation`} onClick={() => close(true)}>×</button>
+      </div>
       <span className="term-popover-entry"><b>Plain language</b><span>{entry.plain}</span></span>
       <span className="term-popover-entry"><b>Biological meaning</b><span>{entry.biology}</span></span>
       <span className="term-popover-entry"><b>Inside ASO Compass</b><span>{entry.app}</span></span>
       <span className="term-popover-entry"><b>Common mistake</b><span>{entry.mistake}</span></span>
-      <a href={FULL_GLOSSARY_URL} target="_blank" rel="noreferrer">Open the full glossary ↗</a>
-    </span>
+      <a href={FULL_GLOSSARY_URL}>Open the full glossary →</a>
+    </div>
+  </>, document.body);
+
+  return <span className="term-help">
+    <button
+      ref={triggerRef}
+      type="button"
+      aria-label={`Explain ${entry.label}`}
+      aria-expanded={open}
+      aria-controls={`${id}-popover`}
+      onClick={() => {
+        setPosition(null);
+        setActiveTermHelp(open ? null : id);
+      }}
+    >{children ?? entry.label}<span aria-hidden="true">?</span></button>
+    {popover}
   </span>;
 }
 
