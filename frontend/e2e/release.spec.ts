@@ -32,7 +32,7 @@ test("guided form and offline evidence example are usable", async ({ page }) => 
   await page.getByText("ClinVar interpretation lab", { exact: true }).click();
   await expect(page.getByRole("heading", { name: /a ClinVar classification is more than a label/i })).toBeVisible();
   const evidenceDialog = page.getByRole("dialog", { name: "SOD1" });
-  await evidenceDialog.getByLabel("Explain LOEUF").click();
+  await evidenceDialog.getByLabel("Explain LOEUF").first().click();
   const termDialog = page.getByRole("dialog", { name: "LOEUF" });
   await expect(termDialog).toBeVisible();
   await termDialog.getByRole("button", { name: "Close LOEUF explanation" }).click();
@@ -56,7 +56,15 @@ test("guided form and offline evidence example are usable", async ({ page }) => 
 test("guided tutorial leads into the offline evidence example", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Learn" }).click();
-  await expect(page.getByRole("heading", { name: /transparent map/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /understand why a candidate was classified/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What ASO Compass helps you investigate" })).toBeVisible();
+  await expect(page.getByText("Synthesize target evidence", { exact: true })).toBeVisible();
+  const operations = page.locator("details.learn-operations");
+  await expect(operations).not.toHaveAttribute("open", "");
+  await expect(operations.getByRole("heading", { name: "Disease query" })).not.toBeVisible();
+  await page.getByText("Supporting context", { exact: true }).click();
+  await expect(operations).toHaveAttribute("open", "");
+  await expect(operations.getByRole("heading", { name: "Disease query" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "The five research tracks" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /build interpretation skills/i })).toBeVisible();
   await expect(page.getByText("Fixture review pending").first()).toBeVisible();

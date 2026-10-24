@@ -68,10 +68,28 @@ def load_example_cases() -> tuple[ExampleCase, ...]:
         seen_ids.add(case.case_id)
         seen_slugs.add(case.slug)
         if case.status == "published":
-            if not case.example_id or not case.fixture_file or not case.reviewer:
-                raise ValueError("Published educational cases require an example, fixture, and reviewer")
+            if (
+                not case.example_id
+                or not case.fixture_file
+                or not case.fixture_version
+                or not case.engine_version
+                or not case.source_releases
+                or not case.reviewer
+                or case.review_status != "published"
+            ):
+                raise ValueError(
+                    "Published educational cases require a reviewed, versioned fixture and provenance"
+                )
             if not 3 <= len(case.teaching_candidates) <= 5:
                 raise ValueError("Published educational cases require three to five teaching candidates")
+        elif (
+            case.example_id is not None
+            or case.fixture_file is not None
+            or case.teaching_candidates
+            or case.review_status != "pending"
+            or case.reviewer is not None
+        ):
+            raise ValueError("Planned educational cases cannot expose unreviewed fixture data")
     return cases
 
 
@@ -96,6 +114,13 @@ def load_example_bundle(example_id: str, environment: str) -> ExampleBundle | No
     raw = resource.read_text(encoding="utf-8")
     payload: dict[str, Any] = json.loads(raw)
     run_data = payload["run"]
+    if run_data["disease_id"] != case.disease_id or run_data["engine_version"] != case.engine_version:
+        raise ValueError("Educational fixture provenance does not match its reviewed manifest")
+    fixture_symbols = {str(item["gene_symbol"]) for item in payload["candidates"]}
+    missing_teaching_candidates = set(case.teaching_candidates) - fixture_symbols
+    if missing_teaching_candidates:
+        missing = ", ".join(sorted(missing_teaching_candidates))
+        raise ValueError(f"Educational fixture is missing reviewed teaching candidates: {missing}")
     run_id = uuid5(EXAMPLE_NAMESPACE, example_id)
     digest = hashlib.sha256(raw.encode()).hexdigest()
     run = Run(

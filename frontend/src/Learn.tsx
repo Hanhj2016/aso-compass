@@ -1,4 +1,5 @@
 import { EDUCATIONAL_CASES } from "./caseStudies";
+import { TermHelp } from "./education";
 
 type LearnProps = {
   disclaimer: string;
@@ -9,10 +10,21 @@ type LearnProps = {
 
 const COPY = {
   en: {
-    eyebrow: "Guided application tour",
-    title: "A transparent map, not a clinical answer.",
-    intro: "Learn ASO Compass as a software evidence pipeline first. You do not need a medical background to follow how a disease query becomes traceable candidate records and cautious research tracks.",
+    eyebrow: "Capability-guided learning",
+    title: "Understand why a candidate was classified—and what the evidence cannot prove.",
+    intro: "ASO Compass brings disease association, mechanism, constraint, variant, and therapeutic-precedent evidence into one traceable research view. Use it to compare candidates, inspect uncertainty, and learn how evidence supports—or fails to support—an intervention direction.",
     start: "Open the guided ALS example",
+    capabilitiesEyebrow: "Core application capabilities",
+    capabilitiesTitle: "What ASO Compass helps you investigate",
+    capabilitiesIntro: "Start with the scientific questions the application can help you examine. The workflow that assembles the result is supporting context, not the main lesson.",
+    capabilities: [
+      ["Synthesize target evidence", "Bring association, variant, mechanism, constraint, drug, and trial context together without treating any one source as a complete answer."],
+      ["Interpret mechanism direction", "Use visible deterministic rules to distinguish knockdown, splice/upregulation, ambiguous, modifier, and insufficient-data tracks."],
+      ["Compare candidates", "Examine candidates side by side without allowing therapeutic precedent or a single high score to silently decide the ranking."],
+      ["Audit evidence completeness", "See missing, capped, conflicting, or unreturned evidence so that absence and truncation are not mistaken for negative biology."],
+      ["Trace claims to sources", "Open the evidence-source map and primary records to learn what each source can support—and what it cannot establish."],
+      ["Ask bounded AI questions", "Generate explanations from saved evidence while preserving deterministic classifications, warnings, citations, and shortlist order."],
+    ],
     boundaryTitle: "Four boundaries to remember",
     boundaries: [
       ["Association is not causation", "A score says that public evidence links a gene to a disease. It does not prove that changing the gene will help."],
@@ -20,8 +32,8 @@ const COPY = {
       ["Missing is not negative", "A failed, capped, or empty lookup cannot be interpreted as evidence that the biology is absent."],
       ["AI explains; it does not decide", "Generated text can summarize saved evidence, but it cannot change classifications, scores, shortlist order, or warnings."],
     ],
-    pipelineTitle: "From query to reviewable evidence",
-    pipelineIntro: "Think of each scientific source as a feature provider and every candidate as a versioned record with provenance.",
+    pipelineTitle: "How a result is assembled",
+    pipelineIntro: "This operational flow is useful when you need to audit provenance or diagnose missing data. It is secondary to interpreting the scientific evidence shown above.",
     pipeline: [
       ["01", "Disease query", "Choose a disease or phenotype identifier. The identifier anchors the analysis to an ontology record."],
       ["02", "Association", "Open Targets supplies genes and association scores that pass the configured filters."],
@@ -111,25 +123,20 @@ export default function Learn({ disclaimer, onExample, onCase, onResumeSaved }: 
       </div>
     </section>
 
-    <section className="learn-section" aria-labelledby="learn-boundaries">
-      <h2 id="learn-boundaries">{copy.boundaryTitle}</h2>
-      <div className="learn-boundaries">{copy.boundaries.map(([title, text]) => <article key={title}><h3>{title}</h3><p>{text}</p></article>)}</div>
-    </section>
-
-    <section className="learn-section" aria-labelledby="learn-pipeline">
-      <h2 id="learn-pipeline">{copy.pipelineTitle}</h2><p className="learn-intro">{copy.pipelineIntro}</p>
-      <ol className="learn-pipeline">{copy.pipeline.map(([number, title, text]) => <li key={number}><span>{number}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
+    <section className="learn-section learn-capabilities" aria-labelledby="learn-capabilities">
+      <p className="eyebrow">{copy.capabilitiesEyebrow}</p><h2 id="learn-capabilities">{copy.capabilitiesTitle}</h2><p className="learn-intro">{copy.capabilitiesIntro}</p>
+      <div>{copy.capabilities.map(([title, text], index) => <article key={title}><span>{String(index + 1).padStart(2, "0")}</span><h3>{title}</h3><p>{text}</p></article>)}</div>
     </section>
 
     <section className="learn-section" aria-labelledby="learn-tracks">
       <p className="eyebrow">{copy.tracksEyebrow}</p><h2 id="learn-tracks">{copy.tracksTitle}</h2>
       <div className="learn-track-grid">{copy.tracks.map(([title, meaning, caution], index) => <article key={title} className={`learn-track track-border-${index}`}><h3>{title}</h3><b>{copy.means}</b><p>{meaning}</p><b>{copy.notMeans}</b><p>{caution}</p></article>)}</div>
-      <p className="notice learn-precedence">{copy.precedence}</p>
+      <p className="notice learn-precedence">Mechanism precedence is: reviewed manual override → Gene2Phenotype → ClinVar heuristic → modifier. <TermHelp term="loeuf"/> adds safety context; it does not select the mechanism track.</p>
     </section>
 
     <section className="learn-section" aria-labelledby="learn-reading">
       <p className="eyebrow">{copy.readEyebrow}</p><h2 id="learn-reading">{copy.readTitle}</h2>
-      <ol className="learn-reading">{copy.readSteps.map(([title, text], index) => <li key={title}><span>{String(index + 1).padStart(2, "0")}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
+      <ol className="learn-reading">{copy.readSteps.map(([title, text], index) => <li key={title}><span>{String(index + 1).padStart(2, "0")}</span><div><h3>{title === "LOEUF" ? <TermHelp term="loeuf"/> : title}</h3><p>{text}</p></div></li>)}</ol>
     </section>
 
     <section className="learn-section learn-example" aria-labelledby="learn-example">
@@ -145,6 +152,11 @@ export default function Learn({ disclaimer, onExample, onCase, onResumeSaved }: 
       </article>)}</div>
     </section>
 
+    <section className="learn-section" aria-labelledby="learn-boundaries">
+      <h2 id="learn-boundaries">{copy.boundaryTitle}</h2>
+      <div className="learn-boundaries">{copy.boundaries.map(([title, text]) => <article key={title}><h3>{title}</h3><p>{text}</p></article>)}</div>
+    </section>
+
     <section className="learn-section" aria-labelledby="learn-ai">
       <p className="eyebrow">{copy.aiEyebrow}</p><h2 id="learn-ai">{copy.aiTitle}</h2>
       <div className="learn-ai-flow">{copy.aiFlow.map((step, index) => <div key={step}><span>{index + 1}</span><b>{step}</b></div>)}</div>
@@ -155,6 +167,12 @@ export default function Learn({ disclaimer, onExample, onCase, onResumeSaved }: 
       <p className="eyebrow">{copy.glossaryEyebrow}</p><h2 id="learn-glossary">{copy.glossaryTitle}</h2>
       <div>{copy.glossary.map(([term, definition]) => <details key={term}><summary>{term}<span>+</span></summary><p>{definition}</p></details>)}</div>
     </section>
+
+    <details className="learn-section learn-operations">
+      <summary><span><b>Supporting context</b>{copy.pipelineTitle}</span><span aria-hidden="true">+</span></summary>
+      <p className="learn-intro">{copy.pipelineIntro}</p>
+      <ol className="learn-pipeline">{copy.pipeline.map(([number, title, text]) => <li key={number}><span>{number}</span><div><h3>{title}</h3><p>{text}</p></div></li>)}</ol>
+    </details>
 
     <section className="learn-section" aria-labelledby="learn-check">
       <p className="eyebrow">{copy.checkEyebrow}</p><h2 id="learn-check">{copy.checkTitle}</h2>

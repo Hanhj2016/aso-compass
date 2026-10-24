@@ -187,6 +187,8 @@ export default function PrintReport({ run, candidates, mode, generatedAt, runSum
       <section className="print-track-summary"><h2>Candidate tracks</h2><div>{tracks.map(item => <article key={item.track}><span>{item.label}</span><b>{item.count}</b></article>)}</div></section>
       <section className="print-reading-guide"><h2>Reading guide</h2><div>
         <p><b>Capped</b> Source evidence exceeded the per-gene retrieval limit; observed fractions may be incomplete.</p>
+        <p><b>LOEUF</b> Population constraint context; lower values indicate less tolerance to loss of function, not automatic unsuitability or safety.</p>
+        <p><b>Review status</b> ClinVar review and consensus context; classifications should not be interpreted without condition, date, and primary record.</p>
         <p><b>Not checked</b> Enrichment was not performed. This is missing information, not negative evidence.</p>
         <p><b>None found</b> The checked sources returned no match; absence is limited to those sources and that run.</p>
         <p><b>Target-level approval</b> A drug may be approved for another disease, direction, modality, or population.</p>

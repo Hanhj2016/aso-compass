@@ -181,14 +181,15 @@ export function EvidenceSourceMap({ candidate }: { candidate: Candidate }) {
   return <section className="source-map" aria-labelledby="source-map-title">
     <p className="eyebrow">Evidence-source map</p>
     <h3 id="source-map-title">How the saved evidence reaches this track</h3>
-    <p>Open a source to see what claim it can support—and what it cannot support.</p>
-    <div className="source-map-list">
-      {sources.map(([name, role, status, supports, limitation]) => <details key={name}>
-        <summary><span><b>{name}</b><small>{role}</small></span><span aria-hidden="true">+</span></summary>
-        <div><p className="source-map-status">{status}</p><dl><div><dt>Can support</dt><dd>{supports}</dd></div><div><dt>Cannot support</dt><dd>{limitation}</dd></div></dl></div>
+    <p>Follow the numbered evidence streams into the rule engine. Open any source to inspect its claim boundary.</p>
+    <div className="source-map-list" aria-label="Five evidence streams converging on the deterministic track">
+      {sources.map(([name, role, status, supports, limitation], index) => <details key={name}>
+        <summary><span className="source-map-step" aria-hidden="true">{index + 1}</span><span><b>{name}</b><small>{role}</small></span><span aria-hidden="true">→</span></summary>
+        <div><p className="source-map-status">{status}</p>{name === "gnomAD" && <p className="mechanism-term-note">Context concept: <TermHelp term="loeuf"/></p>}{name === "ClinVar / EVA" && <p className="mechanism-term-note">Interpretation concept: <TermHelp term="reviewStatus"/></p>}<dl><div><dt>Can support</dt><dd>{supports}</dd></div><div><dt>Cannot support</dt><dd>{limitation}</dd></div></dl></div>
       </details>)}
     </div>
-    <div className="source-map-result"><span aria-hidden="true">↓</span><small>Deterministic output</small><b>{candidate.final_call}</b><p>Selected by the saved rule engine; not by the source map or AI.</p></div>
+    <div className="source-map-convergence" aria-hidden="true"><span>Independent evidence roles remain separate</span><b>↓</b></div>
+    <div className="source-map-result"><small>Deterministic rule engine</small><b>{candidate.final_call}</b><p>Combines the saved inputs by visible rules. Neither this diagram nor AI changes the track.</p></div>
   </section>;
 }
 
@@ -206,6 +207,7 @@ export function ClinVarLearningCheckpoint({ candidate }: { candidate: Candidate 
   const interpretation = candidate.clinvar_interpretation;
   const available = interpretation?.metadata_status === "available" || interpretation?.metadata_status === "partial";
   const reviewCounts = Object.entries(interpretation?.review_status_counts ?? {});
+  const starCounts = Object.entries(interpretation?.review_star_counts ?? {}).sort(([a], [b]) => Number(b) - Number(a));
   const representatives = interpretation?.representative_records ?? [];
   return <section className="clinvar-checkpoint" aria-labelledby="clinvar-checkpoint-title">
     <p className="eyebrow">Interpretation checkpoint</p>
@@ -221,14 +223,17 @@ export function ClinVarLearningCheckpoint({ candidate }: { candidate: Candidate 
         <div><span>Conflict-marked records</span><b>{interpretation?.conflict_records ?? 0}</b></div>
         <div><span>Latest evidence date</span><b>{interpretation?.latest_evidence_date ?? "Not returned"}</b></div>
         <div><span>Submitter count</span><b>{interpretation?.submitter_count ?? "Not exposed"}</b></div>
+        <div><span>Latest source release</span><b>{interpretation?.latest_release_date ?? "Not returned"}</b></div>
+        <div><span>Release version(s)</span><b>{interpretation?.release_versions?.join(", ") || "Not returned"}</b></div>
       </div>
       {reviewCounts.length > 0 && <div className="review-status-list" aria-label="Review status distribution">{reviewCounts.map(([status, count]) => <span key={status}><b>{count}</b>{status}</span>)}</div>}
+      {starCounts.length > 0 && <div className="review-star-distribution" aria-label="ClinVar review-star distribution"><h4><TermHelp term="reviewStatus">Review-star distribution</TermHelp></h4>{starCounts.map(([stars, count]) => <span key={stars}><b>{"★".repeat(Number(stars)) || "No stars"}</b><small>{count} record{count === 1 ? "" : "s"}</small></span>)}</div>}
       {(interpretation?.conditions?.length ?? 0) > 0 && <details className="learning-question"><summary>Variant–condition relationships returned</summary><ul>{interpretation?.conditions?.map(condition => <li key={`${condition.id}-${condition.label}`}>{condition.label ?? condition.id ?? "Unlabelled condition"} <small>({condition.record_count} records)</small></li>)}</ul></details>}
       {representatives.length > 0 && <details className="learning-question representative-records"><summary>Inspect representative variant records ({representatives.length})</summary><div>{representatives.map((record, index) => <article key={record.source_record_id ?? `${record.rs_id}-${index}`}>
         <div><b>{record.rs_id ?? "Variant ID not returned"}</b><span>{record.review_stars === null ? "Stars not returned" : `${"★".repeat(record.review_stars)}${"☆".repeat(4 - record.review_stars)} (${record.review_stars})`}</span></div>
         <p>{record.clinical_significances.join(", ") || "Clinical significance not returned"} · {record.consequence_label?.replaceAll("_", " ") ?? "consequence not returned"}</p>
         <p>{record.review_status ?? "Review status not returned"}</p>
-        <small>{record.condition_label ?? record.condition_id ?? "Condition not returned"} · evidence {record.evidence_date ?? "date not returned"}</small>
+        <small>{record.condition_label ?? record.condition_id ?? "Condition not returned"} · evidence {record.evidence_date ?? "date not returned"} · release {record.release_date ?? "date not returned"}{record.release_version ? ` (${record.release_version})` : ""}</small>
         {record.rs_id && <a href={`https://www.ncbi.nlm.nih.gov/clinvar/?term=${encodeURIComponent(record.rs_id)}`} target="_blank" rel="noreferrer">Review in ClinVar ↗</a>}
       </article>)}</div></details>}
       <p><b>Still not available here:</b> reliable submitter count and the full submission-level evidence. This is a bounded learning view; inspect the primary ClinVar record before variant-level interpretation.</p>

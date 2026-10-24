@@ -25,13 +25,17 @@ describe("ASO Compass", () => {
     expect(screen.getByText(/quick mode is incomplete/i)).toBeVisible();
   });
 
-  it("explains the deterministic workflow", async () => {
+  it("leads with application capabilities and keeps operations secondary", async () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole("button", { name: "Learn" }));
-    expect(screen.getByRole("heading", { name: /transparent map/i })).toBeVisible();
-    expect(screen.getByText(/not a clinical answer/i)).toBeVisible();
+    expect(screen.getByRole("heading", { name: /understand why a candidate was classified/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "What ASO Compass helps you investigate" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Synthesize target evidence" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "The five research tracks" })).toBeVisible();
+    expect(screen.getByText("Disease query", { selector: "h3" })).not.toBeVisible();
+    await user.click(screen.getByText("Supporting context"));
+    expect(screen.getByText("Disease query", { selector: "h3" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "简体中文" })).not.toBeInTheDocument();
   });
 

@@ -44,6 +44,10 @@ export default function CandidatePrintReport({ run, candidate, explanation, gene
   const reviewCoverage = clinvar?.metadata_status === "available" || clinvar?.metadata_status === "partial"
     ? `${clinvar.records_with_review_status ?? 0}/${clinvar.records_returned ?? candidate.n_evidence_returned ?? 0}`
     : "Not retained";
+  const reviewStars = Object.entries(clinvar?.review_star_counts ?? {})
+    .sort(([a], [b]) => Number(b) - Number(a))
+    .map(([stars, count]) => `${stars} star${stars === "1" ? "" : "s"}: ${count}`)
+    .join("; ") || "Not retained";
 
   return <section className="print-report candidate-print-report" data-print-mode="candidate" aria-label={`Candidate evidence print report for ${candidate.gene_symbol}`}>
     <article className="print-page candidate-print-page" data-report-section="candidate-evidence">
@@ -81,7 +85,7 @@ export default function CandidatePrintReport({ run, candidate, explanation, gene
         </section>
         <section>
           <h2>Variant evidence inventory</h2>
-          <dl><dt>Loss-of-function</dt><dd>{valueOrUnknown(candidate.n_lof)}</dd><dt>Missense</dt><dd>{valueOrUnknown(candidate.n_missense)}</dd><dt>Splice</dt><dd>{valueOrUnknown(candidate.n_splice)}</dd><dt>Additional splice</dt><dd>{valueOrUnknown(candidate.n_splice_extra)}</dd><dt>LoF fraction</dt><dd>{fraction(candidate.frac_lof)}</dd><dt>Splice-related fraction</dt><dd>{fraction(candidate.frac_splice_related)}</dd><dt>Review-status coverage</dt><dd>{reviewCoverage}</dd><dt>Conflict-marked records</dt><dd>{valueOrUnknown(clinvar?.conflict_records)}</dd><dt>Latest evidence date</dt><dd>{valueOrUnknown(clinvar?.latest_evidence_date)}</dd></dl>
+          <dl><dt>Loss-of-function</dt><dd>{valueOrUnknown(candidate.n_lof)}</dd><dt>Missense</dt><dd>{valueOrUnknown(candidate.n_missense)}</dd><dt>Splice</dt><dd>{valueOrUnknown(candidate.n_splice)}</dd><dt>Additional splice</dt><dd>{valueOrUnknown(candidate.n_splice_extra)}</dd><dt>LoF fraction</dt><dd>{fraction(candidate.frac_lof)}</dd><dt>Splice-related fraction</dt><dd>{fraction(candidate.frac_splice_related)}</dd><dt>Review-status coverage</dt><dd>{reviewCoverage}</dd><dt>Review stars</dt><dd>{reviewStars}</dd><dt>Conflict-marked records</dt><dd>{valueOrUnknown(clinvar?.conflict_records)}</dd><dt>Latest evidence date</dt><dd>{valueOrUnknown(clinvar?.latest_evidence_date)}</dd><dt>Latest source release</dt><dd>{valueOrUnknown(clinvar?.latest_release_date)}</dd><dt>Release version(s)</dt><dd>{clinvar?.release_versions?.join(", ") || "Not returned"}</dd><dt>Submitter count</dt><dd>{valueOrUnknown(clinvar?.submitter_count ?? "Not exposed by upstream query")}</dd></dl>
         </section>
         <section>
           <h2>Therapeutic precedent</h2>
@@ -107,6 +111,11 @@ export default function CandidatePrintReport({ run, candidate, explanation, gene
           <p className="candidate-print-ai-note">{explanation ? "A separately labeled optional AI appendix follows this deterministic record." : "No AI explanation had been generated when this report was printed."}</p>
         </section>
       </div>
+
+      <section className="candidate-print-terminology">
+        <h2>Terminology notes</h2>
+        <div><p><b>LOEUF</b> Population loss-of-function constraint context; a low value is a safety flag, not proof that a target is undruggable.</p><p><b>Evidence capped</b> Retrieval stopped at the configured limit; it does not mean absent, benign, or low-quality evidence.</p><p><b>Review status / stars</b> Context about review and consensus behind ClinVar classifications; the label alone is not a complete variant interpretation.</p></div>
+      </section>
 
       <footer className="print-page-footer"><span>ASO Compass · Candidate {candidate.gene_symbol} · Run {run.id}</span><span>Research use only · Deterministic evidence</span></footer>
     </article>

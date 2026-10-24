@@ -97,6 +97,10 @@ candidate was selected for teaching, but must not present the selection as a tre
    missingness checkpoint, responsive/accessibility tests, and entry into the complete frozen result.
 6. **Required for every next case:** add and scientifically review the fixture, then add schema, golden-case,
    UI, and AI-grounding tests independently before changing its manifest status to `published`.
+7. **Implemented release guard:** both manifest loaders reject incomplete published provenance and reject any
+   planned case that exposes fixture or candidate data. The backend also verifies that the reviewed disease,
+   engine version, and teaching candidates match the frozen fixture. Use
+   `19_EDUCATIONAL_CASE_REVIEW_WORKSHEET.md` to prepare the five pending reviews.
 
 ## ClinVar exercise contract
 

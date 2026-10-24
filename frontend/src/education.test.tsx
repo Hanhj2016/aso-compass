@@ -20,7 +20,7 @@ const candidate: Candidate = {
     records_reported: 46, records_returned: 46, records_with_review_status: 45, records_with_variant_id: 44,
     records_with_condition: 46, review_status_counts: { "criteria provided, multiple submitters, no conflicts": 40 },
     review_star_counts: { "2": 40 }, conflict_records: 1, submitter_count: null,
-    latest_evidence_date: "2025-02-01", latest_release_date: "2025-03-01", release_versions: [],
+    latest_evidence_date: "2025-02-01", latest_release_date: "2025-03-01", release_versions: ["2025.03"],
     conditions: [{ id: "C0002736", label: "Amyotrophic lateral sclerosis", record_count: 46 }],
     representative_records: [{ source_record_id: "eva-1", rs_id: "rs123", clinical_report_id: null,
       clinical_significances: ["pathogenic"], review_status: "criteria provided, multiple submitters, no conflicts",
@@ -77,6 +77,8 @@ describe("contextual education", () => {
     expect(screen.getByText("Gene2Phenotype")).toBeInTheDocument();
     expect(screen.getByText("ClinVar / EVA")).toBeInTheDocument();
     expect(screen.getByText("gnomAD")).toBeInTheDocument();
+    expect(screen.getByText(/independent evidence roles remain separate/i)).toBeInTheDocument();
+    expect(screen.getByText("Deterministic rule engine")).toBeInTheDocument();
   });
 
   it("teaches that aggregate evidence is not a benign or variant-level conclusion", () => {
@@ -84,8 +86,11 @@ describe("contextual education", () => {
     expect(screen.getByText(/does that mean “benign”/i)).toBeInTheDocument();
     expect(screen.getByText(/aggregate counts establish a variant's clinical significance/i)).toBeInTheDocument();
     expect(screen.getByText(/still not available here/i)).toBeInTheDocument();
-    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("2025-03-01")).toBeInTheDocument();
+    expect(screen.getByText("2025.03")).toBeInTheDocument();
+    expect(screen.getByLabelText("ClinVar review-star distribution")).toHaveTextContent("40 records");
     expect(screen.getByText(/rs123/i)).toBeInTheDocument();
+    expect(screen.getByText(/release 2025-03-01/i)).toBeInTheDocument();
   });
 
   it("expands compound G2P shorthand into contextual terms", () => {

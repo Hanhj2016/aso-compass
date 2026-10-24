@@ -191,6 +191,11 @@ function addRunCover(doc: jsPDF, run: RunRecord, candidates: Candidate[], mode: 
   y += 55;
   const tracks = Object.entries(TRACK_LABEL).map(([track, label]) => `${label}: ${candidates.filter(row => row.final_call === track).length}`);
   y = addSection(doc, "Candidate tracks", tracks, y);
+  y = addSection(doc, "Terminology notes", [
+    "LOEUF is population loss-of-function constraint context; a low value is a safety flag, not proof that a target is undruggable.",
+    "Evidence capped means retrieval stopped at the configured limit; it does not mean absent, benign, or low-quality evidence.",
+    "ClinVar review status and stars describe review and consensus context; the classification label alone is incomplete.",
+  ], y);
   if (mode === "full") addSection(doc, "Optional AI appendix", [includeAI ? "Included from the already-generated, server-validated run summary." : "Not included because no AI run summary had been generated before export."], y);
 }
 
@@ -282,7 +287,21 @@ export function downloadCandidatePdf(run: RunRecord, candidate: Candidate, expla
   });
   y = Math.max(factBottom, (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY) + 18;
   y = addSection(doc, "Completeness and review", [`Completeness: ${candidate.completeness}`, `Evidence capped: ${candidate.evidence_truncated ? "Yes - manual review required" : "No"}`, `Review flag: ${candidate.flag || "None recorded"}`, candidate.note].filter(Boolean), y);
+  const clinvar = candidate.clinvar_interpretation;
+  y = addSection(doc, "ClinVar interpretation context", [
+    `Review-status coverage: ${clinvar?.records_with_review_status ?? "Not retained"} / ${clinvar?.records_returned ?? candidate.n_evidence_returned ?? "Not retained"}`,
+    `Review stars: ${Object.entries(clinvar?.review_star_counts ?? {}).map(([stars, count]) => `${stars} star(s): ${count}`).join("; ") || "Not retained"}`,
+    `Latest evidence date: ${clinvar?.latest_evidence_date ?? "Not returned"}`,
+    `Latest source release: ${clinvar?.latest_release_date ?? "Not returned"}`,
+    `Release version(s): ${clinvar?.release_versions?.join(", ") || "Not returned"}`,
+    `Submitter count: ${clinvar?.submitter_count ?? "Not exposed by upstream query"}`,
+  ], y);
   y = addSection(doc, "Therapeutic precedent", [candidate.aso_precedent || "No ASO precedent was found in the checked sources.", `Trial IDs: ${candidate.aso_trial_ids || "None saved"}`], y);
+  y = addSection(doc, "Terminology notes", [
+    "LOEUF: population loss-of-function constraint context; a low value is a safety flag, not proof that a target is undruggable.",
+    "Evidence capped: retrieval stopped at the configured limit; it does not mean absent, benign, or low-quality evidence.",
+    "Review status / stars: review and consensus context behind ClinVar classifications; the label alone is incomplete.",
+  ], y);
   if (y > pageHeight(doc) - 67) {
     doc.addPage();
     y = 42;

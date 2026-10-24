@@ -12,12 +12,14 @@ for (const caseStudy of manifest.cases) {
   if (seenSlugs.has(caseStudy.slug)) throw new Error(`Duplicate educational case slug: ${caseStudy.slug}`);
   seenSlugs.add(caseStudy.slug);
   if (caseStudy.status === "published") {
-    if (!caseStudy.example_id || !caseStudy.fixture_file || !caseStudy.reviewer) {
+    if (!caseStudy.example_id || !caseStudy.fixture_file || !caseStudy.fixture_version || !caseStudy.engine_version || !caseStudy.reviewer || caseStudy.review_status !== "published" || Object.keys(caseStudy.source_releases).length === 0) {
       throw new Error(`Published educational case is incomplete: ${caseStudy.case_id}`);
     }
     if (caseStudy.teaching_candidates.length < 3 || caseStudy.teaching_candidates.length > 5) {
       throw new Error(`Published educational case must have three to five teaching candidates: ${caseStudy.case_id}`);
     }
+  } else if (caseStudy.example_id || caseStudy.fixture_file || caseStudy.teaching_candidates.length > 0 || caseStudy.review_status !== "pending" || caseStudy.reviewer) {
+    throw new Error(`Planned educational case exposes unreviewed fixture data: ${caseStudy.case_id}`);
   }
 }
 
