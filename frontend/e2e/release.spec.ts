@@ -79,7 +79,7 @@ test("guided tutorial leads into the offline evidence example", async ({ page })
 
 test("published ALS case is directly addressable and leads to the complete frozen result", async ({ page }) => {
   await page.goto("/#/learn/cases/als");
-  await expect(page.getByRole("heading", { name: "Amyotrophic lateral sclerosis (ALS)" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Amyotrophic lateral sclerosis (ALS)", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Learning objectives" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Question guiding this case" })).toBeVisible();
   await expect(page.getByText("Capabilities demonstrated", { exact: true })).toBeVisible();
@@ -98,9 +98,51 @@ test("published ALS case is directly addressable and leads to the complete froze
   await expect(page.getByRole("heading", { name: "Interpretation", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Important limitations" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Next research questions" })).toBeVisible();
-  await page.getByRole("button", { name: /open evidence workspace/i }).click();
+  await page.getByRole("button", { name: /open frozen evidence/i }).click();
   await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
   await expect(page.locator("main .metrics .metric").filter({ hasText: "Candidates" }).locator("b")).toHaveText("6");
+});
+
+test("a case study can start a current analysis for its disease", async ({ page }) => {
+  const runId = "33333333-3333-4333-8333-333333333333";
+  const run = {
+    id: runId,
+    environment: "test",
+    disease_id: "MONDO_0004976",
+    disease_label: "Amyotrophic lateral sclerosis (ALS)",
+    status: "queued",
+    parameters: { run_mode: "full" },
+    warnings: [],
+    validation: {},
+    upstream_metadata: {},
+    engine_version: "4.2-guided",
+    error_code: null,
+    error_message: null,
+  };
+  let submittedBody: Record<string, unknown> | undefined;
+
+  await page.route("http://127.0.0.1:8000/api/v1/runs", async route => {
+    submittedBody = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({ status: 202, contentType: "application/json", body: JSON.stringify(run) });
+  });
+  await page.route(`http://127.0.0.1:8000/api/v1/runs/${runId}`, route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(run) }));
+  await page.route(`http://127.0.0.1:8000/api/v1/runs/${runId}/events`, route => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+
+  await page.goto("/#/learn/cases/als");
+  const launch = page.getByRole("heading", { name: /run a current analysis for amyotrophic lateral sclerosis/i }).locator("xpath=ancestor::aside[1]");
+  await expect(launch.getByRole("button", { name: /run quick analysis/i })).toBeDisabled();
+  await launch.getByRole("radio", { name: /full/i }).check();
+  await launch.getByRole("checkbox").check();
+  await launch.getByRole("button", { name: /run full analysis/i }).click();
+
+  await expect(page.getByText("Analysis in progress", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Amyotrophic lateral sclerosis (ALS)" })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`\\?run=${runId}#/workspace$`));
+  expect(submittedBody).toMatchObject({
+    disease_id: "MONDO_0004976",
+    disease_label: "Amyotrophic lateral sclerosis (ALS)",
+    parameters: { run_mode: "full" },
+  });
 });
 
 test("all reviewed case fixtures are directly teachable", async ({ page }) => {
@@ -114,7 +156,7 @@ test("all reviewed case fixtures are directly teachable", async ({ page }) => {
 
   for (const [slug, title, candidateCount, firstCandidate] of cases) {
     await page.goto(`/?case=${slug}#/learn/cases/${slug}`);
-    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+    await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
     await expect(page.locator(".case-candidate-tabs button")).toHaveCount(candidateCount);
     await expect(page.locator(".case-candidate-tabs button").first()).toContainText(firstCandidate);
     await expect(page.getByRole("heading", { name: "Follow each claim to its source" })).toBeVisible();

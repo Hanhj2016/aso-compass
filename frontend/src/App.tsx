@@ -618,6 +618,24 @@ export default function App() {
   }, [runId, runStatus, example]);
 
   function rememberRun(created: RunRecord) { localStorage.setItem(LAST_RUN_STORAGE_KEY, created.id); setSavedRunId(created.id); setRun(created); setCandidates([]); setEvents([]); setExample(false); showRunInUrl(created.id); }
+  async function startCaseAnalysis(caseStudy: NonNullable<ReturnType<typeof findCaseBySlug>>, mode: "quick" | "full") {
+    const created = await createRun({
+      disease_id: caseStudy.disease_id,
+      disease_label: caseStudy.title,
+      parameters: {
+        run_mode: mode,
+        min_score: 0.2,
+        min_genetic: 0.1,
+        use_variants: true,
+        use_g2p: true,
+        check_drugs: true,
+        check_trials: true,
+        include_modifiers: true,
+      },
+    });
+    rememberRun(created);
+    navigateToView("analyze");
+  }
   async function loadExample(caseToLoad = DEFAULT_CASE) { const response = await fetch(`/examples/${caseToLoad.fixture_file}`); const bundle = await response.json() as ExampleBundle; setRun(bundle.run); setCandidates(bundle.candidates); setEvents(bundle.events); setExample(true); navigateToView("analyze"); showRunInUrl(null); }
   function reset() { setRun(null); setCandidates([]); setEvents([]); setExample(false); showRunInUrl(null); }
   function unlockAI(token: string) { sessionStorage.setItem(AI_ACCESS_STORAGE_KEY, token); setAiAccessToken(token); }
@@ -637,5 +655,5 @@ export default function App() {
   const caseSlug = view === "case" ? window.location.hash.slice("#/learn/cases/".length) : null;
   const caseStudy = findCaseBySlug(caseSlug);
   const headerView = view === "case" ? "learn" : view;
-  return <><Header view={headerView} onView={navigateToView}/>{view === "portfolio" ? <PortfolioPage disclaimer={DISCLAIMER} onCases={() => navigateToView("learn")} onWorkspace={() => navigateToView("analyze")} onMethods={() => navigateToView("glossary")} onCase={navigateToCase} onResumeSaved={resumeSaved}/> : view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()} onCase={navigateToCase} onResumeSaved={resumeSaved}/> : view === "case" && caseStudy?.status === "published" ? <CaseStudyPage key={caseStudy.case_id} caseStudy={caseStudy} disclaimer={DISCLAIMER} onBack={() => navigateToView("learn")} onOpenResults={() => void loadExample(caseStudy)}/> : view === "glossary" ? <GlossaryPage disclaimer={DISCLAIMER}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
+  return <><Header view={headerView} onView={navigateToView}/>{view === "portfolio" ? <PortfolioPage disclaimer={DISCLAIMER} onCases={() => navigateToView("learn")} onWorkspace={() => navigateToView("analyze")} onMethods={() => navigateToView("glossary")} onCase={navigateToCase} onResumeSaved={resumeSaved}/> : view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()} onCase={navigateToCase} onResumeSaved={resumeSaved}/> : view === "case" && caseStudy?.status === "published" ? <CaseStudyPage key={caseStudy.case_id} caseStudy={caseStudy} disclaimer={DISCLAIMER} onBack={() => navigateToView("learn")} onOpenResults={() => void loadExample(caseStudy)} onStartAnalysis={mode => startCaseAnalysis(caseStudy, mode)}/> : view === "glossary" ? <GlossaryPage disclaimer={DISCLAIMER}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
 }

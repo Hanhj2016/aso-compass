@@ -14,15 +14,31 @@ function valueOrUnknown(value: number | null | undefined, digits = 3) {
   return value === null || value === undefined ? "Not returned" : value.toFixed(digits);
 }
 
-export default function CaseStudyPage({ caseStudy, disclaimer, onBack, onOpenResults }: {
+export default function CaseStudyPage({ caseStudy, disclaimer, onBack, onOpenResults, onStartAnalysis }: {
   caseStudy: EducationalCase;
   disclaimer: string;
   onBack: () => void;
   onOpenResults: () => void;
+  onStartAnalysis: (mode: "quick" | "full") => Promise<void>;
 }) {
   const [bundle, setBundle] = useState<ExampleBundle | null>(null);
   const [error, setError] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState(caseStudy.teaching_candidates[0] ?? "");
+  const [analysisMode, setAnalysisMode] = useState<"quick" | "full">("quick");
+  const [analysisConsent, setAnalysisConsent] = useState(false);
+  const [analysisStarting, setAnalysisStarting] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
+
+  async function startCurrentAnalysis() {
+    setAnalysisError("");
+    setAnalysisStarting(true);
+    try {
+      await onStartAnalysis(analysisMode);
+    } catch (reason) {
+      setAnalysisError(reason instanceof Error ? reason.message : "The current analysis could not be started.");
+      setAnalysisStarting(false);
+    }
+  }
 
   useEffect(() => {
     if (caseStudy.status !== "published" || !caseStudy.fixture_file) return;
@@ -103,7 +119,17 @@ export default function CaseStudyPage({ caseStudy, disclaimer, onBack, onOpenRes
           <article><h3>Important limitations</h3><ul>{caseStudy.limitations.map(limitation => <li key={limitation}>{limitation}</li>)}</ul></article>
           <article><h3>Next research questions</h3><ol>{caseStudy.next_research_questions.map(question => <li key={question}>{question}</li>)}</ol></article>
         </div>
-        <aside className="case-workspace-cta"><div><h3>Examine the complete saved evidence</h3><p>Review candidate records, compare deterministic classifications, inspect source provenance, and explore optional evidence-bound AI explanations.</p></div><button className="primary-button compact" type="button" onClick={onOpenResults}>Open evidence workspace →</button></aside>
+        <div className="case-action-grid">
+          <aside className="case-workspace-cta"><div><p className="eyebrow">Versioned teaching record</p><h3>Examine the complete saved evidence</h3><p>Review the frozen candidate records used by this case, compare classifications, and inspect source provenance without refreshing upstream data.</p></div><button className="secondary-button" type="button" onClick={onOpenResults}>Open frozen evidence →</button></aside>
+          <aside className="case-live-analysis" aria-labelledby="case-live-analysis-title">
+            <div><p className="eyebrow">Current source retrieval</p><h3 id="case-live-analysis-title">Run a current analysis for {caseStudy.title}</h3><p>This creates a new persistent run for <b>{caseStudy.disease_id}</b>. Results may differ from the reviewed case because sources and retrieval conditions change.</p></div>
+            <fieldset><legend>Analysis depth</legend><label><input type="radio" name={`case-mode-${caseStudy.case_id}`} checked={analysisMode === "quick"} onChange={() => setAnalysisMode("quick")}/><span><b>Quick</b><small>Up to 25 genes enriched</small></span></label><label><input type="radio" name={`case-mode-${caseStudy.case_id}`} checked={analysisMode === "full"} onChange={() => setAnalysisMode("full")}/><span><b>Full</b><small>Up to 300 genes enriched</small></span></label></fieldset>
+            {analysisMode === "quick" && <p className="notice"><b>Quick mode is incomplete.</b> Variant and drug enrichment are capped at 25 genes.</p>}
+            <label className="case-analysis-consent"><input type="checkbox" checked={analysisConsent} onChange={event => setAnalysisConsent(event.target.checked)}/><span>I understand that this is for research and education, not clinical decisions.</span></label>
+            {analysisError && <p className="error" role="alert">{analysisError}</p>}
+            <button className="primary-button" type="button" disabled={!analysisConsent || analysisStarting} onClick={() => void startCurrentAnalysis()}>{analysisStarting ? "Starting current analysis…" : `Run ${analysisMode} analysis`} <span aria-hidden="true">→</span></button>
+          </aside>
+        </div>
         <p className="case-provenance"><b>Evidence provenance:</b> candidate records were frozen from a completed ASO Compass run and selected for source-bounded educational analysis by {caseStudy.reviewer}. This is not a clinical interpretation.</p>
       </section>
 

@@ -89,7 +89,10 @@ behavior. It is not represented as independent clinical or specialist review.
 2. Backend and frontend loaders fail closed unless a published case has provenance, a verified fixture digest,
    candidate lessons, debrief points, references, and candidate-count compliance.
 3. The backend verifies the disease, engine version, and selected symbols against each frozen fixture.
-4. Case Studies routes directly to every published module and then to its complete saved evidence workspace.
+4. Case Studies routes directly to every published module and then either to its complete frozen evidence
+   workspace or to a newly created Quick/Full analysis for the same disease identifier. Starting a current
+   run requires the research-use acknowledgement and explicitly warns that refreshed sources may differ
+   from the reviewed fixture.
 5. Each module includes a research question, capabilities demonstrated, candidate comparisons, a visual
    evidence-source flow, source claim boundaries, ClinVar metadata exercises, interpretation, limitations,
    next research questions, primary reading, and optional evidence-bound AI on the saved fixture.
