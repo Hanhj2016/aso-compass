@@ -18,6 +18,7 @@ describe("ASO Compass", () => {
   it("requires acknowledgement before a run can start", async () => {
     const user = userEvent.setup();
     render(<App />);
+    await user.click(screen.getByRole("button", { name: "Research Workspace" }));
     const button = screen.getByRole("button", { name: /begin evidence analysis/i });
     expect(button).toBeDisabled();
     await user.click(screen.getByRole("checkbox"));
@@ -28,10 +29,11 @@ describe("ASO Compass", () => {
   it("leads with application capabilities and keeps operations secondary", async () => {
     const user = userEvent.setup();
     render(<App />);
+    expect(screen.getByRole("heading", { name: /from public evidence to a defensible research interpretation/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Scientific judgment made inspectable" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Case Studies" }));
-    expect(screen.getByRole("heading", { name: /biological evidence becomes a defensible research interpretation/i })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "What this portfolio demonstrates" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: /portfolio in biomedical reasoning and research software/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /practice interpretation across six distinct biological problems/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Capabilities practiced across the cases" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Synthesize target evidence" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "The five research tracks" })).toBeVisible();
     expect(screen.getByText("Disease query", { selector: "h3" })).not.toBeVisible();
@@ -176,6 +178,7 @@ describe("ASO Compass", () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await user.click(screen.getByRole("button", { name: /resume latest saved analysis/i }));
     await user.click(await screen.findByRole("button", { name: "Download summary PDF" }));
     await waitFor(() => expect(downloadRunPdfMock).toHaveBeenCalledOnce());
     expect(downloadRunPdfMock.mock.calls[0]?.[5]).toBe("ASO-Compass_Example-disease_summary-report_00000000");

@@ -18,6 +18,10 @@ The repository includes the deterministic baseline, FastAPI/SQLModel backend, Re
 versioned offline example, deployment configuration, and automated backend/frontend/end-to-end checks.
 No credentials are included.
 
+The frontend follows an academic research-portfolio structure: **Portfolio** presents the research question
+and demonstrated capabilities; **Case Studies** contains six reviewed teaching cases; **Research Workspace**
+supports live and saved analyses; and **Methods & Glossary** exposes the interpretation method and vocabulary.
+
 Run the backend locally:
 
 ```bash

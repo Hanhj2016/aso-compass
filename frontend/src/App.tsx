@@ -5,6 +5,7 @@ import CandidatePrintReport from "./CandidatePrintReport";
 import { DEFAULT_CASE, findCaseBySlug } from "./caseStudies";
 import GlossaryPage from "./GlossaryPage";
 import Learn from "./Learn";
+import PortfolioPage from "./PortfolioPage";
 import { ClinVarLearningCheckpoint, EvidenceSourceMap, MechanismHelp, TermHelp } from "./education";
 import PrintReport from "./PrintReport";
 import { normalizeRunWarning, type PrintMode } from "./printReportUtils";
@@ -14,7 +15,7 @@ const DISCLAIMER = "For hypothesis generation and education only. Not for clinic
 const AI_ACCESS_STORAGE_KEY = "aso-compass-ai-access-token";
 const LAST_RUN_STORAGE_KEY = "aso-compass-run";
 type AIConfigStatus = "loading" | "ready" | "error";
-type AppView = "analyze" | "learn" | "case" | "glossary";
+type AppView = "portfolio" | "analyze" | "learn" | "case" | "glossary";
 const PRESETS = [
   ["MONDO_0004976", "Amyotrophic lateral sclerosis (ALS)"],
   ["MONDO_0004975", "Alzheimer disease"],
@@ -40,11 +41,12 @@ function AIIcon({ size = 16 }: { size?: number }) {
 
 function Header({ view, onView }: { view: AppView; onView: (view: AppView) => void }) {
   return <header className="site-header">
-    <button className="brand" type="button" onClick={() => onView("analyze")}>
+    <button className="brand" type="button" onClick={() => onView("portfolio")}>
       <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
       <span><b>ASO</b> Compass<small>Evidence-guided research portfolio</small></span>
     </button>
     <nav aria-label="Primary navigation">
+      <button type="button" className={view === "portfolio" ? "active" : ""} onClick={() => onView("portfolio")}>Portfolio</button>
       <button type="button" aria-label="Research Workspace" className={view === "analyze" ? "active" : ""} onClick={() => onView("analyze")}><span className="nav-full">Research Workspace</span><span className="nav-short">Research</span></button>
       <button type="button" aria-label="Case Studies" className={view === "learn" ? "active" : ""} onClick={() => onView("learn")}><span className="nav-full">Case Studies</span><span className="nav-short">Cases</span></button>
       <button type="button" aria-label="Methods & Glossary" className={view === "glossary" ? "active" : ""} onClick={() => onView("glossary")}><span className="nav-full">Methods &amp; Glossary</span><span className="nav-short">Methods</span></button>
@@ -509,7 +511,8 @@ function viewFromHash(): AppView {
   if (window.location.hash.startsWith("#/learn/cases/")) return "case";
   if (window.location.hash === "#/learn") return "learn";
   if (window.location.hash === "#/glossary") return "glossary";
-  return "analyze";
+  if (window.location.hash === "#/workspace" || new URLSearchParams(window.location.search).has("run")) return "analyze";
+  return "portfolio";
 }
 
 export default function App() {
@@ -526,7 +529,14 @@ export default function App() {
 
   const navigateToView = useCallback((nextView: AppView) => {
     const url = new URL(window.location.href);
-    url.hash = nextView === "analyze" ? "" : `/${nextView}`;
+    const hashes: Record<Exclude<AppView, "case">, string> = {
+      portfolio: "",
+      analyze: "/workspace",
+      learn: "/learn",
+      glossary: "/glossary",
+    };
+    if (nextView === "case") return;
+    url.hash = hashes[nextView];
     window.history.pushState(null, "", url);
     setView(nextView);
   }, []);
@@ -627,5 +637,5 @@ export default function App() {
   const caseSlug = view === "case" ? window.location.hash.slice("#/learn/cases/".length) : null;
   const caseStudy = findCaseBySlug(caseSlug);
   const headerView = view === "case" ? "learn" : view;
-  return <><Header view={headerView} onView={navigateToView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()} onCase={navigateToCase} onResumeSaved={resumeSaved}/> : view === "case" && caseStudy?.status === "published" ? <CaseStudyPage key={caseStudy.case_id} caseStudy={caseStudy} disclaimer={DISCLAIMER} onBack={() => navigateToView("learn")} onOpenResults={() => void loadExample(caseStudy)}/> : view === "glossary" ? <GlossaryPage disclaimer={DISCLAIMER}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
+  return <><Header view={headerView} onView={navigateToView}/>{view === "portfolio" ? <PortfolioPage disclaimer={DISCLAIMER} onCases={() => navigateToView("learn")} onWorkspace={() => navigateToView("analyze")} onMethods={() => navigateToView("glossary")} onCase={navigateToCase} onResumeSaved={resumeSaved}/> : view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()} onCase={navigateToCase} onResumeSaved={resumeSaved}/> : view === "case" && caseStudy?.status === "published" ? <CaseStudyPage key={caseStudy.case_id} caseStudy={caseStudy} disclaimer={DISCLAIMER} onBack={() => navigateToView("learn")} onOpenResults={() => void loadExample(caseStudy)}/> : view === "glossary" ? <GlossaryPage disclaimer={DISCLAIMER}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
 }

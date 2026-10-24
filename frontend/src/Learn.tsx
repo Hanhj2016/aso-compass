@@ -10,12 +10,12 @@ type LearnProps = {
 
 const COPY = {
   en: {
-    eyebrow: "Student research-software portfolio",
-    title: "Explore how biological evidence becomes a defensible research interpretation.",
-    intro: "ASO Compass demonstrates a student's ability to connect biomedical reasoning with reproducible software. Each case brings association, mechanism, constraint, variant, and therapeutic-precedent evidence into one traceable view—while keeping uncertainty and scientific limits visible.",
+    eyebrow: "Curated biomedical case studies",
+    title: "Practice interpretation across six distinct biological problems.",
+    intro: "Each case starts with a focused research question, selected candidate evidence, explicit limitations, and next questions. Together they show how the same evidence framework must be interpreted differently across disease mechanisms.",
     start: "Open the ALS case study",
     capabilitiesEyebrow: "Research capabilities demonstrated",
-    capabilitiesTitle: "What this portfolio demonstrates",
+    capabilitiesTitle: "Capabilities practiced across the cases",
     capabilitiesIntro: "Start with the scientific questions the application can help you examine. The workflow that assembles the result is supporting context, not the main lesson.",
     capabilities: [
       ["Synthesize target evidence", "Bring association, variant, mechanism, constraint, drug, and trial context together without treating any one source as a complete answer."],
@@ -121,21 +121,6 @@ export default function Learn({ disclaimer, onExample, onCase, onResumeSaved }: 
         <button className="primary-button compact" onClick={onExample}>{copy.start}<span aria-hidden="true">→</span></button>
         {onResumeSaved && <button className="secondary-button" onClick={onResumeSaved}>Return to latest saved analysis</button>}
       </div>
-    </section>
-
-    <section className="learn-section portfolio-about" aria-labelledby="portfolio-about-title">
-      <div>
-        <p className="eyebrow">Project &amp; contribution</p>
-        <h2 id="portfolio-about-title">A portfolio in biomedical reasoning and research software</h2>
-        <p className="learn-intro">ASO Compass is a student-built research demonstration. It shows how public biomedical evidence can be transformed into traceable, reproducible, and appropriately limited interpretations without presenting them as clinical conclusions.</p>
-      </div>
-      <div className="portfolio-contribution-grid">
-        <article><h3>Biomedical reasoning</h3><p>Frame gene–disease evidence as testable mechanism questions, not treatment claims.</p></article>
-        <article><h3>Research software</h3><p>Build a typed FastAPI, SQLModel/PostgreSQL, React, and TypeScript application around a deterministic engine.</p></article>
-        <article><h3>Responsible AI</h3><p>Constrain generated explanations to saved evidence and validate their claims and citations server-side.</p></article>
-        <article><h3>Reproducible communication</h3><p>Preserve provenance, versioned fixtures, limitations, exports, and source-adjacent citations.</p></article>
-      </div>
-      <a className="portfolio-source-link" href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Review the implementation and documentation on GitHub ↗</a>
     </section>
 
     <section className="learn-section" aria-labelledby="learn-cases">

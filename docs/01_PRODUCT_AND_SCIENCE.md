@@ -40,14 +40,18 @@ These rules are simplifying heuristics. Missense-heavy evidence does not prove t
 
 ## Recommended screens
 
-1. **Case Studies** — a portfolio-oriented English case series that foregrounds research questions, demonstrated capabilities, source-bounded interpretation, limitations, and next research questions.
-2. **New analysis** — disease selector, Basic/Advanced parameters, workload warning, consent to research-use statement.
-3. **Run progress** — stage timeline, retries/cache status, current counts, warnings, and recoverable errors.
-4. **Results overview** — run metadata, cards, mechanism distribution, association scatter, evidence completeness, and concise interpretation.
-5. **Candidate explorer** — searchable/filterable table and a gene-detail panel with source-specific evidence.
-6. **Exports** — CSV/JSON/report bundle with a manifest and warnings.
-7. **Methods & Glossary** — the interpretation method, application boundaries, and contextual terminology in one in-application reference.
-8. **Examples** — precomputed, versioned results for education and cold-start resilience.
+The interface uses an **academic research-portfolio** pattern rather than a generic analytics dashboard or
+course shell. The top-level sequence is Portfolio → Case Studies → Research Workspace → Methods & Glossary.
+
+1. **Portfolio** — a capability-led overview with the central research question, selected cases, demonstrated scientific and engineering competencies, and project contribution.
+2. **Case Studies** — an English case series that foregrounds research questions, selected evidence examples, source-bounded interpretation, limitations, and next research questions.
+3. **Research Workspace / new analysis** — disease selector, Basic/Advanced parameters, workload warning, consent to research-use statement.
+4. **Run progress** — stage timeline, retries/cache status, current counts, warnings, and recoverable errors.
+5. **Results overview** — run metadata, cards, mechanism distribution, association scatter, evidence completeness, and concise interpretation.
+6. **Candidate explorer** — searchable/filterable table and a gene-detail panel with source-specific evidence.
+7. **Exports** — CSV/JSON/report bundle with a manifest and warnings.
+8. **Methods & Glossary** — the interpretation method, application boundaries, and contextual terminology in one in-application reference.
+9. **Examples** — precomputed, versioned results for education and cold-start resilience.
 
 ## Visualization set
 

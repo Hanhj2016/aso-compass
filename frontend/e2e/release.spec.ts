@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 
 test("guided form and offline evidence example are usable", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByRole("heading", { name: /from public evidence to a defensible research interpretation/i })).toBeVisible();
+  await page.getByRole("button", { name: "Research Workspace", exact: true }).click();
   await expect(page.getByRole("heading", { name: /clearer path through target evidence/i })).toBeVisible();
   await expect(page.getByRole("link", { name: /deployed automatically from github/i })).toHaveAttribute(
     "href",
@@ -55,9 +57,9 @@ test("guided form and offline evidence example are usable", async ({ page }) => 
 
 test("guided tutorial leads into the offline evidence example", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Case Studies" }).click();
-  await expect(page.getByRole("heading", { name: /biological evidence becomes a defensible research interpretation/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "What this portfolio demonstrates" })).toBeVisible();
+  await page.getByRole("button", { name: "Case Studies", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /practice interpretation across six distinct biological problems/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Capabilities practiced across the cases" })).toBeVisible();
   await expect(page.getByText("Synthesize target evidence", { exact: true })).toBeVisible();
   const operations = page.locator("details.learn-operations");
   await expect(operations).not.toHaveAttribute("open", "");
@@ -178,7 +180,7 @@ test("a bundled example can return to the latest persisted live run", async ({ p
   await page.getByRole("button", { name: "Return to latest saved analysis" }).click();
   await expect(page.getByRole("heading", { name: "Persistent ALS analysis" })).toBeVisible();
   await expect(page.locator(".metric").filter({ hasText: "Candidates" }).getByText("114", { exact: true })).toBeVisible();
-  await expect(page).toHaveURL(new RegExp(`\\?run=${runId}$`));
+  await expect(page).toHaveURL(new RegExp(`\\?run=${runId}#/workspace$`));
 });
 
 test("a failed scientific run offers a safe offline fallback", async ({ page }) => {
@@ -217,6 +219,7 @@ test("a failed scientific run offers a safe offline fallback", async ({ page }) 
   });
 
   await page.goto("/");
+  await page.getByRole("button", { name: "Research Workspace", exact: true }).click();
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: /begin evidence analysis/i }).click();
   await expect(page.getByRole("heading", { name: /run could not be completed/i })).toBeVisible();
@@ -257,7 +260,7 @@ test("full print report uses bounded independent candidate tables", async ({ pag
     body: JSON.stringify(bundle),
   }));
   await page.addInitScript(() => { window.print = () => undefined; });
-  await page.goto("/");
+  await page.goto("/#/workspace");
   await page.getByRole("button", { name: /precomputed ALS example/i }).click();
   await expect(page.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();
   const fullDownloadPromise = page.waitForEvent("download");
@@ -314,7 +317,7 @@ test("full print report uses bounded independent candidate tables", async ({ pag
 
 test("embedded full report download has a report-specific filename", async ({ page }) => {
   await page.goto("/");
-  await page.setContent('<iframe title="Embedded ASO Compass" sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts" src="http://127.0.0.1:5173/" style="position:fixed;inset:0;width:100vw;height:100vh;border:0"></iframe>');
+  await page.setContent('<iframe title="Embedded ASO Compass" sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts" src="http://127.0.0.1:5173/#/workspace" style="position:fixed;inset:0;width:100vw;height:100vh;border:0"></iframe>');
   const app = page.frameLocator('iframe[title="Embedded ASO Compass"]');
   await app.getByRole("button", { name: /precomputed ALS example/i }).click();
   await expect(app.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();
@@ -327,7 +330,7 @@ test("embedded full report download has a report-specific filename", async ({ pa
 
 test("embedded candidate evidence download has its own filename", async ({ page }) => {
   await page.goto("/");
-  await page.setContent('<iframe title="Embedded ASO Compass" sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts" src="http://127.0.0.1:5173/" style="position:fixed;inset:0;width:100vw;height:100vh;border:0"></iframe>');
+  await page.setContent('<iframe title="Embedded ASO Compass" sandbox="allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts" src="http://127.0.0.1:5173/#/workspace" style="position:fixed;inset:0;width:100vw;height:100vh;border:0"></iframe>');
   const app = page.frameLocator('iframe[title="Embedded ASO Compass"]');
   await app.getByRole("button", { name: /precomputed ALS example/i }).click();
   await expect(app.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();
