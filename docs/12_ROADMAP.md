@@ -20,6 +20,10 @@
 ## Release 1.1 — usability and evidence depth
 
 - richer plots and comparison views;
+- contextual terminology popovers and candidate evidence-source maps;
+- a bounded ClinVar interpretation checkpoint with versioned review-status, conflict, date, and
+  variant-condition metadata; submitter count remains explicitly unavailable in the current upstream contract;
+- a scientifically reviewed educational case series following `docs/18_EDUCATIONAL_CASE_SERIES.md`;
 - saved parameter presets and shareable read-only run links;
 - stronger accessibility/usability testing with students;
 - source-status dashboard; deterministic summary/full print reports are implemented, while signed or

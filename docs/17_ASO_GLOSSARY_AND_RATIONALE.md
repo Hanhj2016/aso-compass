@@ -162,6 +162,31 @@ NMD 是细胞的 RNA 质量控制机制。若 nonsense、frameshift 或某些 sp
 ClinVar 保存提交者对变异—疾病关系的解释及支持证据。不同提交可能冲突，因此应查看
 review status、提交日期和原始证据，而不能只读取一个标签。
 
+### 5.3 ClinVar review status、提交者和冲突
+
+**Review status（审查状态）**描述一个 ClinVar 分类背后的审查层级与提交者共识，网页通常
+用星级表示。practice guideline、expert panel、多位提交者一致、单一提交者和存在冲突的
+提交，不能被当作完全相同强度的证据。星级反映审查与共识背景，并不是“致病程度分数”。
+
+逐变异解读时至少还应核对：
+
+- **submitter count**：有多少提交者，以及是否真正独立；
+- **agreement / conflict**：提交者对该变异—疾病关系是否一致；
+- **assertion date and version**：分类的日期与版本，较旧记录可能尚未纳入新证据；
+- **variant–condition relationship**：分类针对哪个变异、哪种疾病和哪种遗传背景；
+- **assertion criteria and supporting evidence**：提交者使用的标准与原始证据。
+
+旧版预计算示例的 candidate summary 只保存返回记录数量、变异后果类别和由此产生的基因级
+heuristic。自 `clinvar-interpretation-v1` 起，新运行还会保存 Open Targets EVA 返回的
+review-status 文本、冲突记录数量、证据/发布日期、来源疾病关系，以及最多 12 条代表性记录。
+当前上游契约没有可靠的 submitter count，因此界面必须显示为 `Not exposed`，不能从
+review-status 文本反推。这些新增字段用于教学和复核，不参与 `final_call`、分数或 shortlist。
+即使 metadata 完整，`ClinVar heuristic` 仍不能替代 ClinVar primary record 的逐项复核。
+
+**No evidence returned（未返回证据）不等于 Benign（良性）。**前者只说明本次数据源、查询、
+过滤及返回上限下没有得到符合条件的记录；后者是针对特定变异—疾病关系、由证据支持的
+临床意义分类。缺失、未检查、检索失败和超出模型范围也都不能解释为良性。
+
 ## 6. 最关键的疾病机制
 
 ### Loss of function（LoF，功能缺失）

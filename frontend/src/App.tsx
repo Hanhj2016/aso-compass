@@ -1,7 +1,8 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { askSavedEvidenceQuestion, compareCandidates, createRun, explainCandidate, exportUrl, getCandidates, getEvents, getPublicConfig, getRun, getSavedCandidateExplanation, getSavedRunSummary, summarizeRun } from "./api";
 import CandidatePrintReport from "./CandidatePrintReport";
 import Learn from "./Learn";
+import { ClinVarLearningCheckpoint, EvidenceSourceMap, MechanismHelp, TermHelp } from "./education";
 import PrintReport from "./PrintReport";
 import { normalizeRunWarning, type PrintMode } from "./printReportUtils";
 import type { AIQuestionAnswer, Candidate, CandidateComparison, CandidateExplanation, CitedClaim, ExampleBundle, RunEvent, RunRecord, RunSummary } from "./types";
@@ -170,6 +171,14 @@ function AIAccessControl({ enabled, required, accessToken, onUnlock, onLock }: {
   </section>;
 }
 
+function CandidateDetailSection({ title, summary, defaultOpen = false, children, className = "" }: { title: string; summary: string; defaultOpen?: boolean; children: ReactNode; className?: string }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return <details className={`candidate-detail-section ${className}`.trim()} open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
+    <summary><span><b>{title}</b><small>{summary}</small></span><span aria-hidden="true">{open ? "−" : "+"}</span></summary>
+    <div className="candidate-detail-body">{children}</div>
+  </details>;
+}
+
 function CandidateDrawer({ row, runId, aiEnabled, aiConfigStatus, accessLocked, accessToken, isExample, explanation, onExplanationChange, onPrint, onClose }: { row: Candidate; runId: string; aiEnabled: boolean; aiConfigStatus: AIConfigStatus; accessLocked: boolean; accessToken: string; isExample: boolean; explanation: CandidateExplanation | null; onExplanationChange: (explanation: CandidateExplanation) => void; onPrint: (explanation: CandidateExplanation | null) => void; onClose: () => void }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
@@ -192,14 +201,31 @@ function CandidateDrawer({ row, runId, aiEnabled, aiConfigStatus, accessLocked, 
   return <div className={`drawer-backdrop${maximized ? " drawer-maximized" : ""}`} role="presentation" onMouseDown={onClose}><aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="gene-title" onMouseDown={(e) => e.stopPropagation()}>
     <div className="drawer-actions"><button className="secondary-button candidate-print-button" type="button" onClick={() => onPrint(explanation)}>{explanation ? "Download evidence PDF + AI" : "Download evidence PDF"}</button><button className="secondary-button drawer-size-button" type="button" aria-label={maximized ? "Restore candidate evidence view" : "Maximize candidate evidence view"} aria-pressed={maximized} onClick={() => setMaximized(current => !current)}><span aria-hidden="true">{maximized ? "↙" : "↗"}</span>{maximized ? "Restore" : "Maximize"}</button><button className="drawer-icon-button close" onClick={onClose} aria-label="Close gene details">×</button></div>
     <div className="drawer-content">
-    <p className="eyebrow">Candidate evidence</p><h2 id="gene-title">{row.gene_symbol}</h2><p>{row.gene_name}</p>
-    <span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span>
-    <section><h3>Why this track?</h3><p>{row.confidence_reason}</p><p className="call-source">Deterministic source: <b>{row.call_source}</b> · Confidence label: <b>{row.confidence_tier}</b></p></section>
-    <div className="evidence-grid"><div><span>Overall association</span><b>{row.overall_score.toFixed(3)}</b></div><div><span>Genetic association</span><b>{row.genetic_score.toFixed(3)}</b></div><div><span>LOEUF</span><b>{row.loeuf?.toFixed(3) ?? "Unknown"}</b></div><div><span>Classified variants</span><b>{(row.n_lof ?? 0) + (row.n_missense ?? 0)}</b></div></div>
-    <section><h3>Mechanism evidence</h3><dl><dt>ClinVar heuristic</dt><dd>{row.clinvar_call}</dd><dt>G2P mechanism</dt><dd>{row.g2p_mech ?? "Not returned"}</dd><dt>Inheritance</dt><dd>{row.inheritance ?? "Not returned"}</dd></dl></section>
-    <section><h3>Therapeutic precedent</h3><p>{row.aso_precedent || "No ASO precedent was found in the checked sources."}</p><p>{row.drug_status}</p>{row.aso_trial_ids && <p>Trial IDs: {row.aso_trial_ids}</p>}</section>
-    {(row.flag || row.evidence_truncated) && <p className="notice"><b>Review flag:</b> {row.flag || "Variant evidence was capped and may be incomplete."}</p>}
-    <section className="source-links"><h3>Primary records</h3><a href={`https://platform.opentargets.org/target/${row.ensembl_id}`} target="_blank" rel="noreferrer">Open Targets ↗</a>{row.aso_trial_ids.split(", ").filter(Boolean).map(id => <a key={id} href={`https://clinicaltrials.gov/study/${id}`} target="_blank" rel="noreferrer">{id} ↗</a>)}</section>
+    <header className="candidate-hero"><div><p className="eyebrow">Candidate evidence</p><h2 id="gene-title">{row.gene_symbol}</h2><p>{row.gene_name}</p></div><div className="candidate-identity"><span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span>{row.shortlist_position && <small>Shortlist #{row.shortlist_position}</small>}</div></header>
+    <div className="evidence-grid candidate-overview"><div><span>Overall association</span><b>{row.overall_score.toFixed(3)}</b></div><div><span>Genetic association</span><b>{row.genetic_score.toFixed(3)}</b></div><div><span><TermHelp term="loeuf"/></span><b>{row.loeuf?.toFixed(3) ?? "Unknown"}</b></div><div><span>Evidence returned</span><b>{row.n_evidence === null ? "Not checked" : `${row.n_evidence_returned ?? 0}/${row.n_evidence}`}</b></div></div>
+    {(row.flag || row.evidence_truncated) && <p className="notice candidate-critical-notice"><b>Review before interpreting:</b> {row.flag || "Variant evidence was capped and may be incomplete."}</p>}
+    <nav className="candidate-reading-guide" aria-label="Candidate evidence sections"><span>Read in layers</span><small>Decision → sources → variant context → precedent → optional AI</small></nav>
+
+    <div className="candidate-detail-stack">
+    <CandidateDetailSection title="Deterministic interpretation" summary="Why this track, mechanism, and inheritance" defaultOpen>
+      <section><h3>Why this track?</h3><p>{row.confidence_reason}</p><p className="call-source">Deterministic source: <b>{row.call_source}</b> · Confidence label: <b>{row.confidence_tier}</b></p></section>
+      <section><h3>Mechanism evidence</h3><dl><dt>ClinVar heuristic</dt><dd>{row.clinvar_call}</dd><dt>G2P mechanism</dt><dd><MechanismHelp value={row.g2p_mech}/></dd><dt>Inheritance</dt><dd>{row.inheritance ?? "Not returned"}</dd></dl>{row.flag.toLowerCase().includes("haploinsuff") && <p className="mechanism-term-note">Review concept: <TermHelp term="haploinsufficiency"/></p>}</section>
+    </CandidateDetailSection>
+
+    <CandidateDetailSection title="Evidence sources" summary="What each source can—and cannot—support">
+      <EvidenceSourceMap candidate={row}/>
+    </CandidateDetailSection>
+
+    <CandidateDetailSection title="ClinVar interpretation lab" summary="Review status, conflicts, dates, and variant–condition context">
+      <ClinVarLearningCheckpoint candidate={row}/>
+    </CandidateDetailSection>
+
+    <CandidateDetailSection title="Precedent and primary records" summary="Drug/trial context and links for manual review">
+      <section><h3>Therapeutic precedent</h3><p>{row.aso_precedent || "No ASO precedent was found in the checked sources."}</p><p>{row.drug_status}</p>{row.aso_trial_ids && <p>Trial IDs: {row.aso_trial_ids}</p>}</section>
+      <section className="source-links"><h3>Primary records</h3><a href={`https://platform.opentargets.org/target/${row.ensembl_id}`} target="_blank" rel="noreferrer">Open Targets ↗</a>{row.aso_trial_ids.split(", ").filter(Boolean).map(id => <a key={id} href={`https://clinicaltrials.gov/study/${id}`} target="_blank" rel="noreferrer">{id} ↗</a>)}</section>
+    </CandidateDetailSection>
+
+    <CandidateDetailSection key={explanation ? "candidate-ai-ready" : "candidate-ai-empty"} title="Optional AI explanation" summary="Evidence-bound explanation; never changes the saved result" defaultOpen={Boolean(explanation)} className="candidate-ai-section">
     <section className="ai-panel" aria-labelledby="ai-explanation-title"><div className="ai-heading"><h3 id="ai-explanation-title"><AIIcon/>AI evidence explainer</h3><span><AIIcon size={11}/>Generated · optional</span></div>
       {!aiEnabled && <p>{aiConfigStatus !== "ready" ? "Connecting to the AI service configuration…" : accessLocked ? "Enter the shared AI access token in the results page to unlock explanations." : "AI explanations are currently off. Deterministic results remain fully available."}</p>}
       {aiEnabled && !explanation && <><p>Generate a plain-language explanation from this saved evidence only. The explanation cannot change the classification or rank.</p><button className="secondary-button ai-button" onClick={() => void requestExplanation()} disabled={aiLoading}><AIIcon/>{aiLoading ? "Generating…" : "Explain saved evidence"}</button></>}
@@ -215,6 +241,8 @@ function CandidateDrawer({ row, runId, aiEnabled, aiConfigStatus, accessLocked, 
         <p className="drawer-disclaimer">{explanation.research_use_disclaimer}</p>
       </div>}
     </section>
+    </CandidateDetailSection>
+    </div>
     <p className="drawer-disclaimer">{DISCLAIMER}</p></div>
   </aside></div>;
 }
@@ -452,7 +480,7 @@ function Results({ run, candidates, isExample, aiEnabled, aiConfigStatus, aiAcce
       <p className="view-explainer"><b>{researchView === "all" ? "All evidence" : researchView === "shortlist" ? "Saved priority shortlist" : researchView === "novel" ? "Novel-target discovery" : "Translational precedent"}:</b> {VIEW_HELP[researchView]}</p>
       {aiAvailable && <div className="comparison-toolbar"><div><b><AIIcon/>Compare saved evidence</b><span>{comparisonSelection.length ? `${comparisonSelection.join(", ")} selected` : "Select two or three candidates below"}</span></div><div><button className="text-button" type="button" disabled={!comparisonSelection.length} onClick={() => { setComparisonSelection([]); setComparison(null); setComparisonError(""); }}>Clear</button><button className="secondary-button" type="button" disabled={comparisonSelection.length < 2 || comparisonLoading} onClick={() => void requestComparison()}><AIIcon/>{comparisonLoading ? "Comparing…" : `Compare selected (${comparisonSelection.length})`}</button></div></div>}
       {comparisonError && <p className="ai-error comparison-error" role="alert">{comparisonError}</p>}
-      <div className="table-wrap"><table><thead><tr>{aiAvailable && <th className="comparison-select-cell"><span className="sr-only">Compare</span></th>}<th>Gene</th><th>Track</th><th>Overall</th><th>Genetic</th><th>Evidence</th><th>LOEUF</th><th>Therapeutic precedent</th><th className="candidate-actions-cell"><span className="sr-only">Details</span></th></tr></thead><tbody>{filtered.map((row, index) => { const selectedForComparison = comparisonSelection.includes(row.gene_symbol); const outsidePage = index < pageStart || index >= pageEnd; return <tr key={row.ensembl_id} className={`${selectedForComparison ? "comparison-selected " : ""}${outsidePage ? "page-hidden" : ""}`.trim()}>{aiAvailable && <td className="comparison-select-cell"><input type="checkbox" aria-label={`Select ${row.gene_symbol} for comparison`} checked={selectedForComparison} disabled={!selectedForComparison && comparisonSelection.length >= 3} onChange={() => toggleComparison(row.gene_symbol)}/></td>}<td><b>{row.gene_symbol}</b><small>{row.gene_name}</small></td><td><span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span></td><td>{row.overall_score.toFixed(3)}</td><td>{row.genetic_score.toFixed(3)}</td><td>{row.evidence_truncated ? <span className="status-warn">Capped</span> : row.n_evidence === null ? "Not checked" : `${row.n_evidence_returned}/${row.n_evidence}`}</td><td>{row.loeuf?.toFixed(2) ?? "—"}</td><td><span className={row.has_approved_drug ? "precedent-approved" : ""}>{row.drug_status}</span>{row.aso_precedent && <small>ASO / trial precedent</small>}</td><td className="candidate-actions-cell"><button className="row-button" onClick={() => setSelected(row)} aria-label={`View evidence for ${row.gene_symbol}`}>→</button></td></tr>;})}</tbody></table>{filtered.length === 0 && <p className="empty">No candidates match these filters.</p>}</div>
+      <div className="table-wrap"><table><thead><tr>{aiAvailable && <th className="comparison-select-cell"><span className="sr-only">Compare</span></th>}<th>Gene</th><th>Track</th><th>Overall</th><th>Genetic</th><th>Evidence</th><th><TermHelp term="loeuf"/></th><th>Therapeutic precedent</th><th className="candidate-actions-cell"><span className="sr-only">Details</span></th></tr></thead><tbody>{filtered.map((row, index) => { const selectedForComparison = comparisonSelection.includes(row.gene_symbol); const outsidePage = index < pageStart || index >= pageEnd; return <tr key={row.ensembl_id} className={`${selectedForComparison ? "comparison-selected " : ""}${outsidePage ? "page-hidden" : ""}`.trim()}>{aiAvailable && <td className="comparison-select-cell"><input type="checkbox" aria-label={`Select ${row.gene_symbol} for comparison`} checked={selectedForComparison} disabled={!selectedForComparison && comparisonSelection.length >= 3} onChange={() => toggleComparison(row.gene_symbol)}/></td>}<td><b>{row.gene_symbol}</b><small>{row.gene_name}</small></td><td><span className={`track-badge track-${row.final_call.replace(/[^a-z]/g, "-")}`}>{TRACK_LABEL[row.final_call]}</span></td><td>{row.overall_score.toFixed(3)}</td><td>{row.genetic_score.toFixed(3)}</td><td>{row.evidence_truncated ? <span className="status-warn"><TermHelp term="capped">Capped</TermHelp></span> : row.n_evidence === null ? "Not checked" : `${row.n_evidence_returned}/${row.n_evidence}`}</td><td>{row.loeuf?.toFixed(2) ?? "—"}</td><td><span className={row.has_approved_drug ? "precedent-approved" : ""}>{row.drug_status}</span>{row.aso_precedent && <small>ASO / trial precedent</small>}</td><td className="candidate-actions-cell"><button className="row-button" onClick={() => setSelected(row)} aria-label={`View evidence for ${row.gene_symbol}`}>→</button></td></tr>;})}</tbody></table>{filtered.length === 0 && <p className="empty">No candidates match these filters.</p>}</div>
       {filtered.length > 0 && <div className="pagination"><span>Showing {pageStart + 1}–{pageEnd} of {filtered.length}</span><label>Rows per page <select aria-label="Rows per page" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label><div><button type="button" onClick={() => setPage(1)} disabled={safePage === 1} aria-label="First page">«</button><button type="button" onClick={() => setPage(current => Math.max(1, current - 1))} disabled={safePage === 1}>Previous</button><span>Page {safePage} of {totalPages}</span><button type="button" onClick={() => setPage(current => Math.min(totalPages, current + 1))} disabled={safePage === totalPages}>Next</button><button type="button" onClick={() => setPage(totalPages)} disabled={safePage === totalPages} aria-label="Last page">»</button></div></div>}
     </article>
     {comparison && <section className="ai-panel comparison-panel" aria-labelledby="comparison-title"><div className="ai-heading"><div><p className="eyebrow">Optional interpretation</p><h2 id="comparison-title"><AIIcon size={19}/>Evidence comparison: {comparison.compared_gene_symbols.join(" · ")}</h2></div><span><AIIcon size={11}/>Generated · no ranking</span></div><div className="ai-output"><p className="ai-summary">{comparison.output.overview}</p>

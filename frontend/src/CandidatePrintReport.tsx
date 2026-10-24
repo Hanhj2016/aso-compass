@@ -40,6 +40,10 @@ export default function CandidatePrintReport({ run, candidate, explanation, gene
     ? "Not checked"
     : `${candidate.n_evidence_returned ?? 0}/${candidate.n_evidence}`;
   const openTargetsUrl = `https://platform.opentargets.org/target/${candidate.ensembl_id}`;
+  const clinvar = candidate.clinvar_interpretation;
+  const reviewCoverage = clinvar?.metadata_status === "available" || clinvar?.metadata_status === "partial"
+    ? `${clinvar.records_with_review_status ?? 0}/${clinvar.records_returned ?? candidate.n_evidence_returned ?? 0}`
+    : "Not retained";
 
   return <section className="print-report candidate-print-report" data-print-mode="candidate" aria-label={`Candidate evidence print report for ${candidate.gene_symbol}`}>
     <article className="print-page candidate-print-page" data-report-section="candidate-evidence">
@@ -77,7 +81,7 @@ export default function CandidatePrintReport({ run, candidate, explanation, gene
         </section>
         <section>
           <h2>Variant evidence inventory</h2>
-          <dl><dt>Loss-of-function</dt><dd>{valueOrUnknown(candidate.n_lof)}</dd><dt>Missense</dt><dd>{valueOrUnknown(candidate.n_missense)}</dd><dt>Splice</dt><dd>{valueOrUnknown(candidate.n_splice)}</dd><dt>Additional splice</dt><dd>{valueOrUnknown(candidate.n_splice_extra)}</dd><dt>LoF fraction</dt><dd>{fraction(candidate.frac_lof)}</dd><dt>Splice-related fraction</dt><dd>{fraction(candidate.frac_splice_related)}</dd></dl>
+          <dl><dt>Loss-of-function</dt><dd>{valueOrUnknown(candidate.n_lof)}</dd><dt>Missense</dt><dd>{valueOrUnknown(candidate.n_missense)}</dd><dt>Splice</dt><dd>{valueOrUnknown(candidate.n_splice)}</dd><dt>Additional splice</dt><dd>{valueOrUnknown(candidate.n_splice_extra)}</dd><dt>LoF fraction</dt><dd>{fraction(candidate.frac_lof)}</dd><dt>Splice-related fraction</dt><dd>{fraction(candidate.frac_splice_related)}</dd><dt>Review-status coverage</dt><dd>{reviewCoverage}</dd><dt>Conflict-marked records</dt><dd>{valueOrUnknown(clinvar?.conflict_records)}</dd><dt>Latest evidence date</dt><dd>{valueOrUnknown(clinvar?.latest_evidence_date)}</dd></dl>
         </section>
         <section>
           <h2>Therapeutic precedent</h2>

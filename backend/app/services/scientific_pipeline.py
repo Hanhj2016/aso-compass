@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 import math
 import re
+from collections import Counter
 from collections.abc import Callable
+from datetime import date
 from typing import Any
 
 from app.domain.classification import classify_candidates, validate_candidates
@@ -39,6 +41,123 @@ SPLICE_EXTRA_LABELS = {
     "synonymous variant",
 }
 
+CLINVAR_REPRESENTATIVE_LIMIT = 12
+
+
+def _review_stars(review_status: str | None) -> int | None:
+    """Map the Open Targets EVA review-status text to ClinVar's documented stars."""
+
+    if not review_status:
+        return None
+    normalized = review_status.lower().replace("_", " ").strip()
+    if "practice guideline" in normalized:
+        return 4
+    if "expert panel" in normalized:
+        return 3
+    if "multiple submitters" in normalized and "no conflict" in normalized:
+        return 2
+    if "criteria provided" in normalized:
+        return 1
+    return 0
+
+
+def _review_has_conflict(review_status: str | None) -> bool:
+    normalized = str(review_status or "").lower().replace("_", " ")
+    return "conflict" in normalized and "no conflict" not in normalized
+
+
+def _latest_iso_date(values: list[str]) -> str | None:
+    parsed: list[tuple[date, str]] = []
+    for value in values:
+        try:
+            parsed.append((date.fromisoformat(value[:10]), value))
+        except (TypeError, ValueError):
+            continue
+    return max(parsed)[1] if parsed else None
+
+
+def _clinvar_interpretation(
+    rows: list[dict[str, Any]], reported: int, returned: int, truncated: bool
+) -> dict[str, Any]:
+    review_counts = Counter(
+        str(row.get("confidence") or "").strip() for row in rows if row.get("confidence")
+    )
+    star_counts = Counter(
+        str(stars)
+        for row in rows
+        if (stars := _review_stars(str(row.get("confidence") or "") or None)) is not None
+    )
+    condition_counts = Counter(
+        (str(row.get("diseaseFromSourceId") or ""), str(row.get("diseaseFromSource") or ""))
+        for row in rows
+        if row.get("diseaseFromSourceId") or row.get("diseaseFromSource")
+    )
+    conflicts = sum(_review_has_conflict(row.get("confidence")) for row in rows)
+
+    def representative(row: dict[str, Any]) -> dict[str, Any]:
+        consequence = row.get("variantFunctionalConsequence") or {}
+        return {
+            "source_record_id": row.get("id"),
+            "rs_id": row.get("variantRsId"),
+            "clinical_report_id": row.get("clinicalReportId"),
+            "clinical_significances": row.get("clinicalSignificances") or [],
+            "review_status": row.get("confidence"),
+            "review_stars": _review_stars(row.get("confidence")),
+            "evidence_date": row.get("evidenceDate"),
+            "release_date": row.get("releaseDate"),
+            "release_version": row.get("releaseVersion"),
+            "condition_id": row.get("diseaseFromSourceId"),
+            "condition_label": row.get("diseaseFromSource"),
+            "consequence_id": consequence.get("id"),
+            "consequence_label": consequence.get("label"),
+        }
+
+    ordered = sorted(
+        rows,
+        key=lambda row: (
+            _review_has_conflict(row.get("confidence")),
+            _review_stars(row.get("confidence")) or 0,
+            str(row.get("evidenceDate") or ""),
+        ),
+        reverse=True,
+    )
+    return {
+        "schema_version": "clinvar-interpretation-v1",
+        "source": "Open Targets EVA",
+        "metadata_status": "partial" if truncated else "available",
+        "records_reported": reported,
+        "records_returned": returned,
+        "records_with_review_status": sum(review_counts.values()),
+        "records_with_variant_id": sum(bool(row.get("variantRsId")) for row in rows),
+        "records_with_condition": sum(
+            bool(row.get("diseaseFromSourceId") or row.get("diseaseFromSource")) for row in rows
+        ),
+        "review_status_counts": dict(sorted(review_counts.items())),
+        "review_star_counts": dict(sorted(star_counts.items())),
+        "conflict_records": conflicts,
+        "submitter_count": None,
+        "latest_evidence_date": _latest_iso_date(
+            [str(row["evidenceDate"]) for row in rows if row.get("evidenceDate")]
+        ),
+        "latest_release_date": _latest_iso_date(
+            [str(row["releaseDate"]) for row in rows if row.get("releaseDate")]
+        ),
+        "release_versions": sorted(
+            {str(row["releaseVersion"]) for row in rows if row.get("releaseVersion")}
+        ),
+        "conditions": [
+            {"id": condition_id or None, "label": label or None, "record_count": count}
+            for (condition_id, label), count in condition_counts.most_common(8)
+        ],
+        "representative_records": [representative(row) for row in ordered[:CLINVAR_REPRESENTATIVE_LIMIT]],
+        "representative_limit": CLINVAR_REPRESENTATIVE_LIMIT,
+        "limitations": [
+            "Open Targets EVA does not expose a reliable submitter count in this query contract.",
+            "Representative records are a bounded learning sample, not a complete variant review.",
+            *(["The upstream evidence response was truncated."] if truncated else []),
+        ],
+    }
+
 
 def _score(rows: list[dict[str, Any]] | None) -> float:
     return next(
@@ -49,15 +168,19 @@ def _score(rows: list[dict[str, Any]] | None) -> float:
 def _variant_counts(data: dict[str, Any], ensembl_id: str) -> dict[str, Any]:
     evidence = (data.get("disease") or {}).get("evidences") or {}
     rows = evidence.get("rows") or []
+    reported = int(evidence.get("count") or 0)
+    returned = len(rows)
+    truncated = reported > returned
     result: dict[str, Any] = {
         "ensembl_id": ensembl_id,
-        "n_evidence": int(evidence.get("count") or 0),
-        "n_evidence_returned": len(rows),
-        "evidence_truncated": int(evidence.get("count") or 0) > len(rows),
+        "n_evidence": reported,
+        "n_evidence_returned": returned,
+        "evidence_truncated": truncated,
         "n_lof": 0,
         "n_splice": 0,
         "n_splice_extra": 0,
         "n_missense": 0,
+        "clinvar_interpretation": _clinvar_interpretation(rows, reported, returned, truncated),
     }
     for row in rows:
         significances = row.get("clinicalSignificances") or []
@@ -239,8 +362,11 @@ def run_pipeline(
     if parameters["use_variants"]:
         for index, ensembl_id in enumerate(ids, 1):
             try:
-                data, _ = client.query(VARIANTS, {"disease": disease_id, "genes": [ensembl_id], "size": 500})
+                data, variant_query_hash = client.query(
+                    VARIANTS, {"disease": disease_id, "genes": [ensembl_id], "size": 500}
+                )
                 variants[ensembl_id] = _variant_counts(data, ensembl_id)
+                variants[ensembl_id]["_variant_query_hash"] = variant_query_hash
             except Exception:
                 warnings.append(
                     f"Variant lookup failed for {ensembl_id}; evidence remains unknown, not negative."
@@ -344,6 +470,12 @@ def run_pipeline(
                 "n_missense": None,
                 "g2p_mech": None,
                 "inheritance": None,
+                "clinvar_interpretation": {
+                    "schema_version": "clinvar-interpretation-v1",
+                    "source": "Open Targets EVA",
+                    "metadata_status": "not_checked" if not parameters["use_variants"] else "not_returned",
+                    "limitations": ["No per-record ClinVar/EVA interpretation metadata was retained."],
+                },
                 "strategy": None,
                 "drug_status": "not checked",
                 "has_approved_drug": None,

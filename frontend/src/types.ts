@@ -72,6 +72,45 @@ export interface Candidate {
   aso_precedent: string;
   shortlist_position: number | null;
   completeness: string;
+  clinvar_interpretation?: ClinVarInterpretation;
+}
+
+export interface ClinVarRepresentativeRecord {
+  source_record_id: string | null;
+  rs_id: string | null;
+  clinical_report_id: string | null;
+  clinical_significances: string[];
+  review_status: string | null;
+  review_stars: number | null;
+  evidence_date: string | null;
+  release_date: string | null;
+  release_version: string | null;
+  condition_id: string | null;
+  condition_label: string | null;
+  consequence_id: string | null;
+  consequence_label: string | null;
+}
+
+export interface ClinVarInterpretation {
+  schema_version?: string;
+  source?: string;
+  metadata_status?: "available" | "partial" | "not_checked" | "not_returned";
+  records_reported?: number;
+  records_returned?: number;
+  records_with_review_status?: number;
+  records_with_variant_id?: number;
+  records_with_condition?: number;
+  review_status_counts?: Record<string, number>;
+  review_star_counts?: Record<string, number>;
+  conflict_records?: number;
+  submitter_count?: number | null;
+  latest_evidence_date?: string | null;
+  latest_release_date?: string | null;
+  release_versions?: string[];
+  conditions?: Array<{ id: string | null; label: string | null; record_count: number }>;
+  representative_records?: ClinVarRepresentativeRecord[];
+  representative_limit?: number;
+  limitations?: string[];
 }
 
 export interface PublicConfig {

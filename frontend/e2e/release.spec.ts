@@ -27,10 +27,21 @@ test("guided form and offline evidence example are usable", async ({ page }) => 
   ).toBeVisible();
   await page.getByRole("button", { name: "View evidence for SOD1" }).click();
   await expect(page.getByRole("dialog", { name: "SOD1" })).toBeVisible();
+  await page.getByText("Evidence sources", { exact: true }).click();
+  await expect(page.getByRole("heading", { name: /how the saved evidence reaches this track/i })).toBeVisible();
+  await page.getByText("ClinVar interpretation lab", { exact: true }).click();
+  await expect(page.getByRole("heading", { name: /a ClinVar classification is more than a label/i })).toBeVisible();
+  const evidenceDialog = page.getByRole("dialog", { name: "SOD1" });
+  await evidenceDialog.getByLabel("Explain LOEUF").click();
+  await expect(evidenceDialog.getByRole("note").filter({ hasText: "LOEUF" })).toBeVisible();
+  const clinVarSource = evidenceDialog.locator(".source-map-list details").filter({ hasText: "ClinVar / EVA" });
+  await clinVarSource.getByText("ClinVar / EVA", { exact: true }).click();
+  await expect(clinVarSource.getByText("Cannot support", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Maximize candidate evidence view" }).click();
   await expect(page.locator(".drawer-backdrop")).toHaveClass(/drawer-maximized/);
   await page.getByRole("button", { name: "Restore candidate evidence view" }).click();
   await expect(page.locator(".drawer-backdrop")).not.toHaveClass(/drawer-maximized/);
+  await page.getByText("Optional AI explanation", { exact: true }).click();
   await expect(
     page.getByRole("dialog", { name: "SOD1" }).getByText(
       /(?:connecting to the AI service configuration|enter the shared AI access token in the results page to unlock explanations|AI explanations are currently off)/i,
@@ -44,6 +55,8 @@ test("guided tutorial leads into the offline evidence example", async ({ page })
   await page.getByRole("button", { name: "Learn" }).click();
   await expect(page.getByRole("heading", { name: /transparent map/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "The five research tracks" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /build interpretation skills/i })).toBeVisible();
+  await expect(page.getByText("Fixture review pending").first()).toBeVisible();
 
   await page.getByRole("button", { name: /open the guided ALS example/i }).first().click();
   await expect(page.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();

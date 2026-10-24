@@ -1008,13 +1008,41 @@ def export(
         "flag",
         "note",
     ]
+    clinvar_csv_fields = [
+        "clinvar_metadata_status",
+        "clinvar_review_status_coverage",
+        "clinvar_conflict_records",
+        "clinvar_latest_evidence_date",
+    ]
+
+    def export_row(row: Candidate, include_clinvar_detail: bool = False) -> dict[str, object]:
+        base: dict[str, object] = {field: getattr(row, field) for field in fields}
+        interpretation = row.clinvar_interpretation or {}
+        if include_clinvar_detail:
+            base["clinvar_interpretation"] = interpretation
+        else:
+            base.update(
+                {
+                    "clinvar_metadata_status": interpretation.get("metadata_status", "not retained"),
+                    "clinvar_review_status_coverage": (
+                        f"{interpretation.get('records_with_review_status', 0)}/"
+                        f"{interpretation.get('records_returned', row.n_evidence_returned or 0)}"
+                    ),
+                    "clinvar_conflict_records": interpretation.get("conflict_records"),
+                    "clinvar_latest_evidence_date": interpretation.get("latest_evidence_date"),
+                }
+            )
+        return base
+
     if format == "csv":
         stream = io.StringIO()
-        writer = csv.DictWriter(stream, fieldnames=[*fields, "research_use_disclaimer"])
+        writer = csv.DictWriter(
+            stream, fieldnames=[*fields, *clinvar_csv_fields, "research_use_disclaimer"]
+        )
         writer.writeheader()
         for row in rows:
             writer.writerow(
-                {**{field: getattr(row, field) for field in fields}, "research_use_disclaimer": DISCLAIMER}
+                {**export_row(row), "research_use_disclaimer": DISCLAIMER}
             )
         body, media = stream.getvalue().encode(), "text/csv"
     elif format == "json":
@@ -1028,7 +1056,7 @@ def export(
                     "warnings": run.warnings,
                     "research_use_disclaimer": DISCLAIMER,
                 },
-                "candidates": [{field: getattr(row, field) for field in fields} for row in rows],
+                "candidates": [export_row(row, include_clinvar_detail=True) for row in rows],
             },
             default=str,
             indent=2,

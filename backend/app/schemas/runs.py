@@ -120,3 +120,4 @@ class CandidatePublic(BaseModel):
     aso_precedent: str
     shortlist_position: int | None
     completeness: str
+    clinvar_interpretation: dict[str, object]

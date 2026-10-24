@@ -127,6 +127,7 @@ class RunWorker:
                             "n_missense",
                             "g2p_mech",
                             "inheritance",
+                            "clinvar_interpretation",
                             "drug_status",
                             "aso_drug",
                             "aso_names",
@@ -141,7 +142,11 @@ class RunWorker:
                             candidate_id=candidate.id,
                             source="normalized_scientific_evidence",
                             external_id=candidate.ensembl_id,
-                            query_hash=str(metadata.get("association_query_hash") or "unknown"),
+                            query_hash=str(
+                                row.get("_variant_query_hash")
+                                or metadata.get("association_query_hash")
+                                or "unknown"
+                            ),
                             upstream_release=str(release) if release else None,
                             completeness=candidate.completeness,
                             normalized=evidence_fields,

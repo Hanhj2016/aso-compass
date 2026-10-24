@@ -96,7 +96,9 @@ CONSTRAINTS = """query Constraints($ids:[String!]!){targets(ensemblIds:$ids){
 
 VARIANTS = """query Evidence($disease:String!,$genes:[String!]!,$size:Int!){
  disease(efoId:$disease){evidences(ensemblIds:$genes,enableIndirect:true,
- datasourceIds:[\"eva\"],size:$size){count rows{variantFunctionalConsequence{id label} clinicalSignificances}}}}"""
+ datasourceIds:[\"eva\"],size:$size){count rows{id variantRsId clinicalReportId confidence
+ evidenceDate releaseDate releaseVersion diseaseFromSource diseaseFromSourceId
+ variantFunctionalConsequence{id label} clinicalSignificances}}}}"""
 
 G2P = """query G2P($disease:String!,$genes:[String!]!){disease(efoId:$disease){
  evidences(ensemblIds:$genes,enableIndirect:true,datasourceIds:[\"gene2phenotype\"],size:500){

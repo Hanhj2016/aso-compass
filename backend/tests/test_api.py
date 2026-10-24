@@ -82,8 +82,37 @@ def test_export_has_disclaimer_and_digest_manifest(api) -> None:
         session.add(run)
         session.commit()
         session.refresh(run)
+        session.add(
+            Candidate(
+                environment="test",
+                run_id=run.id,
+                ensembl_id="ENSG1",
+                gene_symbol="GENE1",
+                overall_score=0.8,
+                genetic_score=0.7,
+                clinvar_call="knockdown",
+                final_call="knockdown",
+                call_source="ClinVar",
+                confidence_tier="fixture",
+                confidence_reason="fixture",
+                clinvar_interpretation={
+                    "schema_version": "clinvar-interpretation-v1",
+                    "metadata_status": "available",
+                    "records_returned": 2,
+                    "records_with_review_status": 2,
+                    "conflict_records": 0,
+                },
+            )
+        )
+        session.commit()
         response = export(run.id, "json", session, settings)
 
         body = response.body.decode()
         assert "Not for clinical decision-making" in body
+        assert "clinvar-interpretation-v1" in body
         assert response.headers["digest"].startswith("sha-256=")
+
+        csv_response = export(run.id, "csv", session, settings)
+        csv_body = csv_response.body.decode()
+        assert "clinvar_review_status_coverage" in csv_body
+        assert "2/2" in csv_body

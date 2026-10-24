@@ -85,6 +85,9 @@ class Candidate(AuditMixin, table=True):
     has_aso_precedent: bool = False
     shortlist_position: int | None = None
     completeness: str = Field(default="complete", max_length=32)
+    clinvar_interpretation: dict[str, Any] = Field(
+        default_factory=dict, sa_column=Column(JSON, nullable=False)
+    )
 
     __table_args__ = (UniqueConstraint("run_id", "ensembl_id", name="uq_candidate_run_ensembl"),)
 
