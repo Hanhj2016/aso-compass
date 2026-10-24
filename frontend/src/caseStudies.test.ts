@@ -2,17 +2,17 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_CASE, EDUCATIONAL_CASES, PUBLISHED_CASES, findCaseBySlug } from "./caseStudies";
 
 describe("educational case manifest", () => {
-  it("publishes only the versioned ALS fixture", () => {
+  it("publishes the six versioned educational fixtures", () => {
     expect(EDUCATIONAL_CASES).toHaveLength(6);
-    expect(PUBLISHED_CASES.map(caseStudy => caseStudy.slug)).toEqual(["als"]);
+    expect(PUBLISHED_CASES).toHaveLength(6);
     expect(DEFAULT_CASE.teaching_candidates).toEqual(["SOD1", "TARDBP", "FUS"]);
     expect(DEFAULT_CASE.fixture_file).toBe("als-v4.1.json");
   });
 
-  it("keeps unreviewed curriculum cases disconnected from fixture loading", () => {
-    const planned = EDUCATIONAL_CASES.filter(caseStudy => caseStudy.status === "planned");
-    expect(planned).toHaveLength(5);
-    expect(planned.every(caseStudy => caseStudy.fixture_file === null && caseStudy.example_id === null)).toBe(true);
-    expect(findCaseBySlug("huntington-disease")?.review_status).toBe("pending");
+  it("records a reviewed sparse-result exception without changing thresholds", () => {
+    const huntington = findCaseBySlug("huntington-disease");
+    expect(huntington?.review_status).toBe("published");
+    expect(huntington?.teaching_candidates).toEqual(["HTT", "SLC2A3"]);
+    expect(huntington?.candidate_count_exception).toMatch(/unchanged default thresholds/i);
   });
 });

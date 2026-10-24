@@ -18,94 +18,193 @@
         "Recognize population-constraint warnings, capped evidence, and therapeutic precedent."
       ],
       "teaching_candidates": ["SOD1", "TARDBP", "FUS"],
+      "candidate_lessons": [
+        { "gene_symbol": "SOD1", "question": "What does the recorded therapeutic precedent add—and what does it not prove?", "answer": "The saved fixture records approved tofersen and target-linked trial context. That makes SOD1 useful for learning about precedent, but it does not turn this educational record into treatment advice or establish efficacy for another candidate or disease context." },
+        { "gene_symbol": "TARDBP", "question": "Why should the knockdown track and the LOEUF warning be read together?", "answer": "The saved G2P and ClinVar evidence supports the deterministic knockdown direction, while the low LOEUF and review flag warn that reducing normal function may be risky. Direction and safety are different questions." },
+        { "gene_symbol": "FUS", "question": "Why does capped evidence require manual review even when a track is assigned?", "answer": "Only 500 of 542 reported records were retained in this frozen run. The deterministic G2P track remains saved, but the observed variant mixture is incomplete and should not be treated as the complete ClinVar record set." }
+      ],
       "debrief": "Similar association strength can coexist with different mechanisms, safety context, evidence completeness, and translational precedent.",
+      "debrief_points": [
+        "SOD1 demonstrates therapeutic precedent without turning precedent into a recommendation.",
+        "TARDBP demonstrates why direction and population-constraint safety context must be read separately.",
+        "FUS demonstrates why a saved track does not remove the need to review capped evidence."
+      ],
+      "references": [
+        { "label": "NCBI GeneReviews — Amyotrophic Lateral Sclerosis Overview", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1450/" },
+        { "label": "FDA — Qalsody approval for SOD1-associated ALS", "url": "https://www.fda.gov/drugs/news-events-human-drugs/fda-approves-treatment-amyotrophic-lateral-sclerosis-associated-mutation-sod1-gene" }
+      ],
+      "source_run_id": "precomputed-als-2026-10-18",
+      "fixture_sha256": "abd1fe28b13cfa0b5e3334e8b7a28a9e86bdf59f6d2984e238502a041a94b14d",
+      "candidate_count_exception": null,
       "review_status": "published",
       "reviewer": "ASO Compass maintainers"
     },
     {
       "case_id": "huntington-model-boundaries",
       "slug": "huntington-disease",
-      "example_id": null,
+      "example_id": "example-huntington-2026-10",
       "title": "Huntington disease",
       "disease_id": "MONDO_0007739",
-      "status": "planned",
-      "fixture_file": null,
-      "fixture_version": null,
-      "engine_version": null,
-      "source_releases": {},
+      "status": "published",
+      "fixture_file": "huntington-v4.1.json",
+      "fixture_version": "2026-10-20",
+      "engine_version": "4.1-guided",
+      "source_releases": { "open_targets": "26.09" },
       "learning_objectives": ["Understand why ordinary small-variant counts can miss repeat-expansion biology."],
-      "teaching_candidates": [],
+      "teaching_candidates": ["HTT", "SLC2A3"],
+      "candidate_lessons": [
+        { "gene_symbol": "HTT", "question": "Why can an established Huntington disease gene receive an insufficient-data call here?", "answer": "The saved heuristic counted ordinary returned variant records, while Huntington disease is driven by an HTT CAG repeat expansion. The call describes this workflow's evidence coverage; it is not evidence against the HTT–disease relationship." },
+        { "gene_symbol": "SLC2A3", "question": "What does an association-only modifier teach beside HTT?", "answer": "SLC2A3 shows that an association score can pass the configured filters without establishing causal mechanism or intervention direction. It must not be treated as equivalent to the established repeat-expansion biology of HTT." }
+      ],
       "debrief": "An insufficient-data heuristic is not a negative statement about an established disease gene.",
-      "review_status": "pending",
-      "reviewer": null
+      "debrief_points": [
+        "Repeat expansions are a model boundary for ordinary small-variant consequence counts.",
+        "Association strength, causal mechanism, and intervention direction remain separate claims."
+      ],
+      "references": [
+        { "label": "NCBI GeneReviews — Huntington Disease", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1305/" }
+      ],
+      "source_run_id": "cb86fd11-85e4-41cb-9b71-803516a39259",
+      "fixture_sha256": "24698af59e821f9c9fc5b744005684316514b7e7f2227e8d945fa88f18c15610",
+      "candidate_count_exception": "The unchanged default thresholds returned only HTT and SLC2A3. Adding a third candidate would require changing scientific thresholds or inventing a record, so this model-boundary case intentionally uses two.",
+      "review_status": "published",
+      "reviewer": "ASO Compass maintainers (source-bounded educational review)"
     },
     {
       "case_id": "sma-splice-modulation",
       "slug": "spinal-muscular-atrophy",
-      "example_id": null,
+      "example_id": "example-sma-2026-10",
       "title": "Spinal muscular atrophy",
       "disease_id": "MONDO_0001516",
-      "status": "planned",
-      "fixture_file": null,
-      "fixture_version": null,
-      "engine_version": null,
-      "source_releases": {},
+      "status": "published",
+      "fixture_file": "sma-v4.1.json",
+      "fixture_version": "2026-10-20",
+      "engine_version": "4.1-guided",
+      "source_releases": { "open_targets": "26.09" },
       "learning_objectives": ["Distinguish SMN1 disease biology from SMN2 splice modulation and known ASO precedent."],
-      "teaching_candidates": [],
+      "teaching_candidates": ["SMN1", "SMN2", "IGHMBP2"],
+      "candidate_lessons": [
+        { "gene_symbol": "SMN1", "question": "Why is the disease gene not automatically the same as the therapeutic RNA target?", "answer": "The saved SMN1 record supports a loss-of-function-oriented splice/upregulation review. In established SMA biology, SMN1 deficiency defines the disease, while an intervention may instead modify the related SMN2 transcript. Gene–disease causation and therapeutic target selection are separate steps." },
+        { "gene_symbol": "SMN2", "question": "How can insufficient variant evidence coexist with approved ASO precedent?", "answer": "The deterministic variant-count heuristic returned too little evidence to infer a track, while the saved drug fields record nusinersen precedent. Nusinersen's splice-modulation rationale comes from SMN2 transcript biology, not from this aggregate ClinVar count." },
+        { "gene_symbol": "IGHMBP2", "question": "Why must the condition and inheritance context remain visible?", "answer": "The record is capped and flags recessive loss of function, so it is useful for contrasting related motor-neuron phenotypes without treating every SMA-associated gene as interchangeable with SMN1/SMN2 biology." }
+      ],
       "debrief": "Splice modulation can change productive transcript output without being the opposite of every knockdown strategy.",
-      "review_status": "pending",
-      "reviewer": null
+      "debrief_points": [
+        "SMN1 disease causation and SMN2-directed splice modulation answer different biological questions.",
+        "Therapeutic precedent can be informative even when an aggregate variant heuristic is insufficient.",
+        "A shared phenotype label does not make candidate genes mechanistically interchangeable."
+      ],
+      "references": [
+        { "label": "NCBI GeneReviews — Spinal Muscular Atrophy", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1352/" },
+        { "label": "FDA prescribing information — Spinraza (nusinersen)", "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2024/209531s013s014lbl.pdf" }
+      ],
+      "source_run_id": "abb11b37-ebef-47a1-896f-a65746f72852",
+      "fixture_sha256": "fcc5d283dd6d43059ff2dec6d0d6fbaa7b4ef8d080b47106ddcefb93c5f7663c",
+      "candidate_count_exception": null,
+      "review_status": "published",
+      "reviewer": "ASO Compass maintainers (source-bounded educational review)"
     },
     {
       "case_id": "dmd-exon-skipping",
       "slug": "duchenne-muscular-dystrophy",
-      "example_id": null,
+      "example_id": "example-dmd-2026-10",
       "title": "Duchenne muscular dystrophy",
       "disease_id": "MONDO_0010679",
-      "status": "planned",
-      "fixture_file": null,
-      "fixture_version": null,
-      "engine_version": null,
-      "source_releases": {},
+      "status": "published",
+      "fixture_file": "dmd-v4.2.json",
+      "fixture_version": "2026-10-24",
+      "engine_version": "4.2-guided",
+      "source_releases": { "open_targets": "26.09" },
       "learning_objectives": ["Separate gene-level direction from exon skipping, reading-frame restoration, and sequence design."],
-      "teaching_candidates": [],
+      "teaching_candidates": ["DMD", "UTRN", "LTBP4"],
+      "candidate_lessons": [
+        { "gene_symbol": "DMD", "question": "Why does a splice/upregulation track not identify an exon-skipping therapy?", "answer": "The saved record supports restoration-oriented review and records exon-skipping precedent, but exon choice depends on the specific mutation and reading frame. This gene-level result cannot select an exon, sequence, dose, or patient population." },
+        { "gene_symbol": "UTRN", "question": "What does a target-linked development precedent contribute when the heuristic is insufficient?", "answer": "The saved UTRN record includes a Phase 2 precedent but too little returned variant evidence for an automated direction. A development program is contextual evidence, not proof of mechanism, efficacy, or suitability for another modality." },
+        { "gene_symbol": "LTBP4", "question": "Why is a modifier not a replacement target recommendation?", "answer": "The association-only LTBP4 record has no saved directional mechanism. Modifier evidence can inform disease variability while remaining insufficient to justify knockdown, upregulation, or exon-skipping logic." }
+      ],
       "debrief": "Target prioritization and sequence or exon design are separate scientific problems.",
-      "review_status": "pending",
-      "reviewer": null
+      "debrief_points": [
+        "A gene-level splice/upregulation direction cannot choose an exon or oligonucleotide sequence.",
+        "Mutation amenability and reading-frame restoration are required downstream questions.",
+        "Modifier and precedent records remain context, not treatment recommendations."
+      ],
+      "references": [
+        { "label": "FDA clinical review — DMD exon-skipping therapies", "url": "https://www.fda.gov/media/179486/download?attachment=" },
+        { "label": "FDA surrogate-endpoint table — DMD antisense oligonucleotides", "url": "https://www.fda.gov/drugs/development-resources/table-surrogate-endpoints-were-basis-drug-approval-or-licensure" }
+      ],
+      "source_run_id": "85686299-3d81-449e-b40f-8a1736688392",
+      "fixture_sha256": "9cb39d1320170d19035d18bcd966569daf3d75ff271801ab3ee6e6b84364b98e",
+      "candidate_count_exception": null,
+      "review_status": "published",
+      "reviewer": "ASO Compass maintainers (source-bounded educational review)"
     },
     {
       "case_id": "attr-knockdown-precedent",
       "slug": "hereditary-attr-amyloidosis",
-      "example_id": null,
+      "example_id": "example-attr-2026-10",
       "title": "Hereditary ATTR amyloidosis",
       "disease_id": "EFO_0700065",
-      "status": "planned",
-      "fixture_file": null,
-      "fixture_version": null,
-      "engine_version": null,
-      "source_releases": {},
+      "status": "published",
+      "fixture_file": "attr-v4.2.json",
+      "fixture_version": "2026-10-24",
+      "engine_version": "4.2-guided",
+      "source_releases": { "open_targets": "26.09" },
       "learning_objectives": ["Connect toxic protein reduction, tissue delivery, and indication-specific therapeutic precedent."],
-      "teaching_candidates": [],
+      "teaching_candidates": ["TTR", "LYZ", "B2M"],
+      "candidate_lessons": [
+        { "gene_symbol": "TTR", "question": "What can the convergent knockdown and therapeutic-precedent record support?", "answer": "The saved TTR record supports a toxic-protein-reduction hypothesis and records approved gene-silencing precedent. It does not establish delivery to every affected tissue, equivalence among ATTR phenotypes, or a treatment choice." },
+        { "gene_symbol": "LYZ", "question": "Why should another amyloid-associated gene remain separate from hereditary ATTR biology?", "answer": "LYZ passes association filters but has insufficient directional evidence in this run. A shared amyloidosis context does not make its protein biology or intervention strategy equivalent to TTR." },
+        { "gene_symbol": "B2M", "question": "What does insufficient data mean in this three-candidate comparison?", "answer": "The B2M record lacks enough returned evidence for an automated direction. It is a coverage statement, not benign evidence and not proof that the association is irrelevant." }
+      ],
       "debrief": "Therapeutic precedent is informative context, not proof that every intervention or disease context is equivalent.",
-      "review_status": "pending",
-      "reviewer": null
+      "debrief_points": [
+        "TTR reduction has mechanism and precedent context, but delivery and phenotype still matter.",
+        "Genes associated with other amyloid processes are not interchangeable with TTR.",
+        "Approved precedent remains bounded by indication, modality, tissue, and population."
+      ],
+      "references": [
+        { "label": "NCBI GeneReviews — Hereditary Transthyretin Amyloidosis", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1194/" },
+        { "label": "FDA prescribing information — Amvuttra (vutrisiran)", "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2025/215515s006lbl.pdf" }
+      ],
+      "source_run_id": "0f93020b-0386-42d9-b309-c005175b29dc",
+      "fixture_sha256": "f0ed1b70853a7416e7d30bded6b3cd250806c406e5d61ad67b9f3ffabf64bfb6",
+      "candidate_count_exception": null,
+      "review_status": "published",
+      "reviewer": "ASO Compass maintainers (source-bounded educational review)"
     },
     {
       "case_id": "dravet-direction-safety",
       "slug": "dravet-syndrome",
-      "example_id": null,
+      "example_id": "example-dravet-2026-10",
       "title": "Dravet syndrome",
       "disease_id": "MONDO_0100135",
-      "status": "planned",
-      "fixture_file": null,
-      "fixture_version": null,
-      "engine_version": null,
-      "source_releases": {},
+      "status": "published",
+      "fixture_file": "dravet-v4.1.json",
+      "fixture_version": "2026-10-21",
+      "engine_version": "4.1-guided",
+      "source_releases": { "open_targets": "26.09" },
       "learning_objectives": ["Recognize haploinsufficiency and why non-selective knockdown logic can be hazardous."],
-      "teaching_candidates": [],
+      "teaching_candidates": ["SCN1A", "SNX27", "PCDH19"],
+      "candidate_lessons": [
+        { "gene_symbol": "SCN1A", "question": "Why must an ambiguous, capped heuristic not override established dosage biology?", "answer": "The saved SCN1A record contains mixed, capped variant evidence and therefore remains ambiguous in this engine. Primary dosage and disease-mechanism evidence must be reviewed separately; a non-selective knockdown conclusion would be unsafe to infer from these counts." },
+        { "gene_symbol": "SNX27", "question": "Does a possible-haploinsufficiency flag establish that SNX27 explains Dravet syndrome?", "answer": "No. The flag describes the returned variant mixture and restoration-oriented review context for this candidate. It does not replace disease-specific causal evidence or make SNX27 equivalent to SCN1A." },
+        { "gene_symbol": "PCDH19", "question": "What does an association-only modifier contribute to the lesson?", "answer": "The record demonstrates that association can be present while effect direction remains unknown. A phenotype-related gene should not inherit SCN1A's mechanism or an intervention direction by proximity in a candidate list." }
+      ],
       "debrief": "Association strength cannot choose intervention direction, and restoration-oriented logic still requires feasibility and safety review.",
-      "review_status": "pending",
-      "reviewer": null
+      "debrief_points": [
+        "SCN1A illustrates why aggregate variant mixtures cannot replace dosage-sensitive mechanism review.",
+        "Haploinsufficiency makes indiscriminate knockdown logic particularly hazardous.",
+        "Other phenotype-associated genes require their own causal and inheritance evidence."
+      ],
+      "references": [
+        { "label": "ClinGen Dosage Sensitivity — SCN1A", "url": "https://search.clinicalgenome.org/kb/gene-dosage/SCN1A" },
+        { "label": "NCBI GeneReviews — SCN1A Seizure Disorders", "url": "https://www.ncbi.nlm.nih.gov/books/NBK1318/" }
+      ],
+      "source_run_id": "b0bae039-c790-43c8-80d1-f9d2138ce42c",
+      "fixture_sha256": "a50b2c31aacd62253b7fb27ff8724bfc2d44eb057d68a04f0d756cda842121ee",
+      "candidate_count_exception": null,
+      "review_status": "published",
+      "reviewer": "ASO Compass maintainers (source-bounded educational review)"
     }
   ]
 }

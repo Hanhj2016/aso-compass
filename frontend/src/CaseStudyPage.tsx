@@ -10,21 +10,6 @@ const TRACK_LABELS: Record<string, string> = {
   "insufficient data": "Insufficient data",
 };
 
-const CANDIDATE_PROMPTS: Record<string, { question: string; answer: string }> = {
-  SOD1: {
-    question: "What does the recorded therapeutic precedent add—and what does it not prove?",
-    answer: "The saved fixture records approved tofersen and target-linked trial context. That makes SOD1 useful for learning about precedent, but it does not turn this educational record into treatment advice or establish efficacy for another candidate or disease context.",
-  },
-  TARDBP: {
-    question: "Why should the knockdown track and the LOEUF warning be read together?",
-    answer: "The saved G2P and ClinVar evidence supports the deterministic knockdown direction, while the low LOEUF and review flag warn that reducing normal function may be risky. Direction and safety are different questions.",
-  },
-  FUS: {
-    question: "Why does capped evidence require manual review even when a track is assigned?",
-    answer: "Only 500 of 542 reported records were retained in this frozen run. The deterministic G2P track remains saved, but the observed variant mixture is incomplete and should not be treated as the complete ClinVar record set.",
-  },
-};
-
 function valueOrUnknown(value: number | null | undefined, digits = 3) {
   return value === null || value === undefined ? "Not returned" : value.toFixed(digits);
 }
@@ -61,6 +46,8 @@ export default function CaseStudyPage({ caseStudy, disclaimer, onBack, onOpenRes
     return caseStudy.teaching_candidates.map(symbol => bySymbol.get(symbol)).filter((candidate): candidate is Candidate => Boolean(candidate));
   }, [bundle, caseStudy.teaching_candidates]);
   const selected = candidates.find(candidate => candidate.gene_symbol === selectedSymbol) ?? candidates[0];
+  const selectedLesson = caseStudy.candidate_lessons.find(lesson => lesson.gene_symbol === selected?.gene_symbol);
+  const hasClinVarMetadata = selected?.clinvar_interpretation?.metadata_status === "available" || selected?.clinvar_interpretation?.metadata_status === "partial";
 
   return <main id="main" className="case-study-page">
     <button className="text-button case-back" type="button" onClick={onBack}>← Back to Learn</button>
@@ -79,8 +66,8 @@ export default function CaseStudyPage({ caseStudy, disclaimer, onBack, onOpenRes
 
     {bundle && <>
       <section className="case-study-section" aria-labelledby="case-compare-title">
-        <p className="eyebrow">Step 1 · Compare</p><h2 id="case-compare-title">Three candidates, three different review questions</h2>
-        <p className="learn-intro">These candidates are selected from the existing versioned ALS fixture for teaching. Their inclusion is not a therapeutic ranking.</p>
+        <p className="eyebrow">Step 1 · Compare</p><h2 id="case-compare-title">{candidates.length} candidates, {candidates.length} different review questions</h2>
+        <p className="learn-intro">These candidates are copied unchanged from a completed, versioned run for teaching. Their inclusion is not a therapeutic ranking.</p>
         <div className="case-candidate-tabs" role="group" aria-label="Teaching candidates">{candidates.map(candidate => <button key={candidate.gene_symbol} type="button" aria-pressed={selected?.gene_symbol === candidate.gene_symbol} onClick={() => setSelectedSymbol(candidate.gene_symbol)}><b>{candidate.gene_symbol}</b><span>{TRACK_LABELS[candidate.final_call] ?? candidate.final_call}</span></button>)}</div>
 
         {selected && <article className="case-candidate-focus">
@@ -95,19 +82,21 @@ export default function CaseStudyPage({ caseStudy, disclaimer, onBack, onOpenRes
             <div><span>Therapeutic precedent</span><b>{selected.drug_status || "None returned"}</b></div>
           </div>
           {selected.flag && <p className="notice"><b>Review flag:</b> {selected.flag}</p>}
-          <details className="case-learning-prompt"><summary>{CANDIDATE_PROMPTS[selected.gene_symbol]?.question ?? "What should be reviewed next?"}</summary><p>{CANDIDATE_PROMPTS[selected.gene_symbol]?.answer ?? selected.note}</p></details>
+          <details className="case-learning-prompt"><summary>{selectedLesson?.question ?? "What should be reviewed next?"}</summary><p>{selectedLesson?.answer ?? selected.note}</p></details>
         </article>}
       </section>
 
       {selected && <section className="case-study-section case-evidence-lab" aria-labelledby="case-evidence-title">
         <div><p className="eyebrow">Step 2 · Trace</p><h2 id="case-evidence-title">Follow each claim to its source</h2><p className="learn-intro">Open every source and distinguish supporting context from claims it cannot establish.</p><EvidenceSourceMap candidate={selected}/></div>
-        <div><p className="eyebrow">Step 3 · Interpret</p><h2>Check the ClinVar boundary</h2><p className="learn-intro">This older frozen fixture demonstrates an important missingness lesson: detailed interpretation metadata was not retained.</p><ClinVarLearningCheckpoint candidate={selected}/></div>
+        <div><p className="eyebrow">Step 3 · Interpret</p><h2>Check the ClinVar boundary</h2><p className="learn-intro">{hasClinVarMetadata ? "Use the retained review, conflict, date, and condition context without treating an aggregate label as a complete variant interpretation." : "This frozen record demonstrates an important missingness lesson: detailed interpretation metadata was not retained."}</p><ClinVarLearningCheckpoint candidate={selected}/></div>
       </section>}
 
       <section className="case-study-section case-debrief" aria-labelledby="case-debrief-title">
-        <div><p className="eyebrow">Step 4 · Debrief</p><h2 id="case-debrief-title">What this case should leave you with</h2><p>{caseStudy.debrief}</p><ul><li>SOD1 demonstrates therapeutic precedent without turning precedent into a recommendation.</li><li>TARDBP demonstrates why direction and population-constraint safety context must be read separately.</li><li>FUS demonstrates why a saved track does not remove the need to review capped evidence.</li></ul></div>
-        <aside><h3>Continue with the complete record</h3><p>Open all six frozen candidates, the comparison tool, printable reports, and optional evidence-bound AI.</p><button className="primary-button compact" type="button" onClick={onOpenResults}>Open full saved result →</button><small>Published by {caseStudy.reviewer}. Candidate selection is educational, not clinical.</small></aside>
+        <div><p className="eyebrow">Step 4 · Debrief</p><h2 id="case-debrief-title">What this case should leave you with</h2><p>{caseStudy.debrief}</p><ul>{caseStudy.debrief_points.map(point => <li key={point}>{point}</li>)}</ul></div>
+        <aside><h3>Continue with the frozen excerpt</h3><p>Open the selected candidate records, comparison tool, printable reports, and optional evidence-bound AI.</p><button className="primary-button compact" type="button" onClick={onOpenResults}>Open saved teaching result →</button><small>Published by {caseStudy.reviewer}. Candidate selection is educational, not clinical.</small></aside>
       </section>
+
+      <section className="case-study-section case-references" aria-labelledby="case-references-title"><p className="eyebrow">Primary reading</p><h2 id="case-references-title">Check the biological premise outside the heuristic</h2><p className="learn-intro">The frozen application result and these external references answer different questions. Follow the primary records before drawing a biological conclusion.</p><ul>{caseStudy.references.map(reference => <li key={reference.url}><a href={reference.url} target="_blank" rel="noreferrer">{reference.label} ↗</a></li>)}</ul>{caseStudy.candidate_count_exception && <p className="notice"><b>Reviewed candidate-count exception:</b> {caseStudy.candidate_count_exception}</p>}</section>
     </>}
     <p className="persistent-disclaimer">{disclaimer}</p>
   </main>;

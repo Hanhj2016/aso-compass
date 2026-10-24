@@ -27,7 +27,13 @@ class ExampleCase:
     source_releases: dict[str, str]
     learning_objectives: tuple[str, ...]
     teaching_candidates: tuple[str, ...]
+    candidate_lessons: tuple[dict[str, str], ...]
     debrief: str
+    debrief_points: tuple[str, ...]
+    references: tuple[dict[str, str], ...]
+    source_run_id: str | None
+    fixture_sha256: str | None
+    candidate_count_exception: str | None
     review_status: Literal["published", "pending"]
     reviewer: str | None
 
@@ -54,7 +60,13 @@ def load_example_cases() -> tuple[ExampleCase, ...]:
             source_releases=dict(item.get("source_releases", {})),
             learning_objectives=tuple(item.get("learning_objectives", [])),
             teaching_candidates=tuple(item.get("teaching_candidates", [])),
+            candidate_lessons=tuple(item.get("candidate_lessons", [])),
             debrief=item["debrief"],
+            debrief_points=tuple(item.get("debrief_points", [])),
+            references=tuple(item.get("references", [])),
+            source_run_id=item.get("source_run_id"),
+            fixture_sha256=item.get("fixture_sha256"),
+            candidate_count_exception=item.get("candidate_count_exception"),
             review_status=item["review_status"],
             reviewer=item.get("reviewer"),
         )
@@ -75,17 +87,38 @@ def load_example_cases() -> tuple[ExampleCase, ...]:
                 or not case.engine_version
                 or not case.source_releases
                 or not case.reviewer
+                or not case.source_run_id
+                or not case.fixture_sha256
                 or case.review_status != "published"
             ):
                 raise ValueError(
                     "Published educational cases require a reviewed, versioned fixture and provenance"
                 )
-            if not 3 <= len(case.teaching_candidates) <= 5:
-                raise ValueError("Published educational cases require three to five teaching candidates")
+            ordinary_count = 3 <= len(case.teaching_candidates) <= 5
+            reviewed_sparse_exception = (
+                len(case.teaching_candidates) == 2 and bool(case.candidate_count_exception)
+            )
+            if not ordinary_count and not reviewed_sparse_exception:
+                raise ValueError(
+                    "Published cases require three to five candidates or a reviewed two-candidate exception"
+                )
+            lesson_symbols = {lesson.get("gene_symbol") for lesson in case.candidate_lessons}
+            if (
+                any(symbol not in lesson_symbols for symbol in case.teaching_candidates)
+                or not case.debrief_points
+                or not case.references
+            ):
+                raise ValueError("Published cases require reviewed lessons, debrief points, and references")
         elif (
             case.example_id is not None
             or case.fixture_file is not None
             or case.teaching_candidates
+            or case.candidate_lessons
+            or case.debrief_points
+            or case.references
+            or case.source_run_id is not None
+            or case.fixture_sha256 is not None
+            or case.candidate_count_exception is not None
             or case.review_status != "pending"
             or case.reviewer is not None
         ):
@@ -112,6 +145,9 @@ def load_example_bundle(example_id: str, environment: str) -> ExampleBundle | No
         return None
     resource = files("app.data.examples").joinpath(case.fixture_file)
     raw = resource.read_text(encoding="utf-8")
+    digest = hashlib.sha256(raw.encode()).hexdigest()
+    if digest != case.fixture_sha256:
+        raise ValueError("Educational fixture digest does not match its reviewed manifest")
     payload: dict[str, Any] = json.loads(raw)
     run_data = payload["run"]
     if run_data["disease_id"] != case.disease_id or run_data["engine_version"] != case.engine_version:
@@ -122,7 +158,6 @@ def load_example_bundle(example_id: str, environment: str) -> ExampleBundle | No
         missing = ", ".join(sorted(missing_teaching_candidates))
         raise ValueError(f"Educational fixture is missing reviewed teaching candidates: {missing}")
     run_id = uuid5(EXAMPLE_NAMESPACE, example_id)
-    digest = hashlib.sha256(raw.encode()).hexdigest()
     run = Run(
         id=run_id,
         environment=environment,

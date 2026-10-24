@@ -1,0 +1,1143 @@
+{
+  "fixture_provenance": {
+    "source_run_id": "0f93020b-0386-42d9-b309-c005175b29dc",
+    "scope": "reviewed teaching-candidate excerpt",
+    "candidate_values": "copied unchanged from the completed source run"
+  },
+  "run": {
+    "id": "example-attr-2026-10",
+    "environment": "demo",
+    "disease_id": "EFO_0700065",
+    "disease_label": "Hereditary ATTR amyloidosis",
+    "status": "succeeded",
+    "parameters": {
+      "min_score": 0.2,
+      "min_genetic": 0.1,
+      "use_variants": true,
+      "use_g2p": true,
+      "check_drugs": true,
+      "check_trials": true,
+      "include_modifiers": true,
+      "exclude_approved": false,
+      "exclude_aso_precedent": false,
+      "run_mode": "quick",
+      "max_genes_for_variants": 25,
+      "max_genes_for_drugs": 25,
+      "page_size": 100
+    },
+    "engine_version": "4.2-guided",
+    "upstream_metadata": {
+      "disease_label": "hereditary ATTR amyloidosis",
+      "open_targets_release": "26.09",
+      "linked_genes": 1134,
+      "passing_genes": 3,
+      "association_query_hash": "17840af9337fabdd554cd507048c5f517672441dd17fe658b11c8144140c29d4",
+      "evidence_cap_per_gene": 500,
+      "evidence_truncated_genes": 0,
+      "drug_source": "Target.drugAndClinicalCandidates",
+      "trial_source": "ClinicalTrials.gov API v2",
+      "trial_query_hashes": [
+        "f9b724e15de2b3f49cee0ffd360a507482ee9ffc4e9c390f036703b75ca30fca"
+      ],
+      "condition_trial_count": 4
+    },
+    "warnings": [
+      "Quick mode caps variant and drug enrichment at 25 genes; results are incomplete."
+    ],
+    "validation": {
+      "status": "PASS",
+      "candidates": 3,
+      "track_counts": {
+        "knockdown": 1,
+        "splice/upregulation": 0,
+        "ambiguous": 0,
+        "modifier": 0,
+        "insufficient data": 2
+      }
+    },
+    "started_at": "2026-10-24T15:08:43.332916Z",
+    "completed_at": "2026-10-24T15:08:59.917230Z",
+    "error_code": null,
+    "error_message": null,
+    "created_at": "2026-10-24T15:08:11.773986Z",
+    "updated_at": "2026-10-24T15:09:00.526031Z",
+    "research_use_disclaimer": "For hypothesis generation and education only. Not for clinical decision-making."
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "stage": "start",
+      "level": "info",
+      "message": "Run started",
+      "progress_current": null,
+      "progress_total": null,
+      "details": {},
+      "created_at": "2026-10-24T15:08:43.721288Z"
+    },
+    {
+      "sequence": 2,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 0,
+      "progress_total": null,
+      "details": {},
+      "created_at": "2026-10-24T15:08:44.378504Z"
+    },
+    {
+      "sequence": 3,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 200,
+      "progress_total": 1134,
+      "details": {},
+      "created_at": "2026-10-24T15:08:45.490227Z"
+    },
+    {
+      "sequence": 4,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 300,
+      "progress_total": 1134,
+      "details": {},
+      "created_at": "2026-10-24T15:08:46.224681Z"
+    },
+    {
+      "sequence": 5,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 400,
+      "progress_total": 1134,
+      "details": {},
+      "created_at": "2026-10-24T15:08:46.954911Z"
+    },
+    {
+      "sequence": 6,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 500,
+      "progress_total": 1134,
+      "details": {},
+      "created_at": "2026-10-24T15:08:47.679600Z"
+    },
+    {
+      "sequence": 7,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 600,
+      "progress_total": 1134,
+      "details": {},
+      "created_at": "2026-10-24T15:08:48.396778Z"
+    },
+    {
+      "sequence": 8,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 700,
+      "progress_total": 1134,
+      "details": {},
+      "created_at": "2026-10-24T15:08:49.101462Z"
+    },
+    {
+      "sequence": 9,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 800,
+      "progress_total": 1134,
+      "details": {},
+      "created_at": "2026-10-24T15:08:49.845812Z"
+    },
+    {
+      "sequence": 10,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 900,
+      "progress_total": 1134,
+      "details": {},
+      "created_at": "2026-10-24T15:08:50.597059Z"
+    },
+    {
+      "sequence": 11,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 1000,
+      "progress_total": 1134,
+      "details": {},
+      "created_at": "2026-10-24T15:08:51.334743Z"
+    },
+    {
+      "sequence": 12,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 1100,
+      "progress_total": 1134,
+      "details": {},
+      "created_at": "2026-10-24T15:08:52.059436Z"
+    },
+    {
+      "sequence": 13,
+      "stage": "associations",
+      "level": "info",
+      "message": "Fetching Open Targets associations",
+      "progress_current": 1134,
+      "progress_total": 1134,
+      "details": {},
+      "created_at": "2026-10-24T15:08:52.745259Z"
+    },
+    {
+      "sequence": 14,
+      "stage": "constraints",
+      "level": "info",
+      "message": "Fetching gene constraint",
+      "progress_current": 0,
+      "progress_total": 3,
+      "details": {},
+      "created_at": "2026-10-24T15:08:53.211933Z"
+    },
+    {
+      "sequence": 15,
+      "stage": "constraints",
+      "level": "info",
+      "message": "Fetching gene constraint",
+      "progress_current": 3,
+      "progress_total": 3,
+      "details": {},
+      "created_at": "2026-10-24T15:08:53.842547Z"
+    },
+    {
+      "sequence": 16,
+      "stage": "variants",
+      "level": "info",
+      "message": "Classifying ClinVar evidence",
+      "progress_current": 1,
+      "progress_total": 3,
+      "details": {},
+      "created_at": "2026-10-24T15:08:54.599210Z"
+    },
+    {
+      "sequence": 17,
+      "stage": "variants",
+      "level": "info",
+      "message": "Classifying ClinVar evidence",
+      "progress_current": 2,
+      "progress_total": 3,
+      "details": {},
+      "created_at": "2026-10-24T15:08:55.227889Z"
+    },
+    {
+      "sequence": 18,
+      "stage": "variants",
+      "level": "info",
+      "message": "Classifying ClinVar evidence",
+      "progress_current": 3,
+      "progress_total": 3,
+      "details": {},
+      "created_at": "2026-10-24T15:08:55.885657Z"
+    },
+    {
+      "sequence": 19,
+      "stage": "g2p",
+      "level": "info",
+      "message": "Fetching Gene2Phenotype evidence",
+      "progress_current": 3,
+      "progress_total": 3,
+      "details": {},
+      "created_at": "2026-10-24T15:08:56.519719Z"
+    },
+    {
+      "sequence": 20,
+      "stage": "drugs",
+      "level": "info",
+      "message": "Fetching target drug and oligonucleotide precedent",
+      "progress_current": 0,
+      "progress_total": null,
+      "details": {},
+      "created_at": "2026-10-24T15:08:56.977067Z"
+    },
+    {
+      "sequence": 21,
+      "stage": "drugs",
+      "level": "info",
+      "message": "Fetching target drug and oligonucleotide precedent",
+      "progress_current": 3,
+      "progress_total": 3,
+      "details": {},
+      "created_at": "2026-10-24T15:08:58.387300Z"
+    },
+    {
+      "sequence": 22,
+      "stage": "trials",
+      "level": "info",
+      "message": "Searching ClinicalTrials.gov for oligonucleotide trials",
+      "progress_current": 0,
+      "progress_total": null,
+      "details": {},
+      "created_at": "2026-10-24T15:08:58.858664Z"
+    },
+    {
+      "sequence": 23,
+      "stage": "complete",
+      "level": "info",
+      "message": "Run completed",
+      "progress_current": 3,
+      "progress_total": 3,
+      "details": {},
+      "created_at": "2026-10-24T15:09:00.525856Z"
+    }
+  ],
+  "candidates": [
+    {
+      "ensembl_id": "ENSG00000118271",
+      "gene_symbol": "TTR",
+      "gene_name": "transthyretin",
+      "overall_score": 0.898104125575763,
+      "genetic_score": 0.963985585865982,
+      "loeuf": 1.04990005493164,
+      "n_evidence": 421,
+      "n_evidence_returned": 421,
+      "evidence_truncated": false,
+      "n_lof": 6,
+      "n_splice": 5,
+      "n_splice_extra": 0,
+      "n_missense": 145,
+      "frac_lof": 0.0397350993377483,
+      "frac_splice_related": 0.833333333333333,
+      "g2p_mech": null,
+      "inheritance": "dominant",
+      "clinvar_call": "knockdown",
+      "final_call": "knockdown",
+      "call_source": "ClinVar",
+      "confidence_tier": "Strong heuristic evidence",
+      "confidence_reason": "At least 20 classified records and the LoF fraction is well beyond a decision threshold.",
+      "flag": "",
+      "note": "Knockdown plausible if disease mechanism is toxic gain of function.",
+      "drug_status": "Approved: ACORAMIDIS HYDROCHLORIDE, EPLONTERSEN (+10)",
+      "has_approved_drug": true,
+      "n_drugs": 13,
+      "drug_max_stage": "Approved",
+      "approved_drugs": "ACORAMIDIS HYDROCHLORIDE; EPLONTERSEN; TAFAMIDIS; TAFAMIDIS MEGLUMINE; VUTRISIRAN",
+      "oligo_drug": "Approved",
+      "oligo_names": "REVUSIRAN, EPLONTERSEN",
+      "aso_drug": "Approved",
+      "aso_names": "EPLONTERSEN, VUTRISIRAN",
+      "aso_trial_n": 4,
+      "aso_trial_weak": 1,
+      "aso_trial_best": "Ph2 withdrawn",
+      "aso_trial_ids": "NCT02627820, NCT03702829, NCT03728634",
+      "aso_precedent": "Drug: EPLONTERSEN, VUTRISIRAN (Approved) | Trials: 4 (best Ph2 withdrawn; 1 via summary text)",
+      "shortlist_position": 1,
+      "completeness": "complete",
+      "clinvar_interpretation": {
+        "schema_version": "clinvar-interpretation-v1",
+        "source": "Open Targets EVA",
+        "metadata_status": "available",
+        "records_reported": 421,
+        "records_returned": 421,
+        "records_with_review_status": 421,
+        "records_with_variant_id": 369,
+        "records_with_condition": 421,
+        "review_status_counts": {
+          "criteria provided, conflicting classifications": 4,
+          "criteria provided, multiple submitters, no conflicts": 53,
+          "criteria provided, single submitter": 349,
+          "no assertion criteria provided": 15
+        },
+        "review_star_counts": {
+          "1": 368,
+          "2": 53
+        },
+        "conflict_records": 4,
+        "submitter_count": null,
+        "latest_evidence_date": "2026-06-20",
+        "latest_release_date": "2026-06-20",
+        "release_versions": [],
+        "conditions": [
+          {
+            "id": "C2751492",
+            "label": "Amyloidosis, hereditary systemic 1",
+            "record_count": 419
+          },
+          {
+            "id": "C4275067",
+            "label": "ATTRV122I amyloidosis",
+            "record_count": 1
+          },
+          {
+            "id": "C0206245",
+            "label": "Familial amyloid neuropathy",
+            "record_count": 1
+          }
+        ],
+        "representative_records": [
+          {
+            "source_record_id": "224d09c756165b98d52a5d7663ef041ab343364c",
+            "rs_id": "rs2276382",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "conflicting classifications of pathogenicity"
+            ],
+            "review_status": "criteria provided, conflicting classifications",
+            "review_stars": 1,
+            "evidence_date": "2020-05-04",
+            "release_date": "2020-05-04",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001819",
+            "consequence_label": "synonymous_variant"
+          },
+          {
+            "source_record_id": "cdd6459df09cb6cacb9c1fce7b4c75edd3e2dbd8",
+            "rs_id": "rs76410435",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "conflicting classifications of pathogenicity"
+            ],
+            "review_status": "criteria provided, conflicting classifications",
+            "review_stars": 1,
+            "evidence_date": "2018-10-10",
+            "release_date": "2018-10-10",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "4bd9776ed3cb10252cac3442f290b709f512ab77",
+            "rs_id": "rs138065384",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "conflicting classifications of pathogenicity"
+            ],
+            "review_status": "criteria provided, conflicting classifications",
+            "review_stars": 1,
+            "evidence_date": "2017-04-17",
+            "release_date": "2017-04-17",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "640fe045de43c213091e910fd133ba1d885cf839",
+            "rs_id": "rs121918074",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "conflicting classifications of pathogenicity"
+            ],
+            "review_status": "criteria provided, conflicting classifications",
+            "review_stars": 1,
+            "evidence_date": "1984-07-01",
+            "release_date": "2013-04-04",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "0d87dc7966cf89de276c36b954e33bdd9eaed32e",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, multiple submitters, no conflicts",
+            "review_stars": 2,
+            "evidence_date": "2025-02-25",
+            "release_date": "2025-02-25",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "1ec6de54a91a329104eb7933908040c2d65afafa",
+            "rs_id": "rs76992529",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "pathogenic"
+            ],
+            "review_status": "criteria provided, multiple submitters, no conflicts",
+            "review_stars": 2,
+            "evidence_date": "2022-12-31",
+            "release_date": "2022-12-31",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "ee78f8f6c0f154e28cc47b82b09f4effc976a3b0",
+            "rs_id": "rs28933979",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "pathogenic"
+            ],
+            "review_status": "criteria provided, multiple submitters, no conflicts",
+            "review_stars": 2,
+            "evidence_date": "2022-12-31",
+            "release_date": "2022-12-31",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "4b13972c9f59bd14ab12f5c1f7a23998a076e1f6",
+            "rs_id": "rs371566010",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, multiple submitters, no conflicts",
+            "review_stars": 2,
+            "evidence_date": "2022-03-28",
+            "release_date": "2022-03-28",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "d744d55f015a0b9748daddd279b7fc1bd031c0ed",
+            "rs_id": "rs2144414426",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "likely pathogenic",
+              "pathogenic"
+            ],
+            "review_status": "criteria provided, multiple submitters, no conflicts",
+            "review_stars": 2,
+            "evidence_date": "2022-01-15",
+            "release_date": "2022-01-15",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "e7c1967f1779eb5844555f977f6de72b8d1b252e",
+            "rs_id": "rs958191819",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "pathogenic"
+            ],
+            "review_status": "criteria provided, multiple submitters, no conflicts",
+            "review_stars": 2,
+            "evidence_date": "2021-09-29",
+            "release_date": "2021-09-29",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "620646f7f4dd040c7324ad76fde5a03594ea3c09",
+            "rs_id": "rs2144409444",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "pathogenic"
+            ],
+            "review_status": "criteria provided, multiple submitters, no conflicts",
+            "review_stars": 2,
+            "evidence_date": "2021-07-18",
+            "release_date": "2021-07-18",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "36edc55af96bb458ab717aa122a1f30e15e1afd6",
+            "rs_id": "rs121918082",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "pathogenic"
+            ],
+            "review_status": "criteria provided, multiple submitters, no conflicts",
+            "review_stars": 2,
+            "evidence_date": "2021-05-10",
+            "release_date": "2021-05-10",
+            "release_version": null,
+            "condition_id": "C2751492",
+            "condition_label": "Amyloidosis, hereditary systemic 1",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          }
+        ],
+        "representative_limit": 12,
+        "limitations": [
+          "Open Targets EVA does not expose a reliable submitter count in this query contract.",
+          "Representative records are a bounded learning sample, not a complete variant review."
+        ]
+      }
+    },
+    {
+      "ensembl_id": "ENSG00000090382",
+      "gene_symbol": "LYZ",
+      "gene_name": "lysozyme",
+      "overall_score": 0.55012955845686,
+      "genetic_score": 0.75253336401648,
+      "loeuf": 1.69029998779297,
+      "n_evidence": 26,
+      "n_evidence_returned": 26,
+      "evidence_truncated": false,
+      "n_lof": 0,
+      "n_splice": 0,
+      "n_splice_extra": 0,
+      "n_missense": 2,
+      "frac_lof": 0.0,
+      "frac_splice_related": null,
+      "g2p_mech": null,
+      "inheritance": null,
+      "clinvar_call": "insufficient data",
+      "final_call": "insufficient data",
+      "call_source": "ClinVar",
+      "confidence_tier": "Insufficient evidence",
+      "confidence_reason": "Fewer than five classified pathogenic records were available.",
+      "flag": "",
+      "note": "Too little ClinVar data. Classify manually (repeat expansions and non-coding mechanisms are invisible here).",
+      "drug_status": "None found",
+      "has_approved_drug": false,
+      "n_drugs": 0,
+      "drug_max_stage": null,
+      "approved_drugs": "",
+      "oligo_drug": "-",
+      "oligo_names": "",
+      "aso_drug": "-",
+      "aso_names": "",
+      "aso_trial_n": null,
+      "aso_trial_weak": null,
+      "aso_trial_best": null,
+      "aso_trial_ids": "",
+      "aso_precedent": "",
+      "shortlist_position": null,
+      "completeness": "complete",
+      "clinvar_interpretation": {
+        "schema_version": "clinvar-interpretation-v1",
+        "source": "Open Targets EVA",
+        "metadata_status": "available",
+        "records_reported": 26,
+        "records_returned": 26,
+        "records_with_review_status": 26,
+        "records_with_variant_id": 7,
+        "records_with_condition": 26,
+        "review_status_counts": {
+          "criteria provided, single submitter": 24,
+          "no assertion criteria provided": 2
+        },
+        "review_star_counts": {
+          "1": 26
+        },
+        "conflict_records": 0,
+        "submitter_count": null,
+        "latest_evidence_date": "2025-09-22",
+        "latest_release_date": "2025-09-22",
+        "release_versions": [],
+        "conditions": [
+          {
+            "id": "C5935572",
+            "label": "Amyloidosis, hereditary systemic 5",
+            "record_count": 26
+          }
+        ],
+        "representative_records": [
+          {
+            "source_record_id": "41c090ed8fe23fc693a8dd047cb0d9b86d1d22db",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-09-22",
+            "release_date": "2025-09-22",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "666ca36912c4ba55c00a9d1221dd8389b5958169",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-04-28",
+            "release_date": "2025-04-28",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001587",
+            "consequence_label": "stop_gained"
+          },
+          {
+            "source_record_id": "efa10e1f1520b0e4d320a9f05e63fcf59dd25290",
+            "rs_id": "rs374990260",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-04-28",
+            "release_date": "2025-04-28",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001587",
+            "consequence_label": "stop_gained"
+          },
+          {
+            "source_record_id": "1febcdb45ed96e52d32ca87a08cc7e4ab5db37df",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "3a261a0cf24dfec1f6ae49b3e7d76231d10846ab",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "4826f7bafdce22c850d534b5b0a35aff87b5cdfa",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "4d025185475437f565b894b1aec4552bea2d8670",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "658db46e5afd4abd2849989838b3ab8424be1885",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001574",
+            "consequence_label": "splice_acceptor_variant"
+          },
+          {
+            "source_record_id": "737742b1b7dbeb7f7d7188290d849288690fe455",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "7759809bd3a6b41d3ae406fda12127bf0ae555cb",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "796861825aaf326a4effe2672c713913fd7bce9f",
+            "rs_id": "rs1363507110",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "a02dc872a69c971f8736cd83d3d942a705d338c4",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935572",
+            "condition_label": "Amyloidosis, hereditary systemic 5",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          }
+        ],
+        "representative_limit": 12,
+        "limitations": [
+          "Open Targets EVA does not expose a reliable submitter count in this query contract.",
+          "Representative records are a bounded learning sample, not a complete variant review."
+        ]
+      }
+    },
+    {
+      "ensembl_id": "ENSG00000166710",
+      "gene_symbol": "B2M",
+      "gene_name": "beta-2-microglobulin",
+      "overall_score": 0.528520041375313,
+      "genetic_score": 0.716489183780284,
+      "loeuf": 0.534449994564056,
+      "n_evidence": 11,
+      "n_evidence_returned": 11,
+      "evidence_truncated": false,
+      "n_lof": 1,
+      "n_splice": 0,
+      "n_splice_extra": 0,
+      "n_missense": 1,
+      "frac_lof": 0.5,
+      "frac_splice_related": 0.0,
+      "g2p_mech": null,
+      "inheritance": null,
+      "clinvar_call": "insufficient data",
+      "final_call": "insufficient data",
+      "call_source": "ClinVar",
+      "confidence_tier": "Insufficient evidence",
+      "confidence_reason": "Fewer than five classified pathogenic records were available.",
+      "flag": "",
+      "note": "Too little ClinVar data. Classify manually (repeat expansions and non-coding mechanisms are invisible here).",
+      "drug_status": "None found",
+      "has_approved_drug": false,
+      "n_drugs": 0,
+      "drug_max_stage": null,
+      "approved_drugs": "",
+      "oligo_drug": "-",
+      "oligo_names": "",
+      "aso_drug": "-",
+      "aso_names": "",
+      "aso_trial_n": null,
+      "aso_trial_weak": null,
+      "aso_trial_best": null,
+      "aso_trial_ids": "",
+      "aso_precedent": "",
+      "shortlist_position": null,
+      "completeness": "complete",
+      "clinvar_interpretation": {
+        "schema_version": "clinvar-interpretation-v1",
+        "source": "Open Targets EVA",
+        "metadata_status": "available",
+        "records_reported": 11,
+        "records_returned": 11,
+        "records_with_review_status": 11,
+        "records_with_variant_id": 5,
+        "records_with_condition": 11,
+        "review_status_counts": {
+          "criteria provided, single submitter": 10,
+          "no assertion criteria provided": 1
+        },
+        "review_star_counts": {
+          "1": 11
+        },
+        "conflict_records": 0,
+        "submitter_count": null,
+        "latest_evidence_date": "2026-05-03",
+        "latest_release_date": "2026-05-03",
+        "release_versions": [],
+        "conditions": [
+          {
+            "id": "C5935573",
+            "label": "Amyloidosis, hereditary systemic 6",
+            "record_count": 11
+          }
+        ],
+        "representative_records": [
+          {
+            "source_record_id": "432ac870f3dcba75b7c6e0228ec45ef16a4bd552",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2026-05-03",
+            "release_date": "2026-05-03",
+            "release_version": null,
+            "condition_id": "C5935573",
+            "condition_label": "Amyloidosis, hereditary systemic 6",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "6eb27c421332d5afa8e9552df56dcc6e0e898b01",
+            "rs_id": "rs1057519879",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "likely pathogenic"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935573",
+            "condition_label": "Amyloidosis, hereditary systemic 6",
+            "consequence_id": "SO:0002012",
+            "consequence_label": "start_lost"
+          },
+          {
+            "source_record_id": "092008efc3eaf491cc77e5848d1f2c1472d12afb",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935573",
+            "condition_label": "Amyloidosis, hereditary systemic 6",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "116c969901fce49946674fd0efcd762c5fa0beec",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935573",
+            "condition_label": "Amyloidosis, hereditary systemic 6",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "165a088d09f0885aa7d387670874b0c00a6fb418",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935573",
+            "condition_label": "Amyloidosis, hereditary systemic 6",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "45592967ead71ef8f30b476d893a5b406701e877",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935573",
+            "condition_label": "Amyloidosis, hereditary systemic 6",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "5e446b31503bcb15961249b39eb4b72c3f6cdfc5",
+            "rs_id": null,
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935573",
+            "condition_label": "Amyloidosis, hereditary systemic 6",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "715595778e20d0954e508d64c743f0fe90ff77f5",
+            "rs_id": "rs148494241",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935573",
+            "condition_label": "Amyloidosis, hereditary systemic 6",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "d7f23501c6375817c95d7dd743d82bd2d50fd793",
+            "rs_id": "rs372078625",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935573",
+            "condition_label": "Amyloidosis, hereditary systemic 6",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "ef5109f11003bdbd76764ddd1e2fa052f6c05a93",
+            "rs_id": "rs778103494",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "uncertain significance"
+            ],
+            "review_status": "criteria provided, single submitter",
+            "review_stars": 1,
+            "evidence_date": "2025-01-25",
+            "release_date": "2025-01-25",
+            "release_version": null,
+            "condition_id": "C5935573",
+            "condition_label": "Amyloidosis, hereditary systemic 6",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          },
+          {
+            "source_record_id": "89660a714950f82521d84b55d5392374b2465bc1",
+            "rs_id": "rs2141288680",
+            "clinical_report_id": null,
+            "clinical_significances": [
+              "pathogenic"
+            ],
+            "review_status": "no assertion criteria provided",
+            "review_stars": 1,
+            "evidence_date": "2022-05-14",
+            "release_date": "2024-05-26",
+            "release_version": null,
+            "condition_id": "C5935573",
+            "condition_label": "Amyloidosis, hereditary systemic 6",
+            "consequence_id": "SO:0001583",
+            "consequence_label": "missense_variant"
+          }
+        ],
+        "representative_limit": 12,
+        "limitations": [
+          "Open Targets EVA does not expose a reliable submitter count in this query contract.",
+          "Representative records are a bounded learning sample, not a complete variant review."
+        ]
+      }
+    }
+  ]
+}

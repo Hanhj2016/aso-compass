@@ -257,6 +257,17 @@ export interface AIQuestionAnswer {
 
 export interface ExampleBundle { run: RunRecord; candidates: Candidate[]; events: RunEvent[] }
 
+export interface EducationalCandidateLesson {
+  gene_symbol: string;
+  question: string;
+  answer: string;
+}
+
+export interface EducationalCaseReference {
+  label: string;
+  url: string;
+}
+
 export interface EducationalCase {
   case_id: string;
   slug: string;
@@ -270,7 +281,13 @@ export interface EducationalCase {
   source_releases: Record<string, string>;
   learning_objectives: string[];
   teaching_candidates: string[];
+  candidate_lessons: EducationalCandidateLesson[];
   debrief: string;
+  debrief_points: string[];
+  references: EducationalCaseReference[];
+  source_run_id: string | null;
+  fixture_sha256: string | null;
+  candidate_count_exception: string | null;
   review_status: "published" | "pending";
   reviewer: string | null;
 }

@@ -2,110 +2,102 @@
 
 ## Purpose
 
-Extend the existing English Learn view from a single ALS walkthrough into a versioned sequence of
-evidence-interpretation cases. Cases teach source scope, mechanism direction, missingness, therapeutic
-precedent, and uncertainty. They are educational research demonstrations, not clinical simulations.
+The English Learn view provides a versioned sequence of evidence-interpretation cases. Cases teach source
+scope, mechanism direction, missingness, therapeutic precedent, and uncertainty. They are educational
+research demonstrations, not clinical simulations.
 
-## Non-negotiable case contract
+## Publication contract
 
-Every published case must contain:
+Every published case contains:
 
 - a stable `example_id`, disease ontology identifier, creation date, engine version, and source releases;
-- a frozen run record and three to five deliberately selected candidate records;
-- explicit learning objectives and a short debrief;
-- source identifiers adjacent to scientific claims;
+- a frozen run copied from a completed application run and a deliberately selected teaching subset;
+- explicit learning objectives, candidate-specific questions, and a short debrief;
+- primary references for the biological premise and source identifiers beside application claims;
 - visible missingness, truncation, and known model limitations;
-- a scientific-review status and reviewer attribution before release;
+- reviewer attribution, the source run ID, and a verified SHA-256 fixture digest;
 - regression tests proving that the fixture does not change deterministic classifications or thresholds.
 
-Candidate selection is a scientific curation step. Candidate records must come from a reproducible run or
-reviewed source fixture; they must not be invented to make a lesson work. The application may explain why a
-candidate was selected for teaching, but must not present the selection as a treatment recommendation.
+The ordinary teaching set contains three to five candidates. A smaller set is allowed only when the unchanged
+run does not contain a third defensible candidate and the reason is recorded. Candidate records are copied
+unchanged from completed runs; the teaching layer must not invent values or present candidate selection as a
+treatment ranking.
 
-## Progression
+The current five new cases received a **source-bounded educational review by the ASO Compass maintainers**.
+That review checks saved evidence, primary references, wording boundaries, fixture identity, and application
+behavior. It is not represented as independent clinical or specialist review.
 
-### 1. Amyotrophic lateral sclerosis — published module
+## Published progression
+
+### 1. Amyotrophic lateral sclerosis
 
 - **Identifier:** `MONDO_0004976`
-- **Learning objectives:** compare multiple mechanism tracks; distinguish association from direction;
-  recognize constraint warnings, capped evidence, and SOD1 therapeutic precedent.
-- **Current teaching candidates:** the interactive module selects SOD1, TARDBP, and FUS from the bundled
-  six-candidate fixture. It teaches therapeutic precedent, direction-versus-safety review, and capped-evidence
-  interpretation without changing the underlying candidate records.
+- **Teaching candidates:** SOD1, TARDBP, FUS.
+- **Learning focus:** multiple mechanism tracks, direction versus population-constraint context, capped
+  evidence, and therapeutic precedent.
 - **Debrief:** similar association strength can coexist with different mechanisms, safety context, evidence
   completeness, and translational precedent.
 
-### 2. Huntington disease — pending reviewed fixture
+### 2. Huntington disease
 
 - **Identifier:** `MONDO_0007739`
-- **Learning objectives:** understand why a strong gene–disease relationship does not guarantee that ordinary
-  small-variant counts represent the causal mechanism; identify repeat expansion and non-coding blind spots.
-- **Candidate requirement:** select three to five records from a frozen run only after verifying that the set
-  demonstrates the intended contrast without implying that weak candidates are negative controls.
-- **Debrief:** HTT is a test of model boundaries; “insufficient data” in a variant-count heuristic is not a
-  negative statement about the established disease gene.
+- **Teaching candidates:** HTT and SLC2A3.
+- **Reviewed exception:** the unchanged default-threshold run returned only two candidates. Adding a third
+  would require changing scientific thresholds or inventing a record.
+- **Learning focus:** ordinary small-variant counts do not represent HTT repeat-expansion biology; association
+  alone does not establish direction.
+- **Debrief:** an `insufficient data` heuristic is not a negative statement about an established disease gene.
 
-### 3. Spinal muscular atrophy — pending reviewed fixture
+### 3. Spinal muscular atrophy
 
 - **Identifier:** `MONDO_0001516`
-- **Learning objectives:** distinguish SMN1 disease biology from SMN2 splice modulation; connect a known ASO
-  precedent to mechanism without generalizing efficacy to unrelated targets.
-- **Candidate requirement:** a reviewed three-to-five-candidate set must preserve the roles of SMN1 and SMN2
-  and clearly label any comparator candidates.
+- **Teaching candidates:** SMN1, SMN2, IGHMBP2.
+- **Learning focus:** separate SMN1 disease biology from SMN2 splice modulation and therapeutic precedent;
+  retain condition and inheritance context for comparator genes.
 - **Debrief:** splice modulation can change productive transcript output without being the opposite of every
   knockdown strategy.
 
-### 4. Duchenne muscular dystrophy — pending reviewed fixture
+### 4. Duchenne muscular dystrophy
 
 - **Identifier:** `MONDO_0010679`
-- **Learning objectives:** introduce reading-frame restoration, exon skipping, transcript specificity, and the
-  difference between a gene-level track and a sequence-level ASO design.
-- **Candidate requirement:** select reviewed records that make the DMD mechanism visible without implying that
-  ASO Compass designs an exon-skipping oligonucleotide.
-- **Debrief:** target prioritization and sequence/exon design are separate scientific problems.
+- **Teaching candidates:** DMD, UTRN, LTBP4.
+- **Learning focus:** distinguish gene-level direction from exon choice, reading-frame restoration, sequence
+  design, and modifier evidence.
+- **Debrief:** target prioritization and sequence or exon design are separate scientific problems.
 
-### 5. Hereditary ATTR amyloidosis — pending reviewed fixture
+### 5. Hereditary ATTR amyloidosis
 
 - **Identifier:** `EFO_0700065`
-- **Learning objectives:** connect toxic protein production, knockdown direction, tissue delivery, and existing
-  therapeutic precedent while keeping indication-specific claims bounded.
-- **Candidate requirement:** select a reviewed set that includes TTR and transparent comparators derived from
-  the same frozen run.
-- **Debrief:** precedent makes a target translationally informative; it does not make every disease context or
-  intervention equivalent.
+- **Teaching candidates:** TTR, LYZ, B2M.
+- **Learning focus:** connect toxic-protein reduction and precedent while keeping tissue delivery,
+  indication, and unrelated amyloid biology separate.
+- **Debrief:** precedent is useful context, not proof that every intervention or disease context is equivalent.
 
-### 6. Dravet syndrome — pending reviewed fixture
+### 6. Dravet syndrome
 
 - **Identifier:** `MONDO_0100135`
-- **Learning objectives:** understand dominant loss of function and haploinsufficiency; recognize why further
-  knockdown may be directionally hazardous; distinguish restoration from unrestricted overexpression.
-- **Candidate requirement:** select three to five reviewed records that preserve SCN1A's mechanism and label
-  comparator mechanisms accurately.
-- **Debrief:** association strength alone cannot choose intervention direction, and restoration-oriented logic
-  still requires feasibility and safety review.
+- **Teaching candidates:** SCN1A, SNX27, PCDH19.
+- **Learning focus:** haploinsufficiency, the danger of indiscriminate knockdown reasoning, aggregate-variant
+  model limits, and association-only comparators.
+- **Debrief:** association strength cannot choose intervention direction; restoration-oriented logic still
+  requires feasibility and safety review.
 
-## Implementation status and sequence
+## Implemented application behavior
 
-1. **Implemented:** ALS remains the only published case until another fixture passes the review gates.
-2. **Implemented:** a typed case manifest, separate from candidate data, holds objectives, debrief, status,
-   reviewer attribution, source releases, teaching candidates, and fixture filename.
-3. **Implemented:** the backend example loader and example AI routes use the published-manifest allow-list;
-   unreviewed manifest entries cannot be loaded through those routes.
-4. **Implemented:** Learn shows the complete curriculum but opens exercises only for `published` manifests;
-   placeholder candidate results are never displayed.
-5. **Implemented for ALS:** direct routing, three-candidate exercises, evidence-source tracing, a ClinVar
-   missingness checkpoint, responsive/accessibility tests, and entry into the complete frozen result.
-6. **Required for every next case:** add and scientifically review the fixture, then add schema, golden-case,
-   UI, and AI-grounding tests independently before changing its manifest status to `published`.
-7. **Implemented release guard:** both manifest loaders reject incomplete published provenance and reject any
-   planned case that exposes fixture or candidate data. The backend also verifies that the reviewed disease,
-   engine version, and teaching candidates match the frozen fixture. Use
-   `19_EDUCATIONAL_CASE_REVIEW_WORKSHEET.md` to prepare the five pending reviews.
+1. A shared typed manifest is the curriculum source for backend and frontend.
+2. Backend and frontend loaders fail closed unless a published case has provenance, a verified fixture digest,
+   candidate lessons, debrief points, references, and candidate-count compliance.
+3. The backend verifies the disease, engine version, and selected symbols against each frozen fixture.
+4. Learn routes directly to every published module and then to its complete saved teaching excerpt.
+5. Each module includes candidate comparisons, a visual evidence-source flow, source claim boundaries,
+   ClinVar metadata exercises, primary reading, and optional evidence-bound AI on the saved fixture.
+6. Tests verify manifest parity, fixture mirroring, candidate presence, route allow-listing, and deterministic
+   fixture loading. The fixture generator performs read-only extraction and does no scientific recalculation.
 
 ## ClinVar exercise contract
 
 New runs use `clinvar-interpretation-v1`, which retains bounded review-status, conflict, evidence/release date,
-and variant-condition context from Open Targets EVA. The current upstream query does not expose a reliable
-submitter count, so the UI reports that field as unavailable and links to primary ClinVar records. Older frozen
-fixtures remain valid and explicitly show that interpretation metadata was not retained. These educational
-fields do not change deterministic classifications, thresholds, scores, or shortlist order.
+and variant-condition context from Open Targets EVA. The upstream query does not expose a reliable submitter
+count, so that field remains explicitly unavailable and is deferred. Older fixtures show missing metadata
+rather than fabricating it. These educational fields do not change classifications, thresholds, scores, or
+shortlist order.

@@ -67,7 +67,8 @@ test("guided tutorial leads into the offline evidence example", async ({ page })
   await expect(operations.getByRole("heading", { name: "Disease query" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "The five research tracks" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /build interpretation skills/i })).toBeVisible();
-  await expect(page.getByText("Fixture review pending").first()).toBeVisible();
+  await expect(page.locator(".learn-case-grid").getByText("Available")).toHaveCount(6);
+  await expect(page.getByText("Fixture review pending")).toHaveCount(0);
 
   await page.getByRole("button", { name: /open the guided ALS example/i }).first().click();
   await expect(page.getByRole("heading", { name: /amyotrophic lateral sclerosis/i })).toBeVisible();
@@ -90,9 +91,29 @@ test("published ALS case is directly addressable and leads to the complete froze
   const audit = await new AxeBuilder({ page }).analyze();
   expect(audit.violations.filter(item => item.impact === "critical" || item.impact === "serious")).toEqual([]);
 
-  await page.getByRole("button", { name: /open full saved result/i }).click();
+  await page.getByRole("button", { name: /open saved teaching result/i }).click();
   await expect(page.getByText(/offline-ready deterministic example/i)).toBeVisible();
   await expect(page.locator("main .metrics .metric").filter({ hasText: "Candidates" }).locator("b")).toHaveText("6");
+});
+
+test("all reviewed case fixtures are directly teachable", async ({ page }) => {
+  const cases = [
+    ["huntington-disease", "Huntington disease", 2, "HTT"],
+    ["spinal-muscular-atrophy", "Spinal muscular atrophy", 3, "SMN1"],
+    ["duchenne-muscular-dystrophy", "Duchenne muscular dystrophy", 3, "DMD"],
+    ["hereditary-attr-amyloidosis", "Hereditary ATTR amyloidosis", 3, "TTR"],
+    ["dravet-syndrome", "Dravet syndrome", 3, "SCN1A"],
+  ] as const;
+
+  for (const [slug, title, candidateCount, firstCandidate] of cases) {
+    await page.goto(`/?case=${slug}#/learn/cases/${slug}`);
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+    await expect(page.locator(".case-candidate-tabs button")).toHaveCount(candidateCount);
+    await expect(page.locator(".case-candidate-tabs button").first()).toContainText(firstCandidate);
+    await expect(page.getByRole("heading", { name: "Follow each claim to its source" })).toBeVisible();
+    await expect(page.getByText("Claims stay source-bounded")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Check the biological premise outside the heuristic" })).toBeVisible();
+  }
 });
 
 test("English glossary is directly addressable and searchable", async ({ page }) => {

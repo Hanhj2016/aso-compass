@@ -169,22 +169,48 @@ function sourceAvailability(candidate: Candidate) {
   };
 }
 
+type SourceState = "available" | "limited" | "missing";
+
+function sourceState(candidate: Candidate) {
+  return {
+    openTargets: { label: "Association returned", state: "available" as SourceState },
+    g2p: candidate.g2p_mech || candidate.inheritance
+      ? { label: "Annotation returned", state: "available" as SourceState }
+      : { label: "Not returned", state: "missing" as SourceState },
+    clinvar: candidate.n_evidence === null
+      ? { label: "Not checked", state: "missing" as SourceState }
+      : candidate.evidence_truncated
+        ? { label: "Capped", state: "limited" as SourceState }
+        : (candidate.n_evidence_returned ?? 0) > 0
+          ? { label: "Evidence returned", state: "available" as SourceState }
+          : { label: "No qualifying records", state: "missing" as SourceState },
+    gnomad: candidate.loeuf === null
+      ? { label: "Not returned", state: "missing" as SourceState }
+      : { label: "Constraint returned", state: "available" as SourceState },
+    precedent: candidate.aso_precedent || (candidate.drug_status && candidate.drug_status !== "None found")
+      ? { label: "Precedent returned", state: "available" as SourceState }
+      : { label: "No match returned", state: "missing" as SourceState },
+  };
+}
+
 export function EvidenceSourceMap({ candidate }: { candidate: Candidate }) {
   const available = sourceAvailability(candidate);
-  const sources = [
-    ["Open Targets", "Association", available.openTargets, "Supports a retrieved gene–disease association and its source scores.", "Does not prove causation, intervention direction, safety, or therapeutic success."],
-    ["Gene2Phenotype", "Mechanism + inheritance", available.g2p, "Can support curated disease mechanism and inheritance context.", "Does not establish that an ASO modality is feasible or safe for this candidate."],
-    ["ClinVar / EVA", "Submitted variant evidence", available.clinvar, "Supports the returned variant-consequence inventory and, for new runs, bounded review-status and variant–condition context.", "It does not establish causality, retain every source record, or expose a reliable submitter count through this query."],
-    ["gnomAD", "Population constraint", available.gnomad, "Supports population constraint context through LOEUF.", "Does not determine the disease mechanism or prove that knockdown is safe or unsafe."],
-    ["Drug / trials", "Therapeutic precedent", available.precedent, "Supports that a target-linked drug or trial record was found by the configured checks.", "Does not establish efficacy for this disease, approval for this indication, or a treatment recommendation."],
+  const states = sourceState(candidate);
+  const sources: Array<[string, string, string, { label: string; state: SourceState }, string, string]> = [
+    ["Open Targets", "Association", available.openTargets, states.openTargets, "Supports a retrieved gene–disease association and its source scores.", "Does not prove causation, intervention direction, safety, or therapeutic success."],
+    ["Gene2Phenotype", "Mechanism + inheritance", available.g2p, states.g2p, "Can support curated disease mechanism and inheritance context.", "Does not establish that an ASO modality is feasible or safe for this candidate."],
+    ["ClinVar / EVA", "Submitted variant evidence", available.clinvar, states.clinvar, "Supports the returned variant-consequence inventory and, for new runs, bounded review-status and variant–condition context.", "It does not establish causality, retain every source record, or expose a reliable submitter count through this query."],
+    ["gnomAD", "Population constraint", available.gnomad, states.gnomad, "Supports population constraint context through LOEUF.", "Does not determine the disease mechanism or prove that knockdown is safe or unsafe."],
+    ["Drug / trials", "Therapeutic precedent", available.precedent, states.precedent, "Supports that a target-linked drug or trial record was found by the configured checks.", "Does not establish efficacy for this disease, approval for this indication, or a treatment recommendation."],
   ];
   return <section className="source-map" aria-labelledby="source-map-title">
     <p className="eyebrow">Evidence-source map</p>
     <h3 id="source-map-title">How the saved evidence reaches this track</h3>
     <p>Follow the numbered evidence streams into the rule engine. Open any source to inspect its claim boundary.</p>
+    <div className="source-map-direction" aria-hidden="true"><span>Independent source evidence</span><b>Claims stay source-bounded</b><span>Rule-based synthesis</span></div>
     <div className="source-map-list" aria-label="Five evidence streams converging on the deterministic track">
-      {sources.map(([name, role, status, supports, limitation], index) => <details key={name}>
-        <summary><span className="source-map-step" aria-hidden="true">{index + 1}</span><span><b>{name}</b><small>{role}</small></span><span aria-hidden="true">→</span></summary>
+      {sources.map(([name, role, status, sourceStatus, supports, limitation], index) => <details key={name} className={`source-map-${sourceStatus.state}`}>
+        <summary><span className="source-map-step" aria-hidden="true">{index + 1}</span><span><b>{name}</b><small>{role}</small><em><i aria-hidden="true"/>{sourceStatus.label}</em></span><span aria-hidden="true">→</span></summary>
         <div><p className="source-map-status">{status}</p>{name === "gnomAD" && <p className="mechanism-term-note">Context concept: <TermHelp term="loeuf"/></p>}{name === "ClinVar / EVA" && <p className="mechanism-term-note">Interpretation concept: <TermHelp term="reviewStatus"/></p>}<dl><div><dt>Can support</dt><dd>{supports}</dd></div><div><dt>Cannot support</dt><dd>{limitation}</dd></div></dl></div>
       </details>)}
     </div>

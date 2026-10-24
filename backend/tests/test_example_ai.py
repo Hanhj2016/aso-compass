@@ -68,13 +68,17 @@ class FakeSummaryProvider:
         )
 
 
-def test_server_example_matches_frontend_bundle() -> None:
-    backend_file = Path(__file__).parents[1] / "app/data/examples/als-v4.1.json"
-    frontend_file = Path(__file__).parents[2] / "frontend/public/examples/als-v4.1.json"
-    assert json.loads(backend_file.read_text()) == json.loads(frontend_file.read_text())
+def test_server_examples_match_frontend_bundles() -> None:
+    backend_dir = Path(__file__).parents[1] / "app/data/examples"
+    frontend_dir = Path(__file__).parents[2] / "frontend/public/examples"
+    for case in published_example_cases():
+        assert case.fixture_file is not None
+        assert json.loads((backend_dir / case.fixture_file).read_text()) == json.loads(
+            (frontend_dir / case.fixture_file).read_text()
+        )
 
 
-def test_case_manifests_match_and_only_reviewed_fixture_is_published() -> None:
+def test_case_manifests_match_and_all_reviewed_fixtures_are_published() -> None:
     backend_file = Path(__file__).parents[1] / "app/data/examples/manifest.json"
     frontend_file = Path(__file__).parents[2] / "frontend/src/caseManifest.json"
     assert json.loads(backend_file.read_text()) == json.loads(frontend_file.read_text())
@@ -82,30 +86,29 @@ def test_case_manifests_match_and_only_reviewed_fixture_is_published() -> None:
     cases = load_example_cases()
     published = published_example_cases()
     assert len(cases) == 6
-    assert [case.slug for case in published] == ["als"]
+    assert len(published) == 6
     assert published[0].teaching_candidates == ("SOD1", "TARDBP", "FUS")
-    assert all(case.fixture_file is None for case in cases if case.status == "planned")
-    assert all(case.review_status == "pending" and case.reviewer is None for case in cases if case.status == "planned")
+    assert all(case.fixture_file and case.review_status == "published" for case in published)
 
     public = list_published_examples()
     public_cases = public["cases"]
     assert isinstance(public_cases, list)
-    assert [case["slug"] for case in public_cases] == ["als"]
+    assert len(public_cases) == 6
 
 
-def test_unreviewed_case_cannot_be_loaded_as_example() -> None:
-    assert load_example_bundle("huntington-model-boundaries", "test") is None
+def test_unknown_case_cannot_be_loaded_as_example() -> None:
+    assert load_example_bundle("unknown-example", "test") is None
 
 
-def test_published_teaching_candidates_exist_in_the_reviewed_fixture() -> None:
-    case = published_example_cases()[0]
-    assert case.example_id is not None
-    bundle = load_example_bundle(case.example_id, "test")
-    assert bundle is not None
-    fixture_symbols = {candidate.gene_symbol for candidate in bundle.candidates}
-    assert set(case.teaching_candidates) <= fixture_symbols
-    assert bundle.run.disease_id == case.disease_id
-    assert bundle.run.engine_version == case.engine_version
+def test_published_teaching_candidates_exist_in_each_reviewed_fixture() -> None:
+    for case in published_example_cases():
+        assert case.example_id is not None
+        bundle = load_example_bundle(case.example_id, "test")
+        assert bundle is not None
+        fixture_symbols = {candidate.gene_symbol for candidate in bundle.candidates}
+        assert set(case.teaching_candidates) <= fixture_symbols
+        assert bundle.run.disease_id == case.disease_id
+        assert bundle.run.engine_version == case.engine_version
 
 
 def test_empty_example_ai_cache_probe_returns_no_content(api) -> None:

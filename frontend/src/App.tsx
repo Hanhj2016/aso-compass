@@ -608,7 +608,7 @@ export default function App() {
   }, [runId, runStatus, example]);
 
   function rememberRun(created: RunRecord) { localStorage.setItem(LAST_RUN_STORAGE_KEY, created.id); setSavedRunId(created.id); setRun(created); setCandidates([]); setEvents([]); setExample(false); showRunInUrl(created.id); }
-  async function loadExample() { const response = await fetch(`/examples/${DEFAULT_CASE.fixture_file}`); const bundle = await response.json() as ExampleBundle; setRun(bundle.run); setCandidates(bundle.candidates); setEvents(bundle.events); setExample(true); navigateToView("analyze"); showRunInUrl(null); }
+  async function loadExample(caseToLoad = DEFAULT_CASE) { const response = await fetch(`/examples/${caseToLoad.fixture_file}`); const bundle = await response.json() as ExampleBundle; setRun(bundle.run); setCandidates(bundle.candidates); setEvents(bundle.events); setExample(true); navigateToView("analyze"); showRunInUrl(null); }
   function reset() { setRun(null); setCandidates([]); setEvents([]); setExample(false); showRunInUrl(null); }
   function unlockAI(token: string) { sessionStorage.setItem(AI_ACCESS_STORAGE_KEY, token); setAiAccessToken(token); }
   function lockAI() { sessionStorage.removeItem(AI_ACCESS_STORAGE_KEY); setAiAccessToken(""); }
@@ -627,5 +627,5 @@ export default function App() {
   const caseSlug = view === "case" ? window.location.hash.slice("#/learn/cases/".length) : null;
   const caseStudy = findCaseBySlug(caseSlug);
   const headerView = view === "case" ? "learn" : view;
-  return <><Header view={headerView} onView={navigateToView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()} onCase={navigateToCase} onResumeSaved={resumeSaved}/> : view === "case" && caseStudy?.status === "published" ? <CaseStudyPage key={caseStudy.case_id} caseStudy={caseStudy} disclaimer={DISCLAIMER} onBack={() => navigateToView("learn")} onOpenResults={() => void loadExample()}/> : view === "glossary" ? <GlossaryPage disclaimer={DISCLAIMER}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
+  return <><Header view={headerView} onView={navigateToView}/>{view === "learn" ? <Learn disclaimer={DISCLAIMER} onExample={() => void loadExample()} onCase={navigateToCase} onResumeSaved={resumeSaved}/> : view === "case" && caseStudy?.status === "published" ? <CaseStudyPage key={caseStudy.case_id} caseStudy={caseStudy} disclaimer={DISCLAIMER} onBack={() => navigateToView("learn")} onOpenResults={() => void loadExample(caseStudy)}/> : view === "glossary" ? <GlossaryPage disclaimer={DISCLAIMER}/> : <main id="main">{content}</main>}<footer><span><b>ASO Compass</b> · Deterministic evidence synthesis · <a href="https://github.com/Hanhj2016/aso-compass" target="_blank" rel="noreferrer">Deployed automatically from GitHub ↗</a></span><span>{DISCLAIMER}</span></footer></>;
 }
