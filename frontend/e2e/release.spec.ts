@@ -44,6 +44,13 @@ test("guided form and offline evidence example are usable", async ({ page }) => 
   await expect(clinVarSource.getByText("Cannot support", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Maximize candidate evidence view" }).click();
   await expect(page.locator(".drawer-backdrop")).toHaveClass(/drawer-maximized/);
+  const detailStack = evidenceDialog.locator(".candidate-detail-stack");
+  const sourceSection = evidenceDialog.locator(".candidate-source-section");
+  const [detailStackBox, sourceSectionBox] = await Promise.all([detailStack.boundingBox(), sourceSection.boundingBox()]);
+  expect(detailStackBox).not.toBeNull();
+  expect(sourceSectionBox).not.toBeNull();
+  expect(sourceSectionBox!.width).toBeGreaterThan(detailStackBox!.width * 0.9);
+  expect(await sourceSection.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
   await page.getByRole("button", { name: "Restore candidate evidence view" }).click();
   await expect(page.locator(".drawer-backdrop")).not.toHaveClass(/drawer-maximized/);
   await page.getByText("Optional AI explanation", { exact: true }).click();

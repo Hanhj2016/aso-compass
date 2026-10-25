@@ -214,12 +214,12 @@ function CandidateDrawer({ row, runId, aiEnabled, aiConfigStatus, accessLocked, 
     <nav className="candidate-reading-guide" aria-label="Candidate evidence sections"><span>Read in layers</span><small>Decision → sources → variant context → precedent → optional AI</small></nav>
 
     <div className="candidate-detail-stack">
-    <CandidateDetailSection title="Deterministic interpretation" summary="Why this track, mechanism, and inheritance" defaultOpen>
+    <CandidateDetailSection title="Deterministic interpretation" summary="Why this track, mechanism, and inheritance" defaultOpen className="candidate-deterministic-section">
       <section><h3>Why this track?</h3><p>{row.confidence_reason}</p><p className="call-source">Deterministic source: <b>{row.call_source}</b> · Confidence label: <b>{row.confidence_tier}</b></p></section>
       <section><h3>Mechanism evidence</h3><dl><dt>ClinVar heuristic</dt><dd>{row.clinvar_call}</dd><dt>G2P mechanism</dt><dd><MechanismHelp value={row.g2p_mech}/></dd><dt>Inheritance</dt><dd>{row.inheritance ?? "Not returned"}</dd></dl>{row.flag.toLowerCase().includes("haploinsuff") && <p className="mechanism-term-note">Review concept: <TermHelp term="haploinsufficiency"/></p>}</section>
     </CandidateDetailSection>
 
-    <CandidateDetailSection title="Evidence sources" summary="What each source can—and cannot—support">
+    <CandidateDetailSection title="Evidence sources" summary="What each source can—and cannot—support" className="candidate-source-section">
       <EvidenceSourceMap candidate={row}/>
     </CandidateDetailSection>
 
