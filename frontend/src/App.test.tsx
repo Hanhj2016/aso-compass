@@ -226,6 +226,7 @@ describe("ASO Compass", () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(([input, init]) =>
       String(input).endsWith("/candidates/GENEA/ai-explanation") && init?.method !== "POST"
     )).toBe(true));
+    expect(screen.getByText("Optional AI explanation", { exact: true }).closest("details")).toHaveAttribute("open");
     await user.click(screen.getByRole("button", { name: "Explain saved evidence" }));
     expect(await screen.findByText("GENEA is a modifier based on the saved evidence.")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Download evidence PDF + AI" }));
